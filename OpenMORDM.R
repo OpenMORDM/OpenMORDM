@@ -191,8 +191,7 @@ mordm.plotset <- function(data, index=-1, mark=NULL, objectives=NULL) {
 		size=sizes,
 		xlab=xlab,
 		ylab=ylab,
-		zlab=zlab,
-		family=2)
+		zlab=zlab)
 }
 
 mordm.identify <- function() {

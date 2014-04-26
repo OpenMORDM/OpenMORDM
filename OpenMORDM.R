@@ -2,9 +2,9 @@ library(grid)
 library(prim)
 library(plot3D)
 library(MASS)
-library(hypervolume)
 library(rgl)
 library(animation)
+library(scales)
 
 mordm.defaultnames <- function(nvars, nobjs) {
 	names <- vector()
@@ -95,20 +95,114 @@ mordm.attributes <- function(data) {
 	return(result)
 }
 
-mordm.plotpar <- function(data) {
-	last <- data[[length(data)]]
-
-	parcoord(last)
+mordm.colorize <- function(set, objectives, mark, palette=heat.colors, n=100, offset=0, unmarked="#888888FF", alpha=1) {
+    if (is.null(mark)) {
+        colors <- set[,objectives[5]]
+        colors <- (colors - min(colors)) / (max(colors) - min(colors))
+    } else if (is.list(mark)) {
+        colors <- rep(0, nrow(set))
+        
+        for (i in 1:length(mark)) {
+            indices <- mordm.select.indices(set, mark[i])
+            colors[indices] <- i
+        }
+        
+        colors <- colors / length(mark)
+    } else {
+        colors <- rep(0, nrow(set))
+        indices <- mordm.select.indices(set, mark)
+        colors[indices] <- 1
+    }
+    
+    colormap <- rev(palette(n+1, alpha=alpha))
+    colormap[1] <- unmarked
+    colormap[(colors*(n-offset))+offset+1]
 }
 
-mordm.plotbox <- function(data) {
-	set <- mordm.getset(data)
-	boxplot(set)
+mordm.plotpar <- function(highlight=NULL) {
+    set <- mordm.currentset
+    objectives <- mordm.currentobjectives
+    mark <- mordm.currentmark
+    colors <- alpha(mordm.currentcolors, 0.4)
+    
+    if (is.null(highlight)) {
+        lwd <- 1
+    } else {
+        lwd <- rep(1, nrow(set))
+        lwd[highlight] <- 3
+        colors[highlight] <- alpha(colors[highlight], 1.0)
+        
+        order <- 1:nrow(set)
+        order <- append(order[-highlight], highlight)
+        
+        set <- set[order,]
+        lwd <- lwd[order]
+        colors <- colors[order]
+    }
+    
+	parcoord(set, col=colors, lwd=lwd, var.label=TRUE)
+    
+	mordm.currentplot <<- "parallel"
+}
+
+mordm.plotbox <- function() {
+	set <- mordm.currentset
+	mark <- mordm.currentmark
+	colors <- mordm.currentcolors
+    nvars <- attr(set, "nvars")
+	nobjs <- attr(set, "nobjs")
+    
+	# get the variable bounds for normalization
+    if (!is.null(attr(set, "bounds"))) {
+        xlim <- attr(set, "bounds")
+    } else {
+        xlim = lapply(1:nvars, function(i) range(set[,i], set[,i]))
+    }
+	
+	# normalize the data
+	normset <- matrix(data=set, nrow=nrow(set), ncol=ncol(set))
+	colnames(normset) <- colnames(set)
+    
+    for (i in 1:nvars) {
+        normset[,i] <- (normset[,i] - xlim[[i]][1]) / (xlim[[i]][2] - xlim[[i]][1])
+    }
+	
+	for (i in 1:nobjs) {
+		lim <- range(normset[,(nvars+i)])
+		normset[,(nvars+i)] <- (normset[,(nvars+i)] - lim[1]) / (lim[2] - lim[1])
+	}
+	
+	# create the plot
+	boxplot(normset, xlab="Variables and Objectives", ylab="Range (Scaled to [0, 1])", range=0, outline=FALSE)
+	
+	if (is.null(mark)) {
+		
+	} else if (is.list(mark)) {
+		if (length(mark) %% 2 == 0) {
+			n <- length(mark)%/%2
+			offsets <- 0.2*(-n:n)[-(n+1)]
+		} else {
+			n <- length(mark)%/%2
+			offsets <- 0.2*(-n:n)
+		}
+
+		for (i in 1:length(mark)) {
+			indices <- mordm.select.indices(set, mark[i])
+			boxplot(normset[indices,], col=colors[indices][1], add=TRUE, range=0, outline=FALSE, at=1:(nvars+nobjs) - offsets[i], names=rep("", nvars+nobjs), boxwex=0.5/length(mark))
+		}
+	} else {
+		indices <- mordm.select.indices(set, mark)
+		boxplot(normset[indices,], col=colors[indices][1], add=TRUE, range=0, outline=FALSE, names=rep("", nvars+nobjs), boxwex=0.5)
+	}
+	
+	mordm.currentplot <<- "box"
 }
 
 mordm.plothist <- function(data) {
 	set <- mordm.getset(data)
 	names <- colnames(set)
+    
+    
 
 	pairs(set)
 #, xlim=range(0,1), ylim=range(0,1))
@@ -131,10 +225,6 @@ mordm.plotset <- function(data, index=-1, mark=NULL, objectives=NULL) {
 	}
 
 	nobjs <- length(objectives)
-
-	# save the state to a global location so other functions can reference
-	mordm.currentset <<- set
-	mordm.currentobjectives <<- objectives
 	
 	# setup the plot
 	if (nobjs >= 2) {
@@ -161,30 +251,12 @@ mordm.plotset <- function(data, index=-1, mark=NULL, objectives=NULL) {
 	}
 
 	if (nobjs >= 5 | !is.null(mark)) {
-		if (is.null(mark)) {
-			colors <- set[,objectives[5]]
-			colors <- (colors - min(colors)) / (max(colors) - min(colors))
-		} else if (is.list(mark) & class(mark) != "mark") {
-			colors <- rep(0, nrow(set))
-
-			for (i in 1:length(mark)) {
-				indices <- mordm.select.indices(set, mark[i])
-				colors[indices] <- i
-			}
-
-			colors <- colors / length(mark)
-		} else {
-			colors <- rep(0, nrow(set))
-			indices <- mordm.select.indices(set, mark)
-			colors[indices] <- 1
-		}
-
-		colormap <- rev(heat.colors(101))
-		colors <- colormap[colors*100+1]
+        colors <- mordm.colorize(set, objectives, mark)
 	} else {
 		colors <- rep("#888888",nrow(set))
 	}
 
+    # create the plot
 	plot3d(x, y, z,
 		type="s",
 		col=colors,
@@ -192,6 +264,12 @@ mordm.plotset <- function(data, index=-1, mark=NULL, objectives=NULL) {
 		xlab=xlab,
 		ylab=ylab,
 		zlab=zlab)
+    
+	# save the state to a global location so other functions can reference
+	mordm.currentset <<- set
+	mordm.currentobjectives <<- objectives
+	mordm.currentmark <<- mark
+    mordm.currentcolors <<- colors
 }
 
 mordm.identify <- function() {
@@ -216,6 +294,10 @@ mordm.identify <- function() {
 		cat(" with a distance ")
 		cat(d[i[1]])
 		cat("\n")
+        
+        if (mordm.currentplot == "parallel") {
+            mordm.plotpar(highlight=i[1])
+        }
 	})
 }
 
@@ -367,16 +449,16 @@ mordm.brush <- function(data, conditions) {
 	print(apply(last, 1, conditions))
 }
 
-mordm.mark.points <- function(points) {
-	mark <- points
-	class(mark) <- "mark"
-	return(mark)
-}
-
 mordm.mark.rule <- function(condition) {
 	mark <- condition
 	class(mark) <- "mark"
 	return(mark)
+}
+
+mordm.mark.points <- function(points) {
+    mordm.mark.rule(function(x) {
+        any(apply(points, 1, function(y) isTRUE(all.equal(x, y))))
+    })
 }
 
 mordm.mark.selection <- function() {
@@ -631,7 +713,7 @@ mordm.recommend <- function(data) {
 
 
 
-data <- mordm.read("E:/Git/openmordm/lakeoutput.txt", 20, 5, 1,
+data <- mordm.read("lakeoutput.txt", 20, 5, 1,
 	bounds=rep(list(range(0.0,0.1)), 20))
 
 # Plot Operators
@@ -640,12 +722,10 @@ data <- mordm.read("E:/Git/openmordm/lakeoutput.txt", 20, 5, 1,
 # Marking Demo
 mark1 <- mordm.mark.rule(function(x) x[21] < 0.1)
 mark2 <- mordm.mark.rule(function(x) x[21] > 0.125)
-mordm.select(data, mark1)
-mordm.select(data, mark2)
-mordm.select(data, mark2, not=TRUE)
-mordm.select(data, list(mark1, mark2))
-mordm.select(data, list(mark1, mark2), or=TRUE)
-mordm.plotset(data, mark=list(mark1, mark2))
+mark3 <- mordm.mark.not(mordm.mark.union(mark1, mark2))
+print(nrow(mordm.select(data, mark1)))
+print(nrow(mordm.select(data, mark2)))
+mordm.plotset(data, mark=list(mark1, mark2, mark3))
 
 #mark3 <- mordm.mark.not(mordm.mark.union(mark1, mark2))
 #mordm.plotset(data, mark=mark3)
@@ -659,4 +739,11 @@ mordm.plotset(data, mark=list(mark1, mark2))
 #boxes <- mordm.prim(data, "Obj2", minimize=TRUE, threshold.type=1)
 #mordm.plotset(data, mark=mordm.mark.union(boxes))
 
-mordm.recommend(data)
+#mordm.recommend(data)
+
+# Parallel Plotting
+#mordm.plotset(data, objectives=c("Obj1", "Obj2", "Obj3", "Obj4", "Obj5"))
+#mordm.plotpar()
+#mordm.identify()
+
+mordm.plotbox()

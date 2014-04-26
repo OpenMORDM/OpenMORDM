@@ -1,9 +1,6 @@
 library(grid)
 library(prim)
-library(plot3D)
-library(MASS)
 library(rgl)
-library(animation)
 library(scales)
 
 mordm.defaultnames <- function(nvars, nobjs) {
@@ -125,6 +122,7 @@ mordm.plotpar <- function(highlight=NULL) {
     mark <- mordm.currentmark
     colors <- alpha(mordm.currentcolors, 0.4)
     
+    # highlight selected solutions
     if (is.null(highlight)) {
         lwd <- 1
     } else {
@@ -140,12 +138,20 @@ mordm.plotpar <- function(highlight=NULL) {
         colors <- colors[order]
     }
     
+    # reset plot settings
+    if (exists("mordm.currentpar")) {
+    	par(mordm.currentpar)
+    }
+    
+    # create the plot
 	parcoord(set, col=colors, lwd=lwd, var.label=TRUE)
     
+    # store the plot settings
 	mordm.currentplot <<- "parallel"
+    mordm.currentpar <<- par(no.readonly=TRUE)
 }
 
-mordm.plotbox <- function() {
+mordm.plotbox <- function(highlight=NULL) {
 	set <- mordm.currentset
 	mark <- mordm.currentmark
 	colors <- mordm.currentcolors
@@ -172,11 +178,16 @@ mordm.plotbox <- function() {
 		normset[,(nvars+i)] <- (normset[,(nvars+i)] - lim[1]) / (lim[2] - lim[1])
 	}
 	
+	# reset plot settings
+	if (exists("mordm.currentpar")) {
+		par(mordm.currentpar)
+	}
+	
 	# create the plot
 	boxplot(normset, xlab="Variables and Objectives", ylab="Range (Scaled to [0, 1])", range=0, outline=FALSE)
 	
 	if (is.null(mark)) {
-		
+		# no markings to plot
 	} else if (is.list(mark)) {
 		if (length(mark) %% 2 == 0) {
 			n <- length(mark)%/%2
@@ -195,7 +206,14 @@ mordm.plotbox <- function() {
 		boxplot(normset[indices,], col=colors[indices][1], add=TRUE, range=0, outline=FALSE, names=rep("", nvars+nobjs), boxwex=0.5)
 	}
 	
+	# highlight selected solutions
+	if (!is.null(highlight)) {
+		lines(normset[highlight,], lwd=3, col=alpha(colors[highlight], 0.75))
+	}
+	
+	# store the plot settings
 	mordm.currentplot <<- "box"
+	mordm.currentpar <<- par(no.readonly=TRUE)
 }
 
 mordm.plothist <- function(data) {
@@ -214,7 +232,7 @@ mordm.plothist <- function(data) {
 	#}
 }
 
-mordm.plotset <- function(data, index=-1, mark=NULL, objectives=NULL) {
+mordm.plot <- function(data, index=-1, mark=NULL, objectives=NULL) {
 	set <- mordm.getset(data, index)
 	nvars <- attr(data, "nvars")
 	nobjs <- attr(data, "nobjs")
@@ -272,33 +290,52 @@ mordm.plotset <- function(data, index=-1, mark=NULL, objectives=NULL) {
     mordm.currentcolors <<- colors
 }
 
-mordm.identify <- function() {
-	rgl.setMouseCallbacks(3, begin=function(x, y) { 
-		userMatrix <- par3d("userMatrix")
-		viewport <- par3d("viewport")
-		scale <- par3d("scale")
-		projection <- rgl.projection()
-		set <- mordm.currentset
-		objectives <- mordm.currentobjectives
-
-		d = matrix(nrow=nrow(set), ncol=1)
-
-		for (i in 1:nrow(set)) {
-			pos <- rgl.user2window(set[i,objectives[1]], set[i,objectives[2]], set[i,objectives[3]], projection=projection)
-			d[i] = as.double(dist(rbind(pos[1:2], c(x/viewport[3],1-y/viewport[4]))))
-		}
-
-		i <- order(d)
-		cat("You selected point ")
-		cat(i[1])
-		cat(" with a distance ")
-		cat(d[i[1]])
-		cat("\n")
-        
-        if (mordm.currentplot == "parallel") {
-            mordm.plotpar(highlight=i[1])
-        }
-	})
+mordm.identify <- function(enabled=TRUE, label=FALSE) {
+	if (enabled) {
+		rgl.setMouseCallbacks(3, begin=function(x, y) { 
+			userMatrix <- par3d("userMatrix")
+			viewport <- par3d("viewport")
+			scale <- par3d("scale")
+			projection <- rgl.projection()
+			set <- mordm.currentset
+			objectives <- mordm.currentobjectives
+	
+			d = matrix(nrow=nrow(set), ncol=1)
+	
+			for (i in 1:nrow(set)) {
+				pos <- rgl.user2window(set[i,objectives[1]],
+									   set[i,objectives[2]],
+									   set[i,objectives[3]],
+									   projection=projection)
+				d[i] = as.double(dist(rbind(pos[1:2],
+											c(x/viewport[3],1-y/viewport[4]))))
+			}
+	
+			i <- order(d)
+			cat("You selected point ")
+			cat(i[1])
+			cat(" with a distance ")
+			cat(d[i[1]])
+			cat("\n")
+			
+			if (label) {
+				offset <- apply(set[,c(objectives[1], objectives[2], objectives[3])], 2, range)
+				offset.diff <- apply(offset, 2, diff) / 20
+				text3d(x=set[i[1],objectives[1]]+offset.diff[1],
+					   y=set[i[1],objectives[2]]+offset.diff[2],
+					   z=set[i[1],objectives[3]]+offset.diff[3],
+					   i[1])
+			}
+	        
+	        if (mordm.currentplot == "parallel") {
+	            mordm.plotpar(highlight=i[1])
+	        } else if (mordm.currentplot == "box") {
+	        	mordm.plotbox(highlight=i[1])
+	        }
+		})
+	} else {
+		rgl.setMouseCallbacks(3)
+	}
 }
 
 mordm.plotops <- function(data, time=FALSE, improvements=FALSE, log=FALSE) {
@@ -457,7 +494,26 @@ mordm.mark.rule <- function(condition) {
 
 mordm.mark.points <- function(points) {
     mordm.mark.rule(function(x) {
-        any(apply(points, 1, function(y) isTRUE(all.equal(x, y))))
+    	# This is a fast implementation to determine if points contains x
+    	for (i in 1:nrow(points)) {
+    		match <- TRUE
+    		
+    		for (j in 1:ncol(points)) {
+    			if (points[i,j] != x[j]) {
+    				match <- FALSE
+    				break
+    			}
+    		}
+    		
+    		if (match) {
+    			return(TRUE)
+    		}
+    	}
+    	
+    	return(FALSE)
+    	
+    	# This is the cleaner but slow version
+        #any(apply(points, 1, function(y) isTRUE(all.equal(x, y))))
     })
 }
 
@@ -475,21 +531,30 @@ mordm.mark.selection <- function() {
 }
 
 mordm.mark.box <- function(box) {
-	mordm.mark.rule(function(x) {
+	result <- mordm.mark.rule(function(x) {
 		names <- colnames(box)
 		all(sapply(1:length(names), function(i) x[names[i]] >= box[1,names[i]] & x[names[i]] <= box[2,names[i]]))
 	})
+	
+	attr(result, "box") <- box
+	return(result)
 }
 
 mordm.mark.union <- function(...) {
 	mordm.mark.rule(function(x) {
-		any(sapply(list(...), function(rule) rule(x)))
+		any(sapply(unlist(list(...)), function(rule) rule(x)))
 	})
 }
 
 mordm.mark.intersection <- function(...) {
 	mordm.mark.rule(function(x) {
-		all(sapply(list(...), function(rule) rule(x)))
+		all(sapply(unlist(list(...)), function(rule) rule(x)))
+	})
+}
+
+mordm.mark.difference <- function(...) {
+	mordm.mark.rule(function(x) {
+		sum(sapply(unlist(list(...)), function(rule) rule(x))) == 1
 	})
 }
 
@@ -524,7 +589,7 @@ mordm.select <- function(data, marking, index=-1, not=FALSE, or=FALSE) {
 }
 
 mordm.select.indices <- function(set, marking, not=FALSE, or=FALSE) {
-	if (is.list(marking) & class(marking) != "mark") {
+	if (is.list(marking)) {
 		indices <- rep(TRUE, nrow(set))
 
 		for (mark in marking) {
@@ -534,14 +599,10 @@ mordm.select.indices <- function(set, marking, not=FALSE, or=FALSE) {
 				indices <- indices & mordm.select.indices(set, mark, not, or)
 			}
 		}
-	} else if (is.matrix(marking)) {
-		indices <- apply(set, 1, function(x) {
-			any(apply(marking, 1, function(y) isTRUE(all.equal(x, y))))
-		})
 	} else if (is.function(marking)) {
 		indices <- apply(set, 1, marking)
 	} else {
-		stop("Markings must be either a matrix of points or a function")
+		stop("Markings must be a function or a list of functions")
 	}
 
 	if (not) {
@@ -634,12 +695,15 @@ mordm.differences <- function(set1, set2, scale=TRUE, n=NULL) {
 	}
 }
 
-mordm.prim <- function(data, objective, minimize=TRUE, ...) {
+mordm.prim <- function(data, objective, minimize=TRUE, percentages=FALSE, ...) {
 	set <- mordm.getset(data)
 	nvars <- attr(set, "nvars")
 	x <- set[,1:nvars]
 
-	if (is.character(objective)) {
+	if (is.function(objective)) {
+		y <- 1*mordm.select.indices(set, objective)
+		minimize <- FALSE
+	} else if (is.character(objective)) {
 		y <- set[,objective]
 	} else {
 		y <- set[,nvars+objective]
@@ -650,13 +714,63 @@ mordm.prim <- function(data, objective, minimize=TRUE, ...) {
 	}
 
 	result <- prim.box(x, y, ...)
-	summary(result)
 	
 	marks <- lapply(1:result$num.hdr.class, function(i) {
 		# for some reason, the following statement is needed for i to evaluate to the correct value
 		i <- eval(i)
 		mordm.mark.box(result$box[[i]])
 	})
+	
+	if (is.function(objective)) {
+		total <- nrow(set)
+		union <- mordm.mark.union(marks)
+		total.expected <- sum(mordm.select.indices(set, objective))
+		total.captured <- sum(mordm.select.indices(set, mordm.mark.intersection(objective, union)))
+		total.incorrect <- sum(mordm.select.indices(set, mordm.mark.intersection(mordm.mark.not(objective), union)))
+		
+		cat("PRIM Results:\n")
+		cat("    Number of Boxes: ")
+		cat(result$num.hdr.class)
+		cat("\n")
+		cat("    Points to Capture: ")
+		cat(total.expected)
+		cat("\n")
+		cat("    Captured:  ")
+		cat(ifelse(percentages, sprintf("%4.1f %%", 100*total.captured / total.expected), paste(total.captured)))
+		cat("\n")
+		cat("    Incorrect: ")
+		cat(ifelse(percentages, sprintf("%4.1f %%", 100*total.incorrect / total.captured), paste(total.incorrect)))
+		cat("\n")
+	
+		for (i in 1:length(marks)) {
+			if (i == 1) {
+				box.union <- marks[[i]]
+				box.mark <- mordm.mark.intersection(objective, marks[[i]])
+				box.diff <- mordm.mark.intersection(mordm.mark.not(objective), marks[[i]])
+			} else {
+				box.prev <- box.union
+				box.union <- mordm.mark.union(box.union, marks[[i]])
+				box.mark <- mordm.mark.intersection(mordm.mark.difference(objective, box.prev), marks[[i]])
+				box.diff <- mordm.mark.intersection(mordm.mark.not(objective), marks[[i]])
+			}
+			
+			captured <- sum(mordm.select.indices(set, box.mark))
+			incorrect <- sum(mordm.select.indices(set, box.diff))
+			
+			cat("\n")
+			cat("    Box ")
+			cat(i)
+			cat(":\n")
+			cat("        Captured:  ")
+			cat(ifelse(percentages, sprintf("%4.1f %%", 100*captured / total.expected), paste(captured)))
+			cat("\n")
+			cat("        Incorrect: ")
+			cat(ifelse(percentages, sprintf("%4.1f %%", 100*incorrect / total.captured), paste(incorrect)))
+			cat("\n")
+		}
+	} else {
+		summary(result)
+	}
 
 	return(rev(marks))
 }
@@ -675,9 +789,8 @@ mordm.recommend <- function(data) {
 	# Check the importance of each objective
 	cat("Order of importance of objectives:\n")
 	obj <- set[,(nvars+1):(nvars+nobjs)]
-	obj.var <- apply(obj, 2, var)
 	obj.cov <- apply(abs(cov(obj)), 2, sum)
-	obj.imp <- sqrt(obj.var + obj.cov)
+	obj.imp <- sqrt(obj.cov)
 
 	for (i in order(obj.imp, decreasing=TRUE)) {
 		cat("    ")
@@ -723,12 +836,10 @@ data <- mordm.read("lakeoutput.txt", 20, 5, 1,
 mark1 <- mordm.mark.rule(function(x) x[21] < 0.1)
 mark2 <- mordm.mark.rule(function(x) x[21] > 0.125)
 mark3 <- mordm.mark.not(mordm.mark.union(mark1, mark2))
-print(nrow(mordm.select(data, mark1)))
-print(nrow(mordm.select(data, mark2)))
-mordm.plotset(data, mark=list(mark1, mark2, mark3))
+#mordm.plot(data, mark=list(mark1, mark2, mark3))
 
 #mark3 <- mordm.mark.not(mordm.mark.union(mark1, mark2))
-#mordm.plotset(data, mark=mark3)
+#mordm.plot(data, mark=mark3)
 
 # Similarity / Differences Demo
 #set1 <- mordm.select(data, mark1)
@@ -736,14 +847,19 @@ mordm.plotset(data, mark=list(mark1, mark2, mark3))
 #mordm.differences(set1, set2, scale=FALSE, n=8)
 
 # Prim Analysis - Bump Hunting
-#boxes <- mordm.prim(data, "Obj2", minimize=TRUE, threshold.type=1)
-#mordm.plotset(data, mark=mordm.mark.union(boxes))
+boxes <- mordm.prim(data, mark1, threshold.type=1, threshold=0.5)
+boxes.union <- mordm.mark.union(boxes)
+boxes.diff <- mordm.mark.difference(mark1, boxes.union)
+boxes.int <- mordm.mark.intersection(mark1, boxes.union)
+mordm.plot(data, mark=boxes.int)
 
 #mordm.recommend(data)
 
-# Parallel Plotting
+# Parallel Plot
 #mordm.plotset(data, objectives=c("Obj1", "Obj2", "Obj3", "Obj4", "Obj5"))
 #mordm.plotpar()
 #mordm.identify()
 
-mordm.plotbox()
+# Box (Candlestick) Plot
+#mordm.plotbox()
+#mordm.identify()

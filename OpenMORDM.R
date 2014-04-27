@@ -2,6 +2,7 @@ library(grid)
 library(prim)
 library(rgl)
 library(scales)
+library(MASS)
 
 mordm.defaultnames <- function(nvars, nobjs) {
 	names <- vector()
@@ -17,12 +18,15 @@ mordm.defaultnames <- function(nvars, nobjs) {
 	return(names)
 }
 
-mordm.read <- function(file, nvars, nobjs, nconstrs=0, bounds=NULL) {
+mordm.read <- function(file, nvars, nobjs, nconstrs=0, bounds=NULL, names=NULL) {
 	text <- readLines(file)
 	solutions <- vector()
 	attributes <- vector()
 	result <- list()
-	names <- mordm.defaultnames(nvars, nobjs)
+	
+	if (is.null(names)) {
+		names <- mordm.defaultnames(nvars, nobjs)
+	}
 
 	for (line in text) {
 		if (substr(line, 1, 1) == "#") {
@@ -139,8 +143,10 @@ mordm.plotpar <- function(highlight=NULL) {
     }
     
     # reset plot settings
-    if (exists("mordm.currentpar")) {
-    	par(mordm.currentpar)
+    if (exists("mordm.defaultpar")) {
+    	par(mordm.defaultpar)
+    } else {
+    	mordm.defaultpar <<- par(no.readonly=TRUE)
     }
     
     # create the plot
@@ -148,7 +154,6 @@ mordm.plotpar <- function(highlight=NULL) {
     
     # store the plot settings
 	mordm.currentplot <<- "parallel"
-    mordm.currentpar <<- par(no.readonly=TRUE)
 }
 
 mordm.plotbox <- function(highlight=NULL) {
@@ -162,7 +167,7 @@ mordm.plotbox <- function(highlight=NULL) {
     if (!is.null(attr(set, "bounds"))) {
         xlim <- attr(set, "bounds")
     } else {
-        xlim = lapply(1:nvars, function(i) range(set[,i], set[,i]))
+        xlim = sapply(1:nvars, function(i) range(set[,i], set[,i]))
     }
 	
 	# normalize the data
@@ -170,7 +175,7 @@ mordm.plotbox <- function(highlight=NULL) {
 	colnames(normset) <- colnames(set)
     
     for (i in 1:nvars) {
-        normset[,i] <- (normset[,i] - xlim[[i]][1]) / (xlim[[i]][2] - xlim[[i]][1])
+        normset[,i] <- (normset[,i] - xlim[1,i]) / (xlim[2,i] - xlim[1,i])
     }
 	
 	for (i in 1:nobjs) {
@@ -179,8 +184,10 @@ mordm.plotbox <- function(highlight=NULL) {
 	}
 	
 	# reset plot settings
-	if (exists("mordm.currentpar")) {
-		par(mordm.currentpar)
+	if (exists("mordm.defaultpar")) {
+		par(mordm.defaultpar)
+	} else {
+		mordm.defaultpar <<- par(no.readonly=TRUE)
 	}
 	
 	# create the plot
@@ -213,7 +220,6 @@ mordm.plotbox <- function(highlight=NULL) {
 	
 	# store the plot settings
 	mordm.currentplot <<- "box"
-	mordm.currentpar <<- par(no.readonly=TRUE)
 }
 
 mordm.plothist <- function(data) {
@@ -342,9 +348,18 @@ mordm.plotops <- function(data, time=FALSE, improvements=FALSE, log=FALSE) {
 	names <- c("SBX", "DE", "PCX", "SPX", "UNDX", "UM")
 	colors <- c("cyan", "red", "blue", "green", "orange", "purple")
 	attributes <- mordm.attributes(data)
+	
+	# reset plot settings
+	if (exists("mordm.defaultpar")) {
+		par(mordm.defaultpar)
+	} else {
+		mordm.defaultpar <<- par(no.readonly=TRUE)
+	}
 
+	# the operator plot uses special margins for the legend and right-axis
 	par(xpd=TRUE, mar=c(10,5,2,ifelse(improvements, 5, 2))+0.1)
 
+	# plot the number of improvements
 	if (improvements) {
 		improve.diff <- c(attributes[1,"Improvements"], diff(attributes[,"Improvements"]))
 
@@ -387,6 +402,7 @@ mordm.plotops <- function(data, time=FALSE, improvements=FALSE, log=FALSE) {
 		par(new=TRUE)
 	}
 
+	# plot the operator probabilities
 	yrange <- range(0:100)
 	xrange <- range(attributes[,ifelse(time, "ElapsedTime", "NFE")])
 
@@ -612,51 +628,26 @@ mordm.select.indices <- function(set, marking, not=FALSE, or=FALSE) {
 	return(indices)
 }
 
-mordm.similarities.singleset <- function(data) {
-	set <- mordm.getset(data)
-	nvars <- attr(set, "nvars")
-	names <- colnames(set)
-
-	mean <- apply(set[,1:nvars], 2, mean)
-	variance <- apply(set[,1:nvars], 2, var)
-	cat("Variance:\n")	
-
-	for (i in order(variance)) {
-		cat("    ")
-		cat(names[i])
-		cat(" (")
-		cat(variance[i])
-		cat(")\n")
-	}
-}
-
-mordm.similarities <- function(set1, ...) {
-	if (length(list(...)) == 0) {
-		mordm.similarities.singleset(set1)
-	} else {
-		
-	}
-}
-
-mordm.differences.calc <- function(mu1, sd1, mu2, sd2) {
-	int_f <- function(x, mu1, sd1, mu2, sd2) {
-		f1 <- dnorm(x, mean=mu1, sd=sd1)
-		f2 <- dnorm(x, mean=mu2, sd=sd2)
-		pmin(f1, f2)
-	}
-
-	integrate(int_f, -Inf, Inf, mu1=mu1, sd1=sd1, mu2=mu2, sd2=sd2)$value
-}
-
-mordm.differences <- function(set1, set2, scale=TRUE, n=NULL) {
+mordm.differences <- function(set1, set2, scale=TRUE, decreasing=TRUE, splits=20, n=min(5, attr(set1, "nvars"))) {
 	nvars <- attr(set1, "nvars")
 	names <- colnames(set1)
-	mu1 <- apply(set1[,1:nvars], 2, mean)
-	sd1 <- apply(set1[,1:nvars], 2, sd)
-	mu2 <- apply(set2[,1:nvars], 2, mean)
-	sd2 <- apply(set2[,1:nvars], 2, sd)
-
-	overlap = sapply(1:nvars, function(i) mordm.differences.calc(mu1[i], sd1[i], mu2[i], sd2[i]))
+	
+	if (scale & !is.null(attr(set1, "bounds"))) {
+		xlim <- attr(set1, "bounds")
+	} else {
+		xlim = sapply(1:nvars, function(i) range(set1[,i], set2[,i]))
+	}
+	
+	ylim = rep(0, nvars)
+	overlap = rep(0, nvars)
+	
+	for (i in 1:nvars) {
+		breaks <- seq(from=xlim[1,i], to=xlim[2,i], length.out=splits)
+		hist1 <- hist(set1[,i], breaks=breaks, plot=FALSE)
+		hist2 <- hist(set2[,i], breaks=breaks, plot=FALSE)
+		ylim[i] = max(hist1$density, hist2$density)
+		overlap[i] = sum(apply(rbind(hist1$density, hist2$density), 2, min)) / sum(hist1$density)
+	}
 
 	cat("Differences Between ")
 	cat(deparse(substitute(set1)))
@@ -664,7 +655,7 @@ mordm.differences <- function(set1, set2, scale=TRUE, n=NULL) {
 	cat(deparse(substitute(set2)))
 	cat(":\n")
 
-	for (i in order(overlap, decreasing=TRUE)) {
+	for (i in order(overlap, decreasing=decreasing)) {
 		cat("    ")
 		cat(sprintf("%-8s", names[i]))
 		cat(" (")
@@ -672,26 +663,16 @@ mordm.differences <- function(set1, set2, scale=TRUE, n=NULL) {
 		cat(")\n")
 	}
 
-	if (scale & !is.null(attr(set1, "bounds"))) {
-		xlim <- attr(set1, "bounds")
-	} else {
-		xlim = lapply(1:nvars, function(i) range(set1[,i], set2[,i]))
-	}
-
-	ylim = lapply(1:nvars, function(i) range(hist(set1[,i], plot=FALSE, breaks=10)$density, hist(set2[,i], plot=FALSE, breaks=10)$density))
-
-	if (is.null(n)) {
-		n <- nvars
-	}
-
 	par(mfrow=c(2,n))
 
-	for (i in order(overlap, decreasing=TRUE)[1:n]) {
-		hist(set1[,i], main=names[i], xlab="Set 1", xlim=xlim[[i]], ylim=ylim[[i]], freq=FALSE, breaks=10)
+	for (i in order(overlap, decreasing=decreasing)[1:n]) {
+		breaks <- seq(from=xlim[1,i], to=xlim[2,i], length.out=splits)
+		hist(set1[,i], main=names[i], xlab="Set 1", xlim=xlim[,i], ylim=range(0, ylim[i]), freq=FALSE, breaks=breaks)
 	}
 
-	for (i in order(overlap, decreasing=TRUE)[1:n]) {
-		hist(set2[,i], main="", xlab="Set 2", xlim=xlim[[i]], ylim=ylim[[i]], freq=FALSE, breaks=10)
+	for (i in order(overlap, decreasing=decreasing)[1:n]) {
+		breaks <- seq(from=xlim[1,i], to=xlim[2,i], length.out=splits)
+		hist(set2[,i], main="", xlab="Set 2", xlim=xlim[,i], ylim=range(0, ylim[i]), freq=FALSE, breaks=breaks)
 	}
 }
 
@@ -827,10 +808,10 @@ mordm.recommend <- function(data) {
 
 
 data <- mordm.read("lakeoutput.txt", 20, 5, 1,
-	bounds=rep(list(range(0.0,0.1)), 20))
+	bounds=matrix(rep(range(0.0, 0.1), 20), nrow=2))
 
 # Plot Operators
-#mordm.plotops(data, time=FALSE, improvements=TRUE)
+mordm.plotops(data, time=FALSE, improvements=TRUE)
 
 # Marking Demo
 mark1 <- mordm.mark.rule(function(x) x[21] < 0.1)
@@ -853,6 +834,10 @@ boxes.diff <- mordm.mark.difference(mark1, boxes.union)
 boxes.int <- mordm.mark.intersection(mark1, boxes.union)
 mordm.plot(data, mark=boxes.int)
 
+prim <- mordm.select(data, boxes.union)
+non.prim <- mordm.select(data, mordm.mark.not(boxes.union))
+#mordm.differences(prim, non.prim, decreasing=TRUE, n=20)
+
 #mordm.recommend(data)
 
 # Parallel Plot
@@ -861,5 +846,5 @@ mordm.plot(data, mark=boxes.int)
 #mordm.identify()
 
 # Box (Candlestick) Plot
-#mordm.plotbox()
+mordm.plotbox()
 #mordm.identify()

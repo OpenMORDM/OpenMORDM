@@ -3,6 +3,7 @@ library(prim)
 library(rgl)
 library(scales)
 library(MASS)
+library(animation)
 
 mordm.defaultnames <- function(nvars, nobjs) {
 	names <- vector()
@@ -238,7 +239,7 @@ mordm.plothist <- function(data) {
 	#}
 }
 
-mordm.plot <- function(data, index=-1, mark=NULL, objectives=NULL) {
+mordm.plot <- function(data, index=-1, mark=NULL, objectives=NULL, ...) {
 	set <- mordm.getset(data, index)
 	nvars <- attr(data, "nvars")
 	nobjs <- attr(data, "nobjs")
@@ -287,7 +288,8 @@ mordm.plot <- function(data, index=-1, mark=NULL, objectives=NULL) {
 		size=sizes,
 		xlab=xlab,
 		ylab=ylab,
-		zlab=zlab)
+		zlab=zlab,
+		...)
     
 	# save the state to a global location so other functions can reference
 	mordm.currentset <<- set
@@ -804,6 +806,35 @@ mordm.recommend <- function(data) {
 	}
 }
 
+mordm.animate <- function(data, indices=1:length(data)) {
+	nvars <- attr(data, "nvars")
+	nobjs <- attr(data, "nobjs")
+	
+	# first compute the limits
+	bounds <- apply(data[[indices[1]]][,(nvars+1):(nvars+nobjs)], 2, range)
+	
+	for (i in indices[-1]) {
+		bounds.temp <- apply(data[[i]][,(nvars+1):(nvars+nobjs)], 2, range)
+		
+		for (j in 1:nobjs) {
+			bounds[,j] <- range(bounds[,j], bounds.temp[,j])
+		}
+	}
+	
+	# generate the snapshots
+	files = vector()
+	
+	for (i in indices) {
+		file <- paste("snapshot_", i, ".png", sep="")
+		mordm.plot(data, index=i, xlim=bounds[,1], ylim=bounds[,2], zlim=bounds[,3])
+		rgl.snapshot(file)
+		files <- append(files, file)
+	}
+	
+	opt <- ani.options(interval=0.1)
+	im.convert(files, convert="gm convert")
+}
+
 
 
 #hypervolume(data[[length(data)]], bandwidth=1, repsperpoint=10)
@@ -826,13 +857,15 @@ mordm.recommend <- function(data) {
 data <- mordm.read("lakeoutput.txt", 20, 5, 1,
 	bounds=matrix(rep(range(0.0, 0.1), 20), nrow=2))
 
+mordm.animate(data)
+
 # Plot Operators
-mordm.plotops(data, time=FALSE, improvements=TRUE)
+#mordm.plotops(data, time=FALSE, improvements=TRUE)
 
 # Marking Demo
-mark1 <- mordm.mark.rule(function(x) x[21] < 0.1)
-mark2 <- mordm.mark.rule(function(x) x[21] > 0.125)
-mark3 <- mordm.mark.not(mordm.mark.union(mark1, mark2))
+#mark1 <- mordm.mark.rule(function(x) x[21] < 0.1)
+#mark2 <- mordm.mark.rule(function(x) x[21] > 0.125)
+#mark3 <- mordm.mark.not(mordm.mark.union(mark1, mark2))
 #mordm.plot(data, mark=list(mark1, mark2, mark3))
 
 #mark3 <- mordm.mark.not(mordm.mark.union(mark1, mark2))
@@ -844,15 +877,15 @@ mark3 <- mordm.mark.not(mordm.mark.union(mark1, mark2))
 #mordm.differences(set1, set2, scale=FALSE, n=8)
 
 # Prim Analysis - Bump Hunting
-boxes <- mordm.prim(data, mark1, threshold.type=1, threshold=0.5)
-boxes.union <- mordm.mark.union(boxes)
-boxes.diff <- mordm.mark.difference(mark1, boxes.union)
-boxes.int <- mordm.mark.intersection(mark1, boxes.union)
-mordm.plot(data, mark=boxes.int)
+#boxes <- mordm.prim(data, mark1, threshold.type=1, threshold=0.5)
+#boxes.union <- mordm.mark.union(boxes)
+#boxes.diff <- mordm.mark.difference(mark1, boxes.union)
+#boxes.int <- mordm.mark.intersection(mark1, boxes.union)
+#mordm.plot(data, mark=boxes.int)
 
-prim <- mordm.select(data, boxes.union)
-non.prim <- mordm.select(data, mordm.mark.not(boxes.union))
-mordm.differences(prim, non.prim, decreasing=TRUE)
+#prim <- mordm.select(data, boxes.union)
+#non.prim <- mordm.select(data, mordm.mark.not(boxes.union))
+#mordm.differences(prim, non.prim, decreasing=TRUE)
 
 #mordm.recommend(data)
 

@@ -1,2 +1,4 @@
 .RData
 .Rhistory
+*.png
+*.gif

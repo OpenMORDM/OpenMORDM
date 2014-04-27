@@ -628,9 +628,17 @@ mordm.select.indices <- function(set, marking, not=FALSE, or=FALSE) {
 	return(indices)
 }
 
-mordm.differences <- function(set1, set2, scale=TRUE, decreasing=TRUE, splits=20, n=min(5, attr(set1, "nvars"))) {
+mordm.differences <- function(set1, set2, scale=TRUE, decreasing=TRUE, splits=20, n=NULL, all=FALSE) {
 	nvars <- attr(set1, "nvars")
 	names <- colnames(set1)
+	
+	if (all) {
+		n <- nvars
+	} else if (is.null(n)) {
+		n <- min(5, nvars)
+	} else {
+		n <- min(n, nvars)
+	}
 	
 	if (scale & !is.null(attr(set1, "bounds"))) {
 		xlim <- attr(set1, "bounds")
@@ -658,11 +666,19 @@ mordm.differences <- function(set1, set2, scale=TRUE, decreasing=TRUE, splits=20
 	for (i in order(overlap, decreasing=decreasing)) {
 		cat("    ")
 		cat(sprintf("%-8s", names[i]))
-		cat(" (")
-		cat(overlap[i])
-		cat(")\n")
+		cat(" ")
+		cat(sprintf("%4.1f %%", 100*overlap[i]))
+		cat("\n")
+	}
+	
+	# reset plot settings
+	if (exists("mordm.defaultpar")) {
+		par(mordm.defaultpar)
+	} else {
+		mordm.defaultpar <<- par(no.readonly=TRUE)
 	}
 
+	# create the plot
 	par(mfrow=c(2,n))
 
 	for (i in order(overlap, decreasing=decreasing)[1:n]) {
@@ -836,7 +852,7 @@ mordm.plot(data, mark=boxes.int)
 
 prim <- mordm.select(data, boxes.union)
 non.prim <- mordm.select(data, mordm.mark.not(boxes.union))
-#mordm.differences(prim, non.prim, decreasing=TRUE, n=20)
+mordm.differences(prim, non.prim, decreasing=TRUE)
 
 #mordm.recommend(data)
 
@@ -846,5 +862,5 @@ non.prim <- mordm.select(data, mordm.mark.not(boxes.union))
 #mordm.identify()
 
 # Box (Candlestick) Plot
-mordm.plotbox()
+#mordm.plotbox()
 #mordm.identify()

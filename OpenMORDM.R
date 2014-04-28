@@ -560,19 +560,60 @@ mordm.mark.box <- function(box) {
 
 mordm.mark.union <- function(...) {
 	mordm.mark.rule(function(x) {
-		any(sapply(unlist(list(...)), function(rule) rule(x)))
+		# faster version with shortcircuiting
+		rules <- unlist(list(...))
+		
+		for (rule in rules) {
+			if (rule(x)) {
+				return(TRUE)
+			}
+		}
+		
+		return(FALSE)
+		
+		# cleaner version without shortcircuiting
+		#any(sapply(unlist(list(...)), function(rule) rule(x)))
 	})
 }
 
 mordm.mark.intersection <- function(...) {
 	mordm.mark.rule(function(x) {
-		all(sapply(unlist(list(...)), function(rule) rule(x)))
+		# faster version with shortcircuiting
+		rules <- unlist(list(...))
+		
+		for (rule in rules) {
+			if (!rule(x)) {
+				return(FALSE)
+			}
+		}
+		
+		return(TRUE)
+		
+		# cleaner version without shortcircuiting
+		#all(sapply(unlist(list(...)), function(rule) rule(x)))
 	})
 }
 
 mordm.mark.difference <- function(...) {
 	mordm.mark.rule(function(x) {
-		sum(sapply(unlist(list(...)), function(rule) rule(x))) == 1
+		# faster version with shortcircuiting
+		rules <- unlist(list(...))
+		count <- 0
+		
+		for (rule in rules) {
+			if (rule(x)) {
+				count <- count + 1
+				
+				if (count > 1) {
+					break
+				}
+			}
+		}
+		
+		return(count == 1)
+		
+		# cleaner version without shortcircuiting
+		#sum(sapply(unlist(list(...)), function(rule) rule(x))) == 1
 	})
 }
 
@@ -743,12 +784,10 @@ mordm.prim <- function(data, objective, minimize=TRUE, percentages=FALSE, ...) {
 	
 		for (i in 1:length(marks)) {
 			if (i == 1) {
-				box.union <- marks[[i]]
 				box.mark <- mordm.mark.intersection(objective, marks[[i]])
 				box.diff <- mordm.mark.intersection(mordm.mark.not(objective), marks[[i]])
 			} else {
-				box.prev <- box.union
-				box.union <- mordm.mark.union(box.union, marks[[i]])
+				box.prev <- mordm.mark.union(marks[1:(i-1)])
 				box.mark <- mordm.mark.intersection(mordm.mark.difference(objective, box.prev), marks[[i]])
 				box.diff <- mordm.mark.intersection(mordm.mark.not(objective), marks[[i]])
 			}
@@ -775,7 +814,6 @@ mordm.prim <- function(data, objective, minimize=TRUE, percentages=FALSE, ...) {
 }
 
 mordm.plotprim <- function(data, mark, main="PRIM Box") {
-	box <- attr(mark, "box")
 	nvars <- attr(data, "nvars")
 	bounds <- attr(data, "bounds")
 	
@@ -786,21 +824,8 @@ mordm.plotprim <- function(data, mark, main="PRIM Box") {
 	if (is.null(bounds)) {
 		stop("Bounds must be defined for the dataset")
 	}
-
-	# scale the box dimensions
- 	values <- sapply(1:nvars, function(i) (box[,i]-bounds[1,i]) / (bounds[2,i]-bounds[1,i]))
-	
-	# ensure the scaled values do not exceed the variable bounds (PRIM boxes can
-	# extend outside the bounds)
-	values[1,] <- sapply(1:nvars, function(i) max(values[1,i], 0))
-	values[2,] <- sapply(1:nvars, function(i) min(values[2,i], 1))
-
-	# create the matrix that is plotted, row1=outside, row2=inside, row3=outside
-	mat <- rbind(values[1,], values[2,]-values[1,], 1-values[2,])
-	colnames(mat) <- colnames(box)
 	
 	longcol <- "black"
-	incol <- "lightblue"
 	outcol <- "transparent"
 	
 	# reset plot settings
@@ -811,12 +836,45 @@ mordm.plotprim <- function(data, mark, main="PRIM Box") {
 	}
 	
 	# create the plot
-	par(xpd=TRUE, mar=c(6.1, 2.1, 4.1, 2.1))
+	par(xpd=TRUE, mar=c(8.1, 2.1, 4.1, 2.1))
 	barplot(matrix(rep(1,3*nvars),ncol=nvars), add=FALSE, main=main, col="transparent", beside=TRUE, width=1, names.arg=rep("",nvars), axes=FALSE, space=c(0,3), border=c("transparent",longcol,"transparent"))
-	barplot(mat[,1:nvars], add=TRUE, col=c(outcol,incol,outcol), border=FALSE, names.arg=rep("",nvars), axes=FALSE, main="", width=3,space=1)
+	
+	if (!is.list(mark)) {
+		mark = list(mark)
+	}
+	
+	colors <- rainbow(length(mark), v=0.9, alpha=0.5)
+		
+	for (i in 1:length(mark)) {
+		box <- attr(mark[[i]], "box")
+		
+		# scale the box dimensions
+		values <- sapply(1:nvars, function(i) (box[,i]-bounds[1,i]) / (bounds[2,i]-bounds[1,i]))
+		
+		# ensure the scaled values do not exceed the variable bounds (PRIM boxes can
+		# extend outside the bounds)
+		values[1,] <- sapply(1:nvars, function(i) max(values[1,i], 0))
+		values[2,] <- sapply(1:nvars, function(i) min(values[2,i], 1))
+		
+		# create the matrix that is plotted, row1=outside, row2=inside, row3=outside
+		mat <- rbind(values[1,], values[2,]-values[1,], 1-values[2,])
+		colnames(mat) <- colnames(box)
+		
+		barplot(mat[,1:nvars], add=TRUE, col=c(outcol,colors[i],outcol), border=NA, names.arg=rep("",nvars), axes=FALSE, main="", width=3, space=1)
+	}
+	
 	axis(1,at = seq(4.5,by=6,length.out=nvars),labels=colnames(mat[,1:nvars]),las=1, line=2)
 	text(seq(4.5,by=6,length.out=nvars), y=rep(1, nvars), pos=3, labels=sprintf("%.2f", bounds[2,]), cex=0.8)
 	text(seq(4.5,by=6,length.out=nvars), y=rep(0, nvars), pos=1, labels=sprintf("%.2f", bounds[1,]), cex=0.8)
+	
+	legend(x=grconvertX(unit(0.5, "npc"), from="npc", to="user"),
+		   y=grconvertY(unit(-0.5, "npc"), from="npc", to="user"),
+		   legend=sprintf("Box %i", 1:length(mark)),
+		   fill=colors,
+		   bty="o",
+		   cex=1.0,
+		   horiz=TRUE,
+		   xjust=0.5)
 }
 
 mordm.recommend <- function(data) {
@@ -909,7 +967,7 @@ data <- mordm.read("lakeoutput.txt", 20, 5, 1,
 
 # Marking Demo
 mark1 <- mordm.mark.rule(function(x) x[21] < 0.1)
-#mark2 <- mordm.mark.rule(function(x) x[21] > 0.125)
+mark2 <- mordm.mark.rule(function(x) x[21] > 0.125)
 #mark3 <- mordm.mark.not(mordm.mark.union(mark1, mark2))
 #mordm.plot(data, mark=list(mark1, mark2, mark3))
 
@@ -923,7 +981,9 @@ mark1 <- mordm.mark.rule(function(x) x[21] < 0.1)
 
 # Prim Analysis - Bump Hunting
 boxes <- mordm.prim(data, mark1, threshold.type=1, threshold=0.5)
-mordm.plotprim(data, boxes[[2]])
+mordm.plotprim(data, boxes)
+
+#boxes2 <- mordm.prim(data, mark2, threshold.type=1, threshold=0.5)
 
 #boxes.union <- mordm.mark.union(boxes)
 #boxes.diff <- mordm.mark.difference(mark1, boxes.union)

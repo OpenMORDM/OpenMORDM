@@ -19,7 +19,7 @@ mordm.defaultnames <- function(nvars, nobjs) {
 	return(names)
 }
 
-mordm.read <- function(file, nvars, nobjs, nconstrs=0, bounds=NULL, names=NULL) {
+mordm.read <- function(file, nvars, nobjs, nconstrs=0, bounds=NULL, names=NULL, maximize=NULL) {
 	text <- readLines(file)
 	solutions <- vector()
 	attributes <- vector()
@@ -76,6 +76,10 @@ mordm.read <- function(file, nvars, nobjs, nconstrs=0, bounds=NULL, names=NULL) 
 			solutions <- append(solutions, line)
 		}
 	}
+	
+	if (!is.null(maximize)) {
+		result <- mordm.normalize(result, maximize)
+	}
 
 	attr(result, "nvars") <- nvars
 	attr(result, "nobjs") <- nobjs
@@ -84,6 +88,19 @@ mordm.read <- function(file, nvars, nobjs, nconstrs=0, bounds=NULL, names=NULL) 
 	class(result) <- "mordm"
 
 	return(result)
+}
+
+mordm.normalize <- function(data, maximize) {
+	nvars <- attr(data, "nvars")
+	nobjs <- attr(data, "nobjs")
+	
+	for (i in 1:length(data)) {
+		entry <- data[[i]]
+		entry[,maximize] <- -entry[,maximize]
+		data[[i]] <- entry
+	}
+	
+	return(data)
 }
 
 mordm.attributes <- function(data) {
@@ -162,7 +179,7 @@ mordm.plotpar <- function(highlight=NULL) {
 	mordm.currentplot <<- "parallel"
 }
 
-mordm.plotbox <- function(highlight=NULL) {
+mordm.plotmark <- function(highlight=NULL) {
 	set <- mordm.currentset
 	mark <- mordm.currentmark
 	colors <- mordm.currentcolors
@@ -225,10 +242,10 @@ mordm.plotbox <- function(highlight=NULL) {
 	}
 	
 	# store the plot settings
-	mordm.currentplot <<- "box"
+	mordm.currentplot <<- "mark"
 }
 
-mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, ...) {
+mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, identify=TRUE, ...) {
 	set <- mordm.getset(data, index)
 	nvars <- attr(data, "nvars")
 	nobjs <- attr(data, "nobjs")
@@ -281,6 +298,10 @@ mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, ..
 		...)
 	
 	rgl.bringtotop(stay)
+	
+	if (identify) {
+		mordm.identify()
+	}
     
 	# save the state to a global location so other functions can reference
 	mordm.currentset <<- set
@@ -329,8 +350,8 @@ mordm.identify <- function(enabled=TRUE, label=FALSE) {
 			if (exists("mordm.currentplot")) {
 		        if (mordm.currentplot == "parallel") {
 		            mordm.plotpar(highlight=i[1])
-		        } else if (mordm.currentplot == "box") {
-		        	mordm.plotbox(highlight=i[1])
+		        } else if (mordm.currentplot == "mark") {
+		        	mordm.plotmark(highlight=i[1])
 		        }
 			}
 		})
@@ -735,7 +756,7 @@ mordm.differences <- function(set1, set2, scale=TRUE, decreasing=TRUE, splits=20
 	}
 }
 
-mordm.prim <- function(data, objective, minimize=TRUE, percentages=FALSE, ...) {
+mordm.prim <- function(data, objective, minimize=TRUE, percentages=FALSE, expand=TRUE, ...) {
 	set <- mordm.getset(data)
 	nvars <- attr(set, "nvars")
 	x <- set[,1:nvars]
@@ -754,6 +775,10 @@ mordm.prim <- function(data, objective, minimize=TRUE, percentages=FALSE, ...) {
 
 	if (minimize) {
 		y <- -y
+	}
+	
+	if (expand) {
+		varargs$paste.alpha = 1
 	}
 
 	result <- do.call(prim.box, c(list(x, y), varargs))
@@ -818,7 +843,7 @@ mordm.prim <- function(data, objective, minimize=TRUE, percentages=FALSE, ...) {
 
 	return(rev(marks))
 }
-mordm.printbox <- function(data, mark, threshold=0.01, digits=2) {
+mordm.printbox <- function(data, mark, threshold=0.01, digits=3) {
 	nvars <- attr(data, "nvars")
 	bounds <- attr(data, "bounds")
 	
@@ -841,6 +866,7 @@ mordm.printbox <- function(data, mark, threshold=0.01, digits=2) {
 	for (i in 1:nvars) {
 		show.min <- FALSE
 		show.max <- FALSE
+		show.equals <- FALSE
 		
 		limits <- c(max(bounds[1,i], box[1,i]), min(bounds[2,i], box[2,i]))
 		limits <- round(limits, digits=digits)
@@ -851,6 +877,11 @@ mordm.printbox <- function(data, mark, threshold=0.01, digits=2) {
 		
 		if (abs(limits[2] - bounds[2,i]) > threshold*(bounds[2,i] - bounds[1,i])) {
 			show.max <- TRUE
+		}
+		
+		if (abs(limits[1] - bounds[2,i]) <= threshold*(bounds[2,i] - bounds[1,i]) |
+			abs(limits[2] - bounds[1,i]) <= threshold*(bounds[2,i] - bounds[1,i])) {
+			show.equals <- TRUE
 		}
 		
 		if (show.min & show.max) {
@@ -864,13 +895,25 @@ mordm.printbox <- function(data, mark, threshold=0.01, digits=2) {
 		} else if (show.min) {
 			cat("  ")
 			cat(names[i])
-			cat(" >= ")
+			
+			if (show.equals) {
+				cat(" = ")
+			} else {
+				cat(" >= ")
+			}
+			
 			cat(limits[1])
 			cat("\n")
 		} else if (show.max) {
 			cat("  ")
 			cat(names[i])
-			cat(" <= ")
+			
+			if (show.equals) {
+				cat(" = ")
+			} else {
+				cat(" <= ")
+			}
+			
 			cat(limits[2])
 			cat("\n")
 		} else {
@@ -894,7 +937,7 @@ mordm.printbox <- function(data, mark, threshold=0.01, digits=2) {
 	cat("\n")
 }
 
-mordm.plotprim <- function(data, mark, main="PRIM Box", scale.width=TRUE, bar.width=3, col=NULL, names=NULL) {
+mordm.plotbox <- function(data, mark, main="PRIM Box", scale.width=TRUE, bar.width=3, col=NULL, names=NULL) {
 	nvars <- attr(data, "nvars")
 	bounds <- attr(data, "bounds")
 	
@@ -1071,8 +1114,9 @@ mordm.animate <- function(data, indices=1:length(data)) {
 
 
 
-data <- mordm.read("lakeoutput.txt", 20, 5, 1,
-	bounds=matrix(rep(range(0.0, 0.1), 20), nrow=2))
+#data <- mordm.read("lakeoutput.txt", 20, 5, 1,
+#	bounds=matrix(rep(range(0.0, 0.1), 20), nrow=2),
+#	maximize=c("Obj2", "Obj3", "Obj4", "Obj5"))
 
 #mordm.animate(data)
 
@@ -1109,10 +1153,10 @@ data <- mordm.read("lakeoutput.txt", 20, 5, 1,
 #mordm.identify()
 
 # Find Scenarios with High Utility
-#mark.high <- mordm.mark.rule(function(x) -x["Obj2"] > 0.25)
-#boxes.high <- mordm.prim(data, mark.high)
+#mark.high <- mordm.mark.rule(function(x) x["Obj2"] > 0.25)
+#boxes.high <- mordm.prim(data, mark.high, paste.alpha=1)
 #boxes.low <- mordm.prim(data, mordm.mark.not(mark.high))
-#mordm.plotprim(data, boxes.high[[1]])
+#mordm.plotbox(data, boxes.high[[1]])
 #mordm.printbox(data, boxes.high[[1]])
 
 #mordm.plotprim(data, list(boxes.high, boxes.low), names=c("High Bentham Utility", "Low Bentham Utility"))

@@ -438,7 +438,7 @@ mordm.plotops <- function(data, time=FALSE, improvements=FALSE, log=FALSE) {
 
 mordm.correlation <- function(data, ht=0.75, lt=0.25) {
 	set <- mordm.getset(data)
-	names <- colnames(last)
+	names <- colnames(set)
 
 	# compute and classify the correlations
 	correlation.high <- matrix(nrow=0, ncol=3)
@@ -1114,9 +1114,10 @@ mordm.animate <- function(data, indices=1:length(data)) {
 
 
 
-#data <- mordm.read("lakeoutput.txt", 20, 5, 1,
-#	bounds=matrix(rep(range(0.0, 0.1), 20), nrow=2),
-#	maximize=c("Obj2", "Obj3", "Obj4", "Obj5"))
+data <- mordm.read("lakeoutput.txt", 20, 5, 1,
+	bounds=matrix(rep(range(0.0, 0.1), 20), nrow=2),
+	maximize=c("Obj2", "Obj3", "Obj4", "Obj5"))
+mordm.plot(data)
 
 #mordm.animate(data)
 

@@ -1,3 +1,11 @@
+# Estimation of Borgonovo's Delta Moment Independent Measure
+#
+# This code is a direct translation of Elmar Plischke's original MATLAB code
+# into R.  
+# 
+# Written by elmar.plischke@tu-clausthal.de
+#     Plischke, Borgonovo, Smith: "Global sensitivity measures from given data",
+#     European Journal of Operational Research 226(3):536-550, 2013
 library("pracma")
 
 rosenbrock <- function(x) {
@@ -70,6 +78,10 @@ transform.output <- function(y, output.trafo="off", quadrature.points=110) {
 		output.trafo <- "off"
 	}
 	
+	if (is.character(output.trafo)) {
+		output.trafo <- tolower(output.trafo)
+	}
+	
 	indx <- order(y)
 	ys <- y[indx]
 	
@@ -128,6 +140,10 @@ rank.sort <- function(x, indx) {
 }
 
 smooth.pdf <- function(y, ys, yy, ysupp2, quadrature.points=110, kd.shape="epanechnikov", kd.estimator="cheap", kd.width="auto") {
+	if (is.character(kd.estimator)) {
+		kd.estimator <- tolower(kd.estimator)
+	}
+	
 	if (is.character(kd.width)) {
 		alfa <- 0
 	} else {
@@ -136,13 +152,13 @@ smooth.pdf <- function(y, ys, yy, ysupp2, quadrature.points=110, kd.shape="epane
 	
 	if (kd.estimator == "cheap") {
 		kdest.result <- kdest(y, yy, alfa, kernel.lookup(kd.shape))
-		f1 <- kdest.result$est
+		f <- kdest.result$est
 		alfa <- kdest.result$h
 	} else if (kd.estimator == "stats") {
 		if (alfa == 0) {
-			f1 <- density(y, kernel=kd.shape, n=length(yy), from=ysupp2[1], to=ysupp2[2])$y
+			f <- density(y, kernel=kd.shape, n=length(yy), from=ysupp2[1], to=ysupp2[2])$y
 		} else {
-			f1 <- density(y, kernel=kd.shape, n=length(yy), from=ysupp2[1], to=ysupp2[2], width=alfa)$y
+			f <- density(y, kernel=kd.shape, n=length(yy), from=ysupp2[1], to=ysupp2[2], width=alfa)$y
 		}
 	} else if (kd.estimator == "diffusion") {
 		if (alfa == 0) {
@@ -151,16 +167,16 @@ smooth.pdf <- function(y, ys, yy, ysupp2, quadrature.points=110, kd.shape="epane
 			kde.result <- kde(ys, quadrature.points, ysupp2[1], ysupp2[2], alfa)
 		}
 		
-		f1 <- kde.result$density
-		f1[f1<0] = 0
+		f <- kde.result$density
+		f[f<0] = 0
 	} else if (kd.estimator == "hist") {
 		f0 <- histc(ys, yy)$cnt
-		f1 <- f0/trapz(yy, f0)
+		f <- f0/trapz(yy, f0)
 	} else {
 		stop("Unknown kernel density estimator")
 	}
 	
-	list(f1=f1, alfa=alfa)
+	list(f=f, alfa=alfa)
 }
 
 plischke <- function(x,
@@ -178,20 +194,10 @@ plischke <- function(x,
 					 kd.shape="epanechnikov") {
 	n <- nrow(x)
 	k <- ncol(x)
-	
-	kd.estimator <- tolower(kd.estimator)
-	kd.shape <- tolower(kd.shape)
-	
-	if (is.character(output.trafo)) {
-		output.trafo <- tolower(output.trafo)
-	}
 
-	if (kd.estimator == "diffusion") {
+	if (tolower(kd.estimator) == "diffusion") {
 		quadrature.points=2^nextpow2(quadrature.points)
 	}
-	
-	# parse the kernel shape argument
-	kernel <- kernel.lookup(kd.shape)
 	
 	# compute critical value for KS statistics
 	ks.result <- critical.value(x, y, ks.level, complement)
@@ -207,7 +213,7 @@ plischke <- function(x,
 	yy <- trafo.result$yy
 	
 	# create a backup copy
-	ysupp2 <- range(yy) #yy[c(1, length(yy))]
+	ysupp2 <- range(yy)
 	yy_ <- yy
 	
 	# transform x into ranks and sort
@@ -217,7 +223,7 @@ plischke <- function(x,
 	
 	# smoothed empirical pdf
 	smoothed.pdf <- smooth.pdf(y, ys, yy, ysupp2, quadrature.points, kd.shape, kd.estimator, kd.width)
-	f1 <- smoothed.pdf$f1
+	f1 <- smoothed.pdf$f
 	alfa <- smoothed.pdf$alfa
 	
 	segs = linspace(0, 1, partition.size+1)
@@ -249,12 +255,13 @@ plischke <- function(x,
 					Vyc[m] <- nx*(mean(yx)-Ey)^2
 				}
 				
-				if (kd.width == "auto") {
-					alfa <- 0
+				if (is.character(kd.width)) {
+					# recompute alfa if kd.width is "auto"
+					alfa <- kd.width
 				}
 				
 				smoothed.pdf <- smooth.pdf(yx, yx, yy, ysupp, quadrature.points, kd.shape, kd.estimator, alfa)
-				f2 <- smoothed.pdf$f1
+				f2 <- smoothed.pdf$f
 				alfa <- smoothed.pdf$alfa
 				
 				# compute differences

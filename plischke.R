@@ -1,16 +1,13 @@
 # Estimation of Borgonovo's Delta Moment Independent Measure
 #
 # This code is a direct translation of Elmar Plischke's original MATLAB code
-# into R.  
+# into R.  Permission to distribute this version under the MIT License was
+# granted by Elmar Plischke on 5/15/2014 via e-mail.
 # 
-# Written by elmar.plischke@tu-clausthal.de
+# Original code written by elmar.plischke@tu-clausthal.de
 #     Plischke, Borgonovo, Smith: "Global sensitivity measures from given data",
 #     European Journal of Operational Research 226(3):536-550, 2013
 library("pracma")
-
-rosenbrock <- function(x) {
-	c(x[1])
-}
 
 kernel.normal <- function(x) exp(-x^2/2)/sqrt(2*pi)
 kernel.triangle <- function(x) pmax(1-abs(x/sqrt(6)), 0)/sqrt(6)
@@ -185,15 +182,15 @@ plischke <- function(x,
 					 quadrature.points=110,
 					 ks.level=0.95,
 					 zero.crossing="on",
-					 parameter.names=NULL,
 					 kd.estimator="cheap",
 					 kd.width="auto",
 					 complement=FALSE,
-					 switch.xy=FALSE,
+					 #switch.xy=FALSE,
 					 output.trafo="off",
 					 kd.shape="epanechnikov") {
 	n <- nrow(x)
 	k <- ncol(x)
+	parameter.names <- colnames(x)
 
 	if (tolower(kd.estimator) == "diffusion") {
 		quadrature.points=2^nextpow2(quadrature.points)
@@ -347,7 +344,15 @@ plischke <- function(x,
 		Si[i] <- sum(Vyc)/Vy/(n-1)
 	}
 	
-	list(delta=delta, Si=Si, acceptL=acceptL)
+	rank <- rev(order(Si))
+	
+	if (!is.null(parameter.names)) {
+		colnames(delta) <- parameter.names
+		colnames(Si) <- parameter.names
+		colnames(acceptL) <- parameter.names
+	}
+	
+	list(delta=delta, Si=Si, rank=rank, acceptL=acceptL)
 }
 
 empcdf <- function(xs) {
@@ -381,6 +386,10 @@ kdest <- function(y, z, h=0, kernel=kernel.epanechnikov) {
 		m <- median(y)
 		s <- min(std(y, flag=1), median(abs(m-y))/0.675)
 		h <- s/(((3*n)/4)^(1/5))
+		
+		if (h == 0) {
+			stop("Unable to estimate the kernel density with the cheap method, try another kd.estimator")
+		}
 	}
 	
 	k <- length(z)
@@ -457,6 +466,6 @@ dct1d <- function(x) {
 }
 
 #X <- matrix(c(linspace(0, 1, 1000), linspace(0, 1, 1000)), nrow=1000, ncol=2)
-X <- matrix(runif(2000), nrow=1000)
-Y <- sapply(1:1000, function(i) rosenbrock(X[i,]))
-print(plischke(X, Y))
+#X <- matrix(runif(2000), nrow=1000)
+#Y <- apply(X, 1, function(x) 2*x[1]+x[2])
+#print(plischke(X, Y))

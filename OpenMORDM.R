@@ -4,6 +4,7 @@ library(rgl)
 library(scales)
 library(MASS)
 library(animation)
+source("plischke.R")
 
 mordm.defaultnames <- function(nvars, nobjs) {
 	names <- vector()
@@ -1097,6 +1098,35 @@ mordm.animate <- function(data, indices=1:length(data)) {
 	im.convert(files, convert="gm convert")
 }
 
+mordm.sensitivity <- function(data, objective, all=FALSE, ...) {
+	set <- mordm.getset(data)
+	nvars <- attr(set, "nvars")
+	nobjs <- attr(set, "nobjs")
+	names <- colnames(set)
+	varargs <- list(...)
+
+	if (all) {
+		for (i in seq(length(data)-1, 1, -1)) {
+			set <- rbind(set, mordm.getset(data, i))
+		}
+	}
+	
+	if (is.function(objective)) {
+		y <- 1*mordm.select.indices(set, objective)
+		
+		# the cheap kd estimator does not work too well on binary data
+		if (is.null(varargs$kd.estimator) || varargs$kd.estimator == "cheap") {
+			varargs$kd.estimator = "hist"
+		}
+	} else if (is.character(objective)) {
+		y <- set[,objective]
+	} else {
+		y <- set[,nvars+objective]
+	}
+	
+	print(do.call(plischke, c(list(set[,1:nvars], y), varargs)))
+}
+
 #hypervolume(data[[length(data)]], bandwidth=1, repsperpoint=10)
 #mordm.plothist(data)
 #mordm.correlation(data)
@@ -1117,7 +1147,7 @@ mordm.animate <- function(data, indices=1:length(data)) {
 data <- mordm.read("lakeoutput.txt", 20, 5, 1,
 	bounds=matrix(rep(range(0.0, 0.1), 20), nrow=2),
 	maximize=c("Obj2", "Obj3", "Obj4", "Obj5"))
-mordm.plot(data)
+#mordm.plot(data)
 
 #mordm.animate(data)
 
@@ -1125,7 +1155,7 @@ mordm.plot(data)
 #mordm.plotops(data, time=FALSE, improvements=TRUE)
 
 # Marking Demo
-#mark1 <- mordm.mark.rule(function(x) x[21] < 0.1)
+mark1 <- mordm.mark.rule(function(x) x[21] < 0.1)
 #mark2 <- mordm.mark.rule(function(x) x[21] > 0.125)
 #mark3 <- mordm.mark.not(mordm.mark.union(mark1, mark2))
 #mordm.plot(data, mark=list(mark1, mark2, mark3))
@@ -1161,3 +1191,5 @@ mordm.plot(data)
 #mordm.printbox(data, boxes.high[[1]])
 
 #mordm.plotprim(data, list(boxes.high, boxes.low), names=c("High Bentham Utility", "Low Bentham Utility"))
+
+mordm.sensitivity(data, mark1, all=FALSE)

@@ -1,12 +1,36 @@
 # Estimation of Borgonovo's Delta Moment Independent Measure
 #
 # This code is a direct translation of Elmar Plischke's original MATLAB code
-# into R.  Permission to distribute this version under the MIT License was
-# granted by Elmar Plischke on 5/15/2014 via e-mail.
+# into R.  Dr. Plischke's original MATLAB code is available for download from
+# <http://www.immr.tu-clausthal.de/~epl/papers/papers.html>.  Permission to
+# distribute this version under the MIT License was granted by Dr. Plischke on
+# 5/15/2014 via e-mail.
 # 
-# Original code written by elmar.plischke@tu-clausthal.de
+# Please refer to the following paper for details on this method:
 #     Plischke, Borgonovo, Smith: "Global sensitivity measures from given data",
-#     European Journal of Operational Research 226(3):536-550, 2013
+#     European Journal of Operational Research 226(3):536-550, 2013.
+#
+#
+# MIT License:
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+# 
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+# 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+
 library("pracma")
 
 kernel.normal <- function(x) exp(-x^2/2)/sqrt(2*pi)
@@ -19,7 +43,7 @@ kernel.lookup <- function(kd.shape="epanechnikov") {
 	if (is.function(kd.shape)) {
 		kernel <- kd.shape
 	} else if (is.character(kd.shape)) {
-		kd.shape = tolower(kd.shape)
+		kd.shape <- tolower(kd.shape)
 		
 		if (kd.shape == "normal") {
 			kernel <- kernel.normal
@@ -51,7 +75,7 @@ critical.value <- function(x, y, ks.level=0.95, complement=FALSE) {
 		}
 		
 		if (ks.level < 0) {
-			ks.level = -ks.level
+			ks.level <- -ks.level
 			ks.test <- function(s,y,f) max(abs(cumtrapz(y,f)))
 		} else {
 			ks.test <- function(s,y,f) s*0.5
@@ -88,7 +112,7 @@ transform.output <- function(y, output.trafo="off", quadrature.points=110) {
 		ysupp <- ymaxmin+0.06*rangey*matrix(c(-1,1))
 		yy <- linspace(ymaxmin[1]-0.04*rangey, ymaxmin[2]+0.04*rangey, quadrature.points)
 	} else if (output.trafo == "cdf") {
-		ys = empcdf(ys)
+		ys <- empcdf(ys)
 		y[indx] <- ys
 		ysupp <- matrix(c(-0.06, 1.06))
 		yy <- linspace(-0.04, 1.04, quadrature.points)
@@ -122,8 +146,8 @@ transform.output <- function(y, output.trafo="off", quadrature.points=110) {
 rank.sort <- function(x, indx) {
 	n <- nrow(x)
 	k <- ncol(x)
-	consticator <- matrix(0, nrow=1, ncol=k)
-	xr = matrix(0, nrow=n, ncol=k)
+	consticator <- zeros(1, k)
+	xr <- zeros(n, k)
 	
 	for (i in 1:k) {
 		indxx <- order(x[,i])
@@ -165,7 +189,7 @@ smooth.pdf <- function(y, ys, yy, ysupp2, quadrature.points=110, kd.shape="epane
 		}
 		
 		f <- kde.result$density
-		f[f<0] = 0
+		f[f<0] <- 0
 	} else if (kd.estimator == "hist") {
 		f0 <- histc(ys, yy)$cnt
 		f <- f0/trapz(yy, f0)
@@ -176,7 +200,7 @@ smooth.pdf <- function(y, ys, yy, ysupp2, quadrature.points=110, kd.shape="epane
 	list(f=f, alfa=alfa)
 }
 
-plischke <- function(x,
+deltamim <- function(x,
 					 y,
 					 partition.size=min(ceiling(nrow(x)^(2/(7+tanh((1500-nrow(x))/500)))), 48),
 					 quadrature.points=110,
@@ -185,12 +209,17 @@ plischke <- function(x,
 					 kd.estimator="cheap",
 					 kd.width="auto",
 					 complement=FALSE,
-					 #switch.xy=FALSE,
+					 plot.enabled=FALSE,
+					 plot.cols=min(ncol(x), 4),
 					 output.trafo="off",
 					 kd.shape="epanechnikov") {
 	n <- nrow(x)
 	k <- ncol(x)
 	parameter.names <- colnames(x)
+	
+	if (is.null(parameter.names)) {
+		parameter.names = sprintf("x%d", 1:k)
+	}
 
 	if (tolower(kd.estimator) == "diffusion") {
 		quadrature.points=2^nextpow2(quadrature.points)
@@ -223,18 +252,26 @@ plischke <- function(x,
 	f1 <- smoothed.pdf$f
 	alfa <- smoothed.pdf$alfa
 	
-	segs = linspace(0, 1, partition.size+1)
-	delta = matrix(0, nrow=1, ncol=k)
-	Sr = matrix(0, nrow=1, ncol=partition.size)
-	nr = matrix(0, nrow=partition.size, ncol=1)
-	Si = matrix(0, nrow=1, ncol=k)
-	Vyc = matrix(0, nrow=1, ncol=partition.size)
-	Ey = mean(y)
-	Vy = var(y)
-	Kr <- matrix(0, nrow=1, ncol=partition.size)
-	acceptL <- matrix(0, nrow=3, ncol=k)
+	# initialize the plotting data
+	if (plot.enabled) {
+		plot.f1 <- f1
+		plot.f2 <- rep(list(list()), k)
+		plot.nr <- list()
+		plot.Sr <- list()
+	}
 	
-	for (i in 1:k) {
+	segs <- linspace(0, 1, partition.size+1)
+	delta <- zeros(1, k)
+	Sr <- zeros(1, partition.size)
+	nr <- zeros(partition.size, 1)
+	Si <- zeros(1, k)
+	Vyc <- zeros(1, partition.size)
+	Ey <- mean(y)
+	Vy <- var(y)
+	Kr <- zeros(1, partition.size)
+	acceptL <- zeros(3, k)
+	
+	for (i in 1:k) {		
 		for (m in 1:partition.size) {
 			if (complement) {
 				yx <- ys[xr[,i]<segs[m] | xr[,i]>=segs[m+1]]
@@ -242,7 +279,7 @@ plischke <- function(x,
 				yx <- ys[xr[,i]>=segs[m] & xr[,i]<segs[m+1]]
 			}
 			
-			nx = length(yx)
+			nx <- length(yx)
 			
 			if (nx > 0) {
 				# contribution to the variance of the conditional expectation
@@ -260,6 +297,15 @@ plischke <- function(x,
 				smoothed.pdf <- smooth.pdf(yx, yx, yy, ysupp, quadrature.points, kd.shape, kd.estimator, alfa)
 				f2 <- smoothed.pdf$f
 				alfa <- smoothed.pdf$alfa
+				
+				# collect data for plotting
+				if (plot.enabled) {
+					if (complement) {
+						plot.f2[[i]] <- append(plot.f2[[i]], list(pmax(1/(n-nx)*(n*f1-nx*f2),0)))
+					} else {
+						plot.f2[[i]] <- append(plot.f2[[i]], list(f2))
+					}
+				}
 				
 				# compute differences
 				fff <- f1-f2
@@ -313,7 +359,7 @@ plischke <- function(x,
 					Sr[m] <- 0
 					Vyc[m] <- 0
 				} else {
-					Sr[m] = S
+					Sr[m] <- S
 				}
 				
 				# save KS for endogeneous threshold computation
@@ -321,6 +367,12 @@ plischke <- function(x,
 				
 				yy <- yy_
 			}
+		}
+		
+		# collect data for plotting
+		if (plot.enabled) {
+			plot.nr <- append(plot.nr, list(nr))
+			plot.Sr <- append(plot.Sr, list(Sr))
 		}
 		
 		#predict rejection level
@@ -340,12 +392,53 @@ plischke <- function(x,
 			acceptL[3,i] <- kolmog(thres3, 0)
 		}
 		
+		# expectation over all partition segments
 		delta[i] <- 0.5*(Sr %*% nr)/n
+		
+		# first order sensitivity index (biased estimator)
 		Si[i] <- sum(Vyc)/Vy/(n-1)
 	}
 	
+	# render the plots
+	if (plot.enabled) {
+		plot.new()
+		cols <- rainbow(partition.size)
+		nf <- layout(matrix(c(1:plot.cols, rep(plot.cols+1, plot.cols)), nrow=2, byrow=TRUE))
+		layout.show(nf)
+		
+		for (i in 1:plot.cols) {
+			plot(yy, plot.f1, type='l', lwd=2, ylab="Density function",
+				 xlab=paste("F(x) given ", parameter.names[i], sep=""),
+				 ylim=range(plot.f1, plot.f2[[i]]), xlim=range(yy))
+			
+			for (m in 1:partition.size) {
+				lines(yy, plot.f2[[i]][[m]], col=cols[m])
+			}
+		}
+		
+		# plot the conditional densities
+		cols <- rainbow(k)
+		plot(cumsum(plot.nr[[1]])/n-1/(2*partition.size),
+			 plot.Sr[[1]],
+			 ylab=expression("S"["r"]),
+			 xlab="Empirical CDF of Inputs",
+			 main="Separation of Conditional Densities",
+			 col=cols[1],
+			 type='l',
+			 ylim=range(0, plot.Sr))
+		
+		for (i in 2:k) {
+			lines(cumsum(plot.nr[[i]])/n-1/(2*partition.size), plot.Sr[[i]], col=cols[i])
+		}
+		
+		lines(c(0,1), ks.crit[i]*c(1,1)*sqrt((partition.size+1)/n), lty=2)
+		legend("topright", legend=parameter.names, lty=1, lwd=1, col=cols, inset=0.02, bty="n")
+	}
+	
+	# provide ranking of sensitivity indices
 	rank <- rev(order(Si))
 	
+	# add parameter names
 	if (!is.null(parameter.names)) {
 		colnames(delta) <- parameter.names
 		colnames(Si) <- parameter.names
@@ -359,7 +452,7 @@ empcdf <- function(xs) {
 	n <- length(xs)
 	xr <- matrix(1:n)
 	tie_loc <- c(which(diff(xs)==0), n+2)
-	tie_next = diff(tie_loc)
+	tie_next <- diff(tie_loc)
 	maxt <- numel(tie_loc)
 	i <- 1
 	
@@ -372,7 +465,7 @@ empcdf <- function(xs) {
 			len <- len+1
 		}
 		
-		xr[run:(run+len)] = run+len/2
+		xr[run:(run+len)] <- run+len/2
 		i <- i+1
 	}
 	
@@ -452,20 +545,99 @@ idct1d <- function(x) {
 	weights <- nrows*exp(1i*(0:(nrows-1))*pi/(2*nrows))
 	x <- Re(ifft(c(weights * x)))
 	
-	result <- matrix(0, nrow=nrows, ncol=1)
+	result <- zeros(nrows, 1)
 	result[seq(1,nrows,2)] <- x[1:(nrows %/% 2)]
 	result[seq(2,nrows,2)] <- x[seq(nrows, nrows %/% 2 + 1, -1)]
 	result
 }
 
 dct1d <- function(x) {
-	nrows = length(x)
+	nrows <- length(x)
 	weight <- c(1, 2*(exp(-1i*(1:(nrows-1))*pi/(2*nrows))))
 	x <- c(x[seq(1,nrows,2)], x[seq(nrows,2,-2)])
 	Re(weight * fft(x))
 }
 
+deltafast <- function(x, y, M=24) {
+	n <- nrow(x)
+	k <- ncol(x)
+	kernel <- kernel.epanechnikov
+	
+	# numerical noise cutoff (simple Kolmogorov-Smirnov)
+	cutoff <- 0.7
+	
+	# output stats
+	miny <- min(y)
+	maxy <- max(y)
+	L <- miny - 0.04*(maxy-miny)
+	U <- maxy + 0.04*(maxy-miny)
+	
+	# transform to unbounded support, the default is no transformation
+	stretch <- function(y,l,u) y
+	squeeze <- function(z,l,u) z
+	ty <- stretch(y,L,U)
+	
+	# work with transformed data
+	medy <- median(ty)
+	iqry <- median(abs(medy-ty)) # interquartile range estimator
+	
+	# bandwidth estimate
+	stdy <- min(std(ty, flag=1), iqry/0.675)
+	h <- stdy*((4/(3*n))^(1/5))
+	
+	# construct interpolation points
+	z1 <- linspace(min(ty)-2*h, medy-iqry, 25)
+	z2 <- linspace(medy-iqry, medy+iqry, 52)
+	z3 <- linspace(medy+iqry, max(ty)+2*h, 25)
+	z <- c(z1, z2[2:(length(z2)-1)], z3)
+	l <- length(z)
+	
+	# back-trafo interpolatin points
+	tz <- squeeze(z,L,U)
+	
+	# kernel density matrix
+	W <- kernel(bsxfun("-", repmat(z, n, 1), repmat(matrix(ty, nrow=n, ncol=1), 1, l))/h)/h
+	
+	# unconditional density
+	densy <- apply(W, 2, mean)
+	
+	# conditional densities for partitioned data
+	Sm <- zeros(k,M)
+	Tm <- zeros(k,M)
+	nm <- zeros(k,M)
+	
+	# keep only W from the partition
+	indxx <- apply(x, 2, order)
+	xr <- zeros(n, k)
+	
+	for (i in 1:k) {
+		xr[,i] <- x[indxx[,i],i]
+		xr[indxx[,i],i] <- 1:n # ranks (no ties)
+	}
+	
+	for (j in 1:M) {
+		indx <- ((j-1)*n/M < xr) & (xr <= j*n/M)
+		nm[,j] <- apply(indx, 2, sum) # no ties, always same nbr of realizations
+		
+		for (i in 1:k) {
+			densc <- apply(W[indx[,i],], 2, mean) # conditional density
+			Sm[i,j] <- trapz(z, pmax(densy-densc,0)) # L1 separation of densities
+			
+			#Kullback Leibler
+			tt <- densc*(log(densc)-log(densy))
+			tt[densc==0] <- 0
+			Tm[i,j] <- trapz(z, tt)
+		}
+
+		Sm[Sm<cutoff*sqrt(1/n+1/nm)] <- 0
+		d <- apply(Sm*nm, 1, sum)/n
+		s <- apply(Tm*nm, 1, sum)/n
+	}
+
+	list(delta=d, theta=s)
+}
+
 #X <- matrix(c(linspace(0, 1, 1000), linspace(0, 1, 1000)), nrow=1000, ncol=2)
 #X <- matrix(runif(2000), nrow=1000)
-#Y <- apply(X, 1, function(x) 2*x[1]+x[2])
-#print(plischke(X, Y))
+#Y <- apply(X, 1, function(x) x[1]+x[2])
+#print(deltamim(X, Y, plot.enabled=TRUE))

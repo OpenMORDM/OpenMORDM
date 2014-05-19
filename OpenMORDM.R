@@ -1124,7 +1124,7 @@ mordm.sensitivity <- function(data, objective, all=FALSE, ...) {
 		y <- set[,nvars+objective]
 	}
 	
-	print(do.call(plischke, c(list(set[,1:nvars], y), varargs)))
+	print(do.call(deltamim, c(list(set[,1:nvars], y), varargs)))
 }
 
 #hypervolume(data[[length(data)]], bandwidth=1, repsperpoint=10)
@@ -1192,4 +1192,4 @@ mark1 <- mordm.mark.rule(function(x) x[21] < 0.1)
 
 #mordm.plotprim(data, list(boxes.high, boxes.low), names=c("High Bentham Utility", "Low Bentham Utility"))
 
-mordm.sensitivity(data, mark1, all=FALSE)
+mordm.sensitivity(data, "Obj2", all=FALSE)

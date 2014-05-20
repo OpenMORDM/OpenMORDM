@@ -5,6 +5,8 @@ library(scales)
 library(MASS)
 library(animation)
 source("plischke.R")
+source("evaluate.R")
+source("pareto.R")
 
 mordm.defaultnames <- function(nvars, nobjs) {
 	names <- vector()
@@ -64,6 +66,7 @@ mordm.read <- function(file, nvars, nobjs, nconstrs=0, bounds=NULL, names=NULL, 
 				attr(entry, "nobjs") <- nobjs
 				attr(entry, "nconstrs") <- nconstrs
 				attr(entry, "bounds") <- bounds
+				attr(entry, "maximize") <- maximize
 
 				result <- append(result, list(entry))
 			}
@@ -86,6 +89,7 @@ mordm.read <- function(file, nvars, nobjs, nconstrs=0, bounds=NULL, names=NULL, 
 	attr(result, "nobjs") <- nobjs
 	attr(result, "nconstrs") <- nconstrs
 	attr(result, "bounds") <- bounds
+	attr(result, "maximize") <- maximize
 	class(result) <- "mordm"
 
 	return(result)
@@ -120,10 +124,12 @@ mordm.attributes <- function(data) {
 	return(result)
 }
 
-mordm.colorize <- function(set, objectives, mark, palette=heat.colors, n=100, offset=0, unmarked="#888888FF", alpha=1) {
-    if (is.null(mark)) {
+mordm.colorize <- function(set, objectives, mark, palette=heat.colors, n=100, offset=0, colors=NULL, unmarked="#888888FF", alpha=1) {
+	if (!is.null(colors)) {
+		colors <- (colors - min(colors, na.rm=TRUE)) / (max(colors, na.rm=TRUE) - min(colors, na.rm=TRUE))
+	} else if (is.null(mark)) {
         colors <- set[,objectives[5]]
-        colors <- (colors - min(colors)) / (max(colors) - min(colors))
+        colors <- (colors - min(colors, na.rm=TRUE)) / (max(colors, na.rm=TRUE) - min(colors, na.rm=TRUE))
     } else if (is.list(mark)) {
         colors <- rep(0, nrow(set))
         
@@ -246,7 +252,7 @@ mordm.plotmark <- function(highlight=NULL) {
 	mordm.currentplot <<- "mark"
 }
 
-mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, identify=TRUE, ...) {
+mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, identify=TRUE, colors=NULL, ...) {
 	set <- mordm.getset(data, index)
 	nvars <- attr(data, "nvars")
 	nobjs <- attr(data, "nobjs")
@@ -282,8 +288,8 @@ mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, id
 		sizes <- rep(2,nrow(set))
 	}
 
-	if (nobjs >= 5 | !is.null(mark)) {
-        colors <- mordm.colorize(set, objectives, mark)
+	if (nobjs >= 5 || !is.null(mark) || !is.null(colors)) {
+        colors <- mordm.colorize(set, objectives, mark, colors=colors)
 	} else {
 		colors <- rep("#888888",nrow(set))
 	}
@@ -1112,11 +1118,15 @@ mordm.sensitivity <- function(data, objective, all=FALSE, ...) {
 	}
 	
 	if (is.function(objective)) {
-		y <- 1*mordm.select.indices(set, objective)
-		
-		# the cheap kd estimator does not work too well on binary data
-		if (is.null(varargs$kd.estimator) || varargs$kd.estimator == "cheap") {
-			varargs$kd.estimator = "hist"
+		if (class(objective) == "mark") {
+			y <- 1*mordm.select.indices(set, objective)
+			
+			# the cheap kd estimator does not work too well on binary data
+			if (is.null(varargs$kd.estimator) || varargs$kd.estimator == "cheap") {
+				varargs$kd.estimator = "hist"
+			}
+		} else {
+			y <- apply(set, 1, objective)
 		}
 	} else if (is.character(objective)) {
 		y <- set[,objective]
@@ -1125,6 +1135,12 @@ mordm.sensitivity <- function(data, objective, all=FALSE, ...) {
 	}
 	
 	print(do.call(deltamim, c(list(set[,1:nvars], y), varargs)))
+}
+
+mordm.robustness <- function(data, sd, nsamples, problem) {
+	set <- mordm.getset(data)
+	set <- set[,1:problem$nvars]
+	apply(set, 1, function(x) check.robustness(nsample(x, sd, nsamples, problem), problem, verbose=FALSE))
 }
 
 #hypervolume(data[[length(data)]], bandwidth=1, repsperpoint=10)
@@ -1192,4 +1208,17 @@ mark1 <- mordm.mark.rule(function(x) x[21] < 0.1)
 
 #mordm.plotprim(data, list(boxes.high, boxes.low), names=c("High Bentham Utility", "Low Bentham Utility"))
 
-mordm.sensitivity(data, "Obj2", all=FALSE)
+#mordm.sensitivity(data, function(x) x["Obj3"] + x["Obj4"], all=FALSE)
+
+print("Ranking...")
+mordm.pareto.rank(data)
+
+
+
+
+#lake.problem <- setup("lake5obj.exe", 20, 5, 1,
+#					  bounds=matrix(rep(range(0, 0.1), 20), nrow=2))
+#set <- mordm.getset(data)
+#y <- robustness(set[,1:20], 0.01, 10, lake.problem)
+#print(y)
+

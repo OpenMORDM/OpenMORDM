@@ -1137,10 +1137,10 @@ mordm.sensitivity <- function(data, objective, all=FALSE, ...) {
 	print(do.call(deltamim, c(list(set[,1:nvars], y), varargs)))
 }
 
-mordm.robustness <- function(data, sd, nsamples, problem) {
+mordm.robustness <- function(data, sd, nsamples, problem, method="variance") {
 	set <- mordm.getset(data)
 	set <- set[,1:problem$nvars]
-	apply(set, 1, function(x) check.robustness(nsample(x, sd, nsamples, problem), problem, verbose=FALSE))
+	apply(set, 1, function(x) check.robustness(nsample(x, sd, nsamples, problem), problem, verbose=FALSE, method=method))
 }
 
 #hypervolume(data[[length(data)]], bandwidth=1, repsperpoint=10)
@@ -1221,6 +1221,6 @@ mark1 <- mordm.mark.rule(function(x) x[21] < 0.1)
 # Compute robustness at each point and color the plot
 lake.problem <- setup("lake5obj.exe", 20, 5, 1,
 					  bounds=matrix(rep(range(0, 0.1), 20), nrow=2))
-y <- mordm.robustness(data, 0.01, 10, lake.problem)
+y <- mordm.robustness(data, 0.01, 10, lake.problem, method="gap")
 mordm.plot(data, color=y)
 

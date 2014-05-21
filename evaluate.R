@@ -104,7 +104,39 @@ nsample <- function(mean, sd, nsamples, problem) {
 	evaluate(points, problem)
 }
 
-check.robustness <- function(output, problem, weights=NULL, verbose=TRUE) {
+check.robustness <- function(output, problem, method="variance", ...) {
+	varargs <- list(...)
+	
+	if (is.function(method)) {
+		do.call(method, c(list(output, problem), varargs))
+	} else if (is.character(method)) {
+		if (method == "variance") {
+			do.call(robustness.variance, c(list(output, problem), varargs))
+		} else if (method == "infogap" || method == "gap") {
+			do.call(robustness.gap, c(list(output, problem), varargs))
+		} else {
+			stop("Unsupported robustness method")
+		}
+	} else {
+		stop("Unsupported robustness method")
+	}
+}
+
+robustness.gap <- function(output, problem, original.point=NULL, verbose=FALSE, weights="unused") {
+	if (is.null(original.point)) {
+		# estimate the original point since one was not provided
+		original.point <- apply(output$vars, 2, mean)
+	}
+	
+	distances <- apply(output$vars, 1, function(x) dist(rbind(original.point, x))[1])
+	feasible <- apply(output$constrs, 1, function(x) all(x == 0.0))
+	indx <- order(distances)
+	
+	last <- min(which(feasible[indx]))
+	distances[last]
+}
+
+robustness.variance <- function(output, problem, weights=NULL, verbose=FALSE, original.point="unused") {
 	nsamples <- nrow(output$vars)
 	robustness <- 0
 	
@@ -145,14 +177,18 @@ check.robustness <- function(output, problem, weights=NULL, verbose=TRUE) {
 	robustness
 }
 
-#lake.problem <- setup("lake5obj.exe", 20, 5, 1,
-#					  bounds=matrix(rep(range(0, 0.1), 20), nrow=2))
+lake.problem <- setup("lake5obj.exe", 20, 5, 1,
+					  bounds=matrix(rep(range(0, 0.1), 20), nrow=2))
 
-#point1 <- c(0.065978253827694289,0.00059485252872073027,0.0063720060647708392,0.01399249646941669,0.0056629099188366446,0.0055362375342112077,0.018313533745478977,0.0014380325082422526,0.00030581191411225422,0.0076185427381808245,0.012503012142105578,0.016869974082367092,0.0054916027479675472,0.023683915240550205,0.013480490539820471,0.0042869043217465472,0.01595043318628675,0.0020746685117287713,0.014651631115411706,0.05198357577908868)
-#point2 <- c(0.066253334084896962,0.00334795911265487,0.013684771705565526,0.033774694935984506,0.020464866435693098,0.017354991123983653,0.033706031688876065,0.015864700818353863,0.027034699046830382,0.016527956408633422,0.01890247862009007,0.033791229890777923,0.0089172364984769961,0.035674941490447969,0.019146078244952128,0.001644145344431495,0.037471429222283685,0.0045358730851966372,0.017658269745000683,0.072713021295378738)
+point1 <- c(0.065978253827694289,0.00059485252872073027,0.0063720060647708392,0.01399249646941669,0.0056629099188366446,0.0055362375342112077,0.018313533745478977,0.0014380325082422526,0.00030581191411225422,0.0076185427381808245,0.012503012142105578,0.016869974082367092,0.0054916027479675472,0.023683915240550205,0.013480490539820471,0.0042869043217465472,0.01595043318628675,0.0020746685117287713,0.014651631115411706,0.05198357577908868)
+point2 <- c(0.066253334084896962,0.00334795911265487,0.013684771705565526,0.033774694935984506,0.020464866435693098,0.017354991123983653,0.033706031688876065,0.015864700818353863,0.027034699046830382,0.016527956408633422,0.01890247862009007,0.033791229890777923,0.0089172364984769961,0.035674941490447969,0.019146078244952128,0.001644145344431495,0.037471429222283685,0.0045358730851966372,0.017658269745000683,0.072713021295378738)
 
-#d1 <- nsample(point1, 0.01, 100, lake.problem)
-#d2 <- nsample(point2, 0.01, 100, lake.problem)
+d1 <- nsample(point1, 0.01, 100, lake.problem)
+d2 <- nsample(point2, 0.01, 100, lake.problem)
+
+print(check.robustness(d1, lake.problem, method="gap"))
+print(check.robustness(d2, lake.problem, method="gap"))
+
 
 #check.robustness(d1, lake.problem)
 #check.robustness(d2, lake.problem)

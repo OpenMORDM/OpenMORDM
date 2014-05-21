@@ -1210,15 +1210,17 @@ mark1 <- mordm.mark.rule(function(x) x[21] < 0.1)
 
 #mordm.sensitivity(data, function(x) x["Obj3"] + x["Obj4"], all=FALSE)
 
-print("Ranking...")
-mordm.pareto.rank(data)
+
+# Non-dominated ranking
+#set <- mordm.join(data, index=1:length(data))
+#print(nrow(set))
+#ranks <- mordm.pareto.rank(set)
+#mordm.plot(set, color=-ranks)
 
 
-
-
-#lake.problem <- setup("lake5obj.exe", 20, 5, 1,
-#					  bounds=matrix(rep(range(0, 0.1), 20), nrow=2))
-#set <- mordm.getset(data)
-#y <- robustness(set[,1:20], 0.01, 10, lake.problem)
-#print(y)
+# Compute robustness at each point and color the plot
+lake.problem <- setup("lake5obj.exe", 20, 5, 1,
+					  bounds=matrix(rep(range(0, 0.1), 20), nrow=2))
+y <- mordm.robustness(data, 0.01, 10, lake.problem)
+mordm.plot(data, color=y)
 

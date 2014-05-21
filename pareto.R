@@ -1,5 +1,29 @@
 library(emoa)
 
+mordm.join <- function(data, index=length(data), unique=TRUE) {
+	if (length(index) == 1) {
+		set <- mordm.getset(data, index)
+	} else {
+		set <- mordm.getset(data, index[1])
+		
+		for (i in 2:length(index)) {
+			set <- rbind(set, mordm.getset(data, index[i]))
+		}
+	}
+	
+	if (unique) {
+		set <- unique(set)
+	}
+	
+	attr(set, "nvars") <- attr(data, "nvars")
+	attr(set, "nobjs") <- attr(data, "nobjs")
+	attr(set, "nconstrs") <- attr(data, "nconstrs")
+	attr(set, "bounds") <- attr(data, "bounds")
+	attr(set, "maximize") <- attr(data, "maximize")
+	
+	set
+}
+
 mordm.pareto.normalize <- function(set) {
 	nvars <- attr(set, "nvars")
 	nobjs <- attr(set, "nobjs")
@@ -21,17 +45,12 @@ mordm.pareto.normalize <- function(set) {
 	minset
 }
 
-mordm.pareto.rank <- function(data) {
-	set <- mordm.getset(data)
+mordm.pareto.rank <- function(set) {
 	set <- mordm.pareto.normalize(set)
-	
 	nds_rank(t(set))
 }
 
-
-mordm.pareto.set <- function(set, maximize) {
-	set <- mordm.getset(data)
+mordm.pareto.set <- function(set) {
 	set <- mordm.pareto.normalize(set)
-	
 	nondominated_points(t(set))
 }

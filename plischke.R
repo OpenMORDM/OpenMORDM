@@ -212,7 +212,8 @@ deltamim <- function(x,
 					 plot.enabled=FALSE,
 					 plot.cols=min(ncol(x), 4),
 					 output.trafo="off",
-					 kd.shape="epanechnikov") {
+					 kd.shape="epanechnikov",
+					 ...) {
 	n <- nrow(x)
 	k <- ncol(x)
 	parameter.names <- colnames(x)

@@ -22,7 +22,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-library("pracma")
+library(pracma)
+library(sensitivity)
+library(boot)
 
 setup <- function(command, nvars, nobjs, nconstrs=0, bounds=NULL) {
 	if (is.null(bounds)) {
@@ -85,7 +87,6 @@ usample <- function(nsamples, problem) {
 	}
 	
 	output <- evaluate(points, problem)
-	#cbind(points, output)
 }
 
 check.bounds <- function(points, problem) {
@@ -128,39 +129,84 @@ nsample <- function(mean, sd, nsamples, problem) {
 	evaluate(points, problem)
 }
 
-check.robustness <- function(output, problem, method="variance", ...) {
+check.robustness <- function(output, problem, method="default", verbose=FALSE, ...) {
 	varargs <- list(...)
+	varargs$verbose <- verbose
 	
 	if (is.function(method)) {
-		do.call(method, c(list(output, problem), varargs))
+		robustness <- do.call(method, c(list(output, problem), varargs))
 	} else if (is.character(method)) {
-		if (method == "variance") {
-			do.call(robustness.variance, c(list(output, problem), varargs))
+		if (method == "default") {
+			robustness <- do.call(robustness.default, c(list(output, problem), varargs))
+		} else if (method == "variance") {
+			robustness <- do.call(robustness.variance, c(list(output, problem), varargs))
+		} else if (method == "constraints") {
+			robustness <- do.call(robustness.constraints, c(list(output, problem), varargs))
 		} else if (method == "infogap" || method == "gap") {
-			do.call(robustness.gap, c(list(output, problem), varargs))
+			robustness <- do.call(robustness.gap, c(list(output, problem), varargs))
 		} else {
 			stop("Unsupported robustness method")
 		}
 	} else {
 		stop("Unsupported robustness method")
 	}
-}
-
-robustness.gap <- function(output, problem, original.point=NULL, verbose=FALSE, weights="unused") {
-	if (is.null(original.point)) {
-		# estimate the original point since one was not provided
-		original.point <- apply(output$vars, 2, mean)
+	
+	if (verbose) {
+		cat("    Overall Robustness: ")
+		cat(robustness)
+		cat("\n\n")
 	}
 	
-	distances <- apply(output$vars, 1, function(x) dist(rbind(original.point, x))[1])
-	feasible <- apply(output$constrs, 1, function(x) all(x == 0.0))
-	indx <- order(distances)
-	
-	last <- min(which(feasible[indx]))
-	distances[last]
+	robustness
 }
 
-robustness.variance <- function(output, problem, weights=NULL, verbose=FALSE, original.point="unused") {
+robustness.gap <- function(output, problem, weights=NULL, verbose=FALSE, original.point=NULL) {
+	if (problem$nconstrs > 0) {
+		if (is.null(original.point)) {
+			# estimate the original point since one was not provided
+			original.point <- apply(output$vars, 2, mean)
+		}
+		
+		distances <- apply(output$vars, 1, function(x) dist(rbind(original.point, x))[1])
+		feasible <- apply(output$constrs, 1, function(x) all(x == 0.0))
+		
+		if (any(!feasible)) {
+			indx <- order(distances)
+			last <- min(which(!feasible[indx]))
+			distances[last]
+		} else {
+			max(distances)
+		}
+	} else {
+		# Can't compute stability region if there are no constraints
+		1
+	}
+}
+
+robustness.constraints <- function(output, problem, weights=NULL, verbose=FALSE, original.point=NULL) {
+	nsamples <- nrow(output$vars)
+	robustness <- 1
+	
+	if (problem$nconstrs > 0) {
+		nviolations <- sum(1*apply(output$constrs, 1, function(x) any(x != 0.0)))
+		robustness <- robustness-nviolations/nsamples
+		
+		if (verbose) {
+			cat("    Constraint Violations: ")
+			cat(sprintf("%0.1f", 100*nviolations/nsamples))
+			cat(" %\n")
+		}
+	}
+	
+	robustness
+}
+
+robustness.default <- function(output, problem, weights=NULL, verbose=FALSE, original.point=NULL) {
+	robustness <- robustness.variance(output, problem, weights, verbose, original.point)
+	robustness * (2-robustness.constraints(output, problem, weights, verbose, original.point))
+}
+
+robustness.variance <- function(output, problem, weights=NULL, verbose=FALSE, original.point=NULL) {
 	nsamples <- nrow(output$vars)
 	robustness <- 0
 	
@@ -181,38 +227,259 @@ robustness.variance <- function(output, problem, weights=NULL, verbose=FALSE, or
 		}
 	}
 	
-	if (problem$nconstrs > 0) {
-		nviolations <- sum(1*apply(output$constrs, 1, function(x) any(x != 0.0)))
-		robustness <- robustness*(1+nviolations/nsamples)
-		
-		if (verbose) {
-			cat("    Constraint Violations: ")
-			cat(sprintf("%0.1f", 100*nviolations/nsamples))
-			cat(" %\n")
-		}
-	}
-	
-	if (verbose) {
-		cat("    Overall Robustness: ")
-		cat(robustness)
-		cat("\n\n")
-	}
-	
 	robustness
 }
 
-lake.problem <- setup("lake5obj.exe", 20, 5, 1,
-					  bounds=matrix(rep(range(0, 0.1), 20), nrow=2))
+cleanup <- function(data) {
+	na.indx <- apply(data$objs, 1, function(x) !any(is.na(x)))
+	
+	if (is.null(data$constrs)) {
+		list(vars=data$vars[na.indx,], objs=data$objs[na.indx,])
+	} else {
+		list(vars=data$vars[na.indx,], objs=data$objs[na.indx,], constrs=data$constrs[na.indx,])
+	}
+}
 
-point1 <- c(0.065978253827694289,0.00059485252872073027,0.0063720060647708392,0.01399249646941669,0.0056629099188366446,0.0055362375342112077,0.018313533745478977,0.0014380325082422526,0.00030581191411225422,0.0076185427381808245,0.012503012142105578,0.016869974082367092,0.0054916027479675472,0.023683915240550205,0.013480490539820471,0.0042869043217465472,0.01595043318628675,0.0020746685117287713,0.014651631115411706,0.05198357577908868)
-point2 <- c(0.066253334084896962,0.00334795911265487,0.013684771705565526,0.033774694935984506,0.020464866435693098,0.017354991123983653,0.033706031688876065,0.015864700818353863,0.027034699046830382,0.016527956408633422,0.01890247862009007,0.033791229890777923,0.0089172364984769961,0.035674941490447969,0.019146078244952128,0.001644145344431495,0.037471429222283685,0.0045358730851966372,0.017658269745000683,0.072713021295378738)
+# Calculates the number of replicates / levels required by the sensitivity
+# analysis method to produce approximately the given number of samples
+sensitivity.levels <- function(problem, samples, method) {
+	if (method == "fast99") {
+		ceiling(samples / problem$nvars)
+	} else if (method == "sobol") {
+		ceiling(samples / (problem$nvars+1))
+	} else if (method == "sobol2002") {
+		ceiling(samples / (problem$nvars+2))
+	} else if (method == "sobol2007") {
+		ceiling(samples / (problem$nvars+2))
+	} else if (method == "sobolEff") {
+		ceiling(samples / (problem$nvars+1))
+	} else if (method == "soboljansen") {
+		ceiling(samples / (problem$nvars+2))
+	} else if (method == "sobolmara") {
+		ceiling(samples / 2)
+	} else if (method == "sobolroalhs") {
+		ceiling(samples / 2)
+	} else if (method == "morris") {
+		ceiling(samples / (problem$nvars+1))
+	} else if (method == "pcc" || method == "src") {
+		samples
+	} else if (method == "plischke") {
+		samples
+	} else {
+		stop("Unsupported method")
+	}
+}
 
-d1 <- nsample(point1, 0.01, 100, lake.problem)
-d2 <- nsample(point2, 0.01, 100, lake.problem)
+sensitivity <- function(problem, objective, samples, method="fast99", verbose=FALSE, plot=FALSE, raw=FALSE, ...) {
+	varargs <- list(...)
+	
+	n <- sensitivity.levels(problem, samples, method)
+	
+	if (method == "fast99") {
+		if (is.null(varargs$q)) {
+			varargs$q <- "qunif"
+		}
+		
+		if (is.null(varargs$q.arg)) {
+			varargs$q.arg <- list(min=0, max=1)
+		}
+		
+		model <- do.call(fast99, c(list(model=NULL, factors=problem$nvars, n=n), varargs))
+	} else if (method == "sobol") {
+		X1 <- data.frame(matrix(runif(problem$nvars*n), nrow=n))
+		X2 <- data.frame(matrix(runif(problem$nvars*n), nrow=n))
+		model <- do.call(sobol, c(list(model=NULL, X1, X2), varargs))
+	} else if (method == "sobol2002") {
+		X1 <- data.frame(matrix(runif(problem$nvars*n), nrow=n))
+		X2 <- data.frame(matrix(runif(problem$nvars*n), nrow=n))
+		model <- do.call(sobol2002, c(list(model=NULL, X1, X2), varargs))
+	} else if (method == "sobol2007") {
+		X1 <- data.frame(matrix(runif(problem$nvars*n), nrow=n))
+		X2 <- data.frame(matrix(runif(problem$nvars*n), nrow=n))
+		model <- do.call(sobol2007, c(list(model=NULL, X1, X2), varargs))
+	} else if (method == "sobolEff") {
+		X1 <- data.frame(matrix(runif(problem$nvars*n), nrow=n))
+		X2 <- data.frame(matrix(runif(problem$nvars*n), nrow=n))
+		model <- do.call(sobolEff, c(list(model=NULL, X1, X2), varargs))
+	} else if (method == "soboljansen") {
+		X1 <- data.frame(matrix(runif(problem$nvars*n), nrow=n))
+		X2 <- data.frame(matrix(runif(problem$nvars*n), nrow=n))
+		model <- do.call(soboljansen, c(list(model=NULL, X1, X2), varargs))
+	} else if (method == "sobolmara") {
+		X <- data.frame(matrix(runif(problem$nvars*n), nrow=n))
+		model <- do.call(sobolmara, c(list(model=NULL, X), varargs))
+	} else if (method == "sobolroalhs") {
+		if (is.null(varargs$order)) {
+			varargs$order <- 1
+		}
+		
+		model <- do.call(sobolroalhs, c(list(model=NULL, factors=problem$nvars, levels=n), varargs))
+	} else if (method == "morris") {
+		if (is.null(varargs$design)) {
+			varargs$design <- list(type="oat", levels=5, grid.jump=3)
+		}
+		
+		model <- do.call(morris, c(list(model=NULL, factors=problem$nvars, r=n), varargs))
+	} else if (method == "pcc" || method == "src") {
+		model <- list(X=data.frame(matrix(runif(problem$nvars*n), nrow=n)))
+	} else if (method == "plischke") {
+		model <- list(X=matrix(runif(problem$nvars*n), nrow=n))
+	} else {
+		stop("Unsupported method")
+	}
+	
+	# ensure the model inputs are valid
+	if (any(is.nan(unlist(model$X)))) {
+		stop("Invalid sampling method, try a different method or increase the number of samples")
+	}
+	
+	# scale the model inputs
+	vars <- t(apply(model$X, 1, function(x) x*(problem$bounds[2,]-problem$bounds[1,]) + problem$bounds[1,]))
+	
+	# evaluate the model
+	y <- evaluate(vars, lake.problem)
+	
+	# compute the sensitivity indices
+	if (method == "pcc") {
+		model <- do.call(pcc, c(list(model$X, y$objs[,objective]), varargs))
+	} else if (method == "src") {
+		model <- do.call(src, c(list(model$X, y$objs[,objective]), varargs))
+	} else if (method == "plischke") {
+		model <- do.call(deltamim, c(list(model$X, y$objs[,objective]), varargs))
+	} else {
+		tell(model, y$objs[,objective])
+	}
+	
+	if (verbose) {
+		print(model)
+	}
+	
+	if (plot) {
+		plot(model)
+	}
+	
+	if (raw) {
+		model
+	} else {
+		if (method == "fast99") {
+			Si <- model$D1/model$V
+			rank <- rev(order(Si))
+			Si.total <- 1 - model$Dt / model$V
+			rank.total <- rev(order(Si.total))
+			list(Si=Si, rank=rank, Si.total=Si.total, rank.total=rank.total)
+		} else if (method == "sobol" || method == "sobolEff" || method == "sobolmara") {
+			Si <- model$S[,"original"]
+			rank <- rev(order(Si))
+			
+			if ("min. c.i." %in% names(model$S)) {
+				Ci <- model$S[,c("min. c.i.", "max. c.i.")]
+				list(Si=Si, rank=rank, Ci=Ci)
+			} else {
+				list(Si=Si, rank=rank)
+			}
+		} else if (method == "sobolroalhs") {
+			Si <- model$S[1:problem$nvars,"original"]
+			rank <- rev(order(Si))
+			
+			if ("min. c.i." %in% names(model$S)) {
+				Ci <- model$S[1:problem$nvars,c("min. c.i.", "max. c.i.")]
+				list(Si=Si, rank=rank, Ci=Ci)
+			} else {
+				list(Si=Si, rank=rank)
+			}
+		} else if (method == "sobol2002" || method == "sobol2007" || method == "soboljansen") {
+			Si <- model$S[,"original"]
+			rank <- rev(order(Si))
+			Si.total <- model$T[,"original"]
+			rank.total <- rev(order(Si.total))
+			
+			if ("min. c.i." %in% names(model$S)) {
+				Ci <- model$S[,c("min. c.i.", "max. c.i.")]
+				Ci.total <- model$T[,c("min. c.i.", "max. c.i.")]
+				list(Si=Si, rank=rank, Ci=Ci, Si.total=Si.total, rank.total=rank.total, Ci.total=Ci.total)
+			} else {
+				list(Si=Si, rank=rank, Si.total=Si.total, rank.total=rank.total)
+			}
+		} else if (method == "morris") {
+			Si <- apply(model$ee, 2, mean)
+			rank <- rev(order(Si))
+			list(Si=Si, rank=rank)
+		} else if (method == "pcc") {
+			Si <- model$PCC[,"original"]
+			rank <- rev(order(Si))
+			
+			if ("min. c.i." %in% names(model$PCC)) {
+				Ci <- model$PCC[,c("min. c.i.", "max. c.i.")]
+				list(Si=Si, rank=rank, Ci=Ci)
+			} else {
+				list(Si=Si, rank=rank)
+			}
+		} else if (method == "src") {
+			Si <- model$SRC[,"original"]
+			rank <- rev(order(Si))
+			
+			if ("min. c.i." %in% names(model$SRC)) {
+				Ci <- model$SRC[,c("min. c.i.", "max. c.i.")]
+				list(Si=Si, rank=rank, Ci=Ci)
+			} else {
+				list(Si=Si, rank=rank)
+			}
+		} else if (method == "plischke") {
+			if (!is.null(varargs$nboot)) {
+				if (is.null(varargs$conf)) {
+					varargs$conf = 0.95
+				}
+				
+				estim.plischke <- function(data, i = 1:nrow(data)) {
+					d <- as.matrix(data[i, ])
+					k <- ncol(d)
+					res <- do.call(deltamim, c(list(d[,-k], d[,k]), varargs))
+					c(res$Si)
+				}
+				
+				V.boot <- boot(cbind(vars, y$objs[,objective]), estim.plischke, R = varargs$nboot)
+				V <- bootstats(V.boot, varargs$conf, "basic")
+				rownames(V) <- paste("X", 1:problem$nvars, sep="")
 
-print(check.robustness(d1, lake.problem, method="gap"))
-print(check.robustness(d2, lake.problem, method="gap"))
+				list(Si=model$Si, rank=model$rank, Ci=V[,c("min. c.i.", "max. c.i.")])
+			} else {
+				list(Si=model$Si, rank=model$rank)
+			}
+		}
+	}
+}
 
-
-#check.robustness(d1, lake.problem)
-#check.robustness(d2, lake.problem)
+# Copied from statistics library since it is not exported
+bootstats <- function(b, conf = 0.95, type = "norm") {
+	p <- length(b$t0)
+	lab <- c("original", "bias", "std. error", "min. c.i.", "max. c.i.")
+	out <-  as.data.frame(matrix(nrow = p, ncol = length(lab),
+								 dimnames = list(NULL, lab)))
+	
+	for (i in 1 : p) {
+		
+		# original estimation, bias, standard deviation
+		
+		out[i, "original"] <- b$t0[i]
+		out[i, "bias"] <- mean(b$t[, i]) - b$t0[i]
+		out[i, "std. error"] <- sd(b$t[, i])
+		
+		# confidence interval
+		
+		if (type == "norm") {
+			ci <- boot.ci(b, index = i, type = "norm", conf = conf)
+			if (!is.null(ci)) {
+				out[i, "min. c.i."] <- ci$norm[2]
+				out[i, "max. c.i."] <- ci$norm[3]
+			}
+		} else if (type == "basic") {
+			ci <- boot.ci(b, index = i, type = "basic", conf = conf)
+			if (!is.null(ci)) {
+				out[i, "min. c.i."] <- ci$basic[4]
+				out[i, "max. c.i."] <- ci$basic[5]
+			}
+		}
+	}
+	
+	return(out)
+}

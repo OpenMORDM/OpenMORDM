@@ -26,12 +26,43 @@ library(pracma)
 library(sensitivity)
 library(boot)
 
-setup <- function(command, nvars, nobjs, nconstrs=0, bounds=NULL) {
+default.names <- function(nvars, nobjs, nconstrs) {
+	names <- vector()
+	
+	if (nvars > 0) {
+		names <- append(names, sprintf("Var%d", 1:nvars))
+	}
+	
+	if (nobjs > 0) {
+		names <- append(names, sprintf("Obj%d", 1:nobjs))
+	}
+	
+	if (nconstrs > 0) {
+		names <- append(names, sprintf("Constr%d", 1:nconstrs))
+	}
+	
+	return(names)
+}
+
+setup <- function(command, nvars, nobjs, nconstrs=0, bounds=NULL, names=NULL) {
 	if (is.null(bounds)) {
 		bounds <- matrix(rep(range(0, 1), nvars), nrow=2)
 	}
 	
-	container <- list(command=command, nvars=nvars, nobjs=nobjs, nconstrs=nconstrs, bounds=bounds)
+	if (is.null(names)) {
+		names <- default.names(nvars, nobjs, nconstrs)
+	} else if (length(names) == nobjs+nconstrs) {
+		names <- append(default.names(nvars, 0, 0), names)
+	} else if (length(names) == nobjs) {
+		names <- append(default.names(nvars, 0, 0), names, default.names(0, 0, nconstrs))
+	} else if (length(names) == nvars + nobjs) {
+		names <- append(names, default.names(0, 0, nconstrs))
+	} else if (length(names) != nvars + nobjs + nconstrs) {
+		warning("Incorrect number of names, using defaults")
+		names <- default.names(nvars, nobjs, nconstrs)
+	}
+	
+	container <- list(command=command, nvars=nvars, nobjs=nobjs, nconstrs=nconstrs, bounds=bounds, names=names)
 	class(container) <- "mop"
 	container
 }
@@ -39,6 +70,7 @@ setup <- function(command, nvars, nobjs, nconstrs=0, bounds=NULL) {
 evaluate <- function(set, problem) {
 	check.length(set, problem)
 	
+	# evaluate the model
 	if (is.function(problem$command)) {
 		output <- evaluate.function(set, problem)
 	} else if (is.character(problem$command)) {
@@ -47,11 +79,23 @@ evaluate <- function(set, problem) {
 		stop("Command must be a R function or an system command")
 	}
 	
+	# construct the result object
 	if (problem$nconstrs > 0) {
-		list(vars=set, objs=output[,1:problem$nobjs,drop=FALSE], constrs=output[,(problem$nobjs+1):(problem$nobjs+problem$nconstrs),drop=FALSE])
+		result <- list(vars=set, objs=output[,1:problem$nobjs,drop=FALSE], constrs=output[,(problem$nobjs+1):(problem$nobjs+problem$nconstrs),drop=FALSE])
 	} else {
-		list(vars=set, objs=output[,1:problem$nobjs,drop=FALSE])
+		result <- list(vars=set, objs=output[,1:problem$nobjs,drop=FALSE])
 	}
+	
+	# assign column names
+	colnames(result$vars) <- problem$names[1:problem$nvars]
+	colnames(result$objs) <- problem$names[(problem$nvars+1):(problem$nvars+problem$nobjs)]
+	
+	if (problem$nconstrs > 0) {
+		colnames(result$constrs) <- problem$names[(problem$nvars+problem$nobjs+1):(problem$nvars+problem$nobjs+problem$nconstrs)]
+	}
+	
+	# return the results
+	result
 }
 
 evaluate.external <- function(set, problem) {
@@ -86,7 +130,7 @@ usample <- function(nsamples, problem) {
 		points[,i] <- (problem$bounds[2,i]-problem$bounds[1,i])*points[,i] + problem$bounds[1,i]
 	}
 	
-	output <- evaluate(points, problem)
+	evaluate(points, problem)
 }
 
 check.bounds <- function(points, problem) {
@@ -270,7 +314,7 @@ sensitivity.levels <- function(problem, samples, method) {
 	}
 }
 
-sensitivity <- function(problem, objective, samples, method="fast99", verbose=FALSE, plot=FALSE, raw=FALSE, ...) {
+sensitivity <- function(problem, objective, samples, method="fast99", verbose=FALSE, plot=FALSE, raw=FALSE, collapse=TRUE, ...) {
 	varargs <- list(...)
 	
 	n <- sensitivity.levels(problem, samples, method)
@@ -334,22 +378,65 @@ sensitivity <- function(problem, objective, samples, method="fast99", verbose=FA
 	}
 	
 	# scale the model inputs
-	vars <- t(apply(model$X, 1, function(x) x*(problem$bounds[2,]-problem$bounds[1,]) + problem$bounds[1,]))
+	vars <- t(apply(model$X, 1, function(x) (problem$bounds[2,]-problem$bounds[1,])*x + problem$bounds[1,]))
 	
 	# evaluate the model
-	y <- evaluate(vars, lake.problem)
+	output <- evaluate(vars, lake.problem)
+	
+	# calculate the response vector
+	if (is.function(objective)) {
+		if (collapse) {
+			downselect <- function(output, index) {
+				if (is.null(output$constrs)) {
+					result <- matrix(c(output$vars[index,], output$objs[index,]), nrow=1)
+				} else {
+					result <- matrix(c(output$vars[index,], output$objs[index,], output$constrs[index,]), nrow=1)
+				}
+				
+				colnames(result) <- problem$names
+			}
+		} else {
+			downselect <- function(output, index) {
+				if (is.null(output$constrs)) {
+					list(vars=output$vars[index,,drop=FALSE],
+						 objs=output$objs[index,,drop=FALSE])
+				} else {
+					list(vars=output$vars[index,,drop=FALSE],
+						 objs=output$objs[index,,drop=FALSE],
+						 constrs=output$constrs[index,,drop=FALSE])
+				}
+			}
+		}
+		
+		y <- sapply(1:nrow(output$vars), function(i) objective(downselect(output, i)))
+	} else if (is.character(objective) && length(objective) == 1) {
+		if (objective %in% colnames(output$vars)) {
+			y <- output$vars[,objective]
+		} else if (objective %in% colnames(output$objs)) {
+			y <- output$objs[,objective]
+		} else if (!is.null(output$constrs) && objective %in% colnames(output$constrs)) {
+			y <- output$constrs[,objective]
+		} else {
+			stop("Unable to find matching column name")
+		}
+	} else if (is.numeric(objective) && length(objective) == 1) {
+		y <- output$objs[,objective]
+	} else {
+		stop("Invalid objective, must be the objective index, a column name, or a function")
+	}
 	
 	# compute the sensitivity indices
 	if (method == "pcc") {
-		model <- do.call(pcc, c(list(model$X, y$objs[,objective]), varargs))
+		model <- do.call(pcc, c(list(model$X, y), varargs))
 	} else if (method == "src") {
-		model <- do.call(src, c(list(model$X, y$objs[,objective]), varargs))
+		model <- do.call(src, c(list(model$X, y), varargs))
 	} else if (method == "plischke") {
-		model <- do.call(deltamim, c(list(model$X, y$objs[,objective]), varargs))
+		model <- do.call(deltamim, c(list(model$X, y), varargs))
 	} else {
-		tell(model, y$objs[,objective])
+		tell(model, y)
 	}
 	
+	# display or plot the results
 	if (verbose) {
 		print(model)
 	}
@@ -358,6 +445,7 @@ sensitivity <- function(problem, objective, samples, method="fast99", verbose=FA
 		plot(model)
 	}
 	
+	# convert the results to a standard format
 	if (raw) {
 		model
 	} else {
@@ -437,7 +525,7 @@ sensitivity <- function(problem, objective, samples, method="fast99", verbose=FA
 					c(res$Si)
 				}
 				
-				V.boot <- boot(cbind(vars, y$objs[,objective]), estim.plischke, R = varargs$nboot)
+				V.boot <- boot(cbind(vars, y), estim.plischke, R = varargs$nboot)
 				V <- bootstats(V.boot, varargs$conf, "basic")
 				rownames(V) <- paste("X", 1:problem$nvars, sep="")
 

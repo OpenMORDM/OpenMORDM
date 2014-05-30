@@ -1162,15 +1162,17 @@ mordm.sensitivity <- function(data, objective, all=FALSE, ...) {
 	print(do.call(deltamim, c(list(set[,1:nvars], y), varargs)))
 }
 
-mordm.robustness <- function(data, sd, nsamples, problem, method="default") {
+mordm.robustness <- function(data, sd, nsamples, problem, method="default", verbose=TRUE) {
 	set <- mordm.getset(data)
-	set <- set[,1:problem$nvars]
+	set <- set[,1:problem$nvars,drop=FALSE]
 	
 	t(sapply(1:nrow(set), function(i) {
-		cat("\r")
-		cat(i)
-		cat(" of ")
-		cat(nrow(set))
+		if (verbose && nrow(set) > 1) {
+			cat("\r")
+			cat(i)
+			cat(" of ")
+			cat(nrow(set))
+		}
 		
 		samples <- nsample(set[i,], sd, nsamples, problem)
 		
@@ -1245,7 +1247,7 @@ mark1 <- mordm.mark.rule(function(x) x[21] < 0.1)
 
 #mordm.plotprim(data, list(boxes.high, boxes.low), names=c("High Bentham Utility", "Low Bentham Utility"))
 
-mordm.sensitivity(data, function(x) x["Obj2"], all=TRUE)
+#mordm.sensitivity(data, function(x) x["Obj2"], all=TRUE)
 
 
 # Non-dominated ranking
@@ -1257,14 +1259,15 @@ mordm.sensitivity(data, function(x) x["Obj2"], all=TRUE)
 
 # Compute robustness at each point and color the plot
 #lake.problem <- setup("lake5obj.exe", 20, 5, 1,
-#					  bouynds=matrix(rep(range(0, 0.1), 20), nrow=2))
+#					  bounds=matrix(rep(range(0, 0.1), 20), nrow=2))
 #r <- mordm.robustness(data, 0.01, 100, lake.problem, method=c("default", "variance", "constraints", "infogap"))
 #mordm.plot(data, color=r[,"default"])
 
 
 
 # Sensitivity analysis
-#lake.problem <- setup("lake5obj.exe", 20, 5, 1,
-#					  bounds=matrix(rep(range(0, 0.1), 20), nrow=2))
-#sen <- sensitivity(lake.problem, 2, 1000, method="plischke", nboot=100)
-#print(sen)
+lake.problem <- setup("lake5obj.exe", 20, 5, 1,
+					  bounds=matrix(rep(range(0, 0.1), 20), nrow=2))
+r.fun <- function(x) mordm.robustness(x, 0.01, 100, lake.problem)
+sen <- sensitivity(lake.problem, r.fun, 100, method="plischke", nboot=100)
+print(sen)

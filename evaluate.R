@@ -519,7 +519,7 @@ sensitivity <- function(problem, objective, samples, method="fast99", verbose=FA
 					varargs$conf = 0.95
 				}
 				
-				estim.plischke <- function(data, i = 1:nrow(data)) {
+				estim.plischke <- function(data, i=1:nrow(data)) {
 					d <- as.matrix(data[i, ])
 					k <- ncol(d)
 					res <- do.call(deltamim, c(list(d[,-k], d[,k]), varargs))
@@ -546,15 +546,12 @@ bootstats <- function(b, conf = 0.95, type = "norm") {
 								 dimnames = list(NULL, lab)))
 	
 	for (i in 1 : p) {
-		
 		# original estimation, bias, standard deviation
-		
 		out[i, "original"] <- b$t0[i]
 		out[i, "bias"] <- mean(b$t[, i]) - b$t0[i]
 		out[i, "std. error"] <- sd(b$t[, i])
 		
 		# confidence interval
-		
 		if (type == "norm") {
 			ci <- boot.ci(b, index = i, type = "norm", conf = conf)
 			if (!is.null(ci)) {

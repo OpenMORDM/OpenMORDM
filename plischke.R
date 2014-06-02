@@ -61,7 +61,6 @@ kernel.lookup <- function(kd.shape="epanechnikov") {
 	} else {
 		stop("Unsupported kernel")
 	}
-	
 }
 
 kolmog <- function(x,y) (x<4)*sqrt(2*pi)/x*sum(exp(-seq(1,35,2)^2*pi^2/(8*x^2)))+(x>=4)*1.0-y
@@ -637,8 +636,3 @@ deltafast <- function(x, y, M=24) {
 
 	list(delta=d, theta=s)
 }
-
-#X <- matrix(c(linspace(0, 1, 1000), linspace(0, 1, 1000)), nrow=1000, ncol=2)
-#X <- matrix(runif(2000), nrow=1000)
-#Y <- apply(X, 1, function(x) x[1]+x[2])
-#print(deltamim(X, Y, plot.enabled=TRUE))

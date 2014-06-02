@@ -394,6 +394,7 @@ sensitivity <- function(problem, objective, samples, method="fast99", verbose=FA
 				}
 				
 				colnames(result) <- problem$names
+				result
 			}
 		} else {
 			downselect <- function(output, index) {

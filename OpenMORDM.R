@@ -1181,3 +1181,73 @@ mordm.robustness <- function(data, sd, nsamples, problem, method="default", verb
 		})
 	}))
 }
+
+mordm.uncertainty <- function(data, sd, nsamples, models, base.model=NULL, method="default", verbose=TRUE) {
+	if (!is.list(models)) {
+		models <- list(models)
+	}
+	
+	# sanity check to ensure all models are valid
+	if (length(models) == 0) {
+		stop("At least one model must be provided")
+	}
+	
+	for (j in 1:length(models)) {
+		if (j == 1) {
+			nvars <- models[[j]]$nvars
+			nobjs <- models[[j]]$nobjs
+			nconstrs <- models[[j]]$nconstrs
+		} else {
+			if (nvars != models[[j]]$nvars) {
+				stop("All models must have the same number of decision variables")
+			}
+			
+			if (nobjs != models[[j]]$nobjs) {
+				stop("All models must have the same number of objectives")
+			}
+			
+			if (nconstrs != models[[j]]$nconstrs) {
+				stop("All models must have the same number of constraints")
+			}
+		}
+	}
+	
+	if (is.null(base.model)) {
+		base.model <- models[[1]]
+	}
+	
+	set <- mordm.getset(data)
+	set <- set[,1:base.model$nvars,drop=FALSE]
+	
+	# simple way to figure how many samples to draw from each model
+	indices <- (0:(nsamples+1) %% length(models))+1
+	
+	t(sapply(1:nrow(set), function(i) {
+		if (verbose && nrow(set) > 1) {
+			cat("\r")
+			cat(i)
+			cat(" of ")
+			cat(nrow(set))
+		}
+		
+		for (j in 1:length(models)) {
+			qty <- sum(indices == j)
+			temp <- nsample(set[i,], sd, qty, models[[j]])
+			
+			if (j == 1) {
+				samples <- temp
+			} else {
+				samples$vars <- rbind(samples$vars, temp$vars)
+				samples$objs <- rbind(samples$objs, temp$objs)
+				
+				if (!is.null(samples$constrs)) {
+					samples$constrs <- rbind(samples$constrs, temp$constrs)
+				}
+			}
+		}
+
+		sapply(unlist(list(method)), function(m) {
+			check.robustness(samples, base.model, verbose=FALSE, method=m)
+		})
+	}))
+}

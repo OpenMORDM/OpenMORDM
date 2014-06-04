@@ -67,6 +67,27 @@ setup <- function(command, nvars, nobjs, nconstrs=0, bounds=NULL, names=NULL) {
 	container
 }
 
+optimize <- function(problem, NFE, executable="borg.exe") {
+	if (!file.exists(executable)) {
+	#	stop(paste("Unable to locate ", executable, sep=""))
+	}
+	
+	if (is.function(problem$command)) {
+		stop("Problem must be an external executable")
+	}
+	
+	command <- paste(executable,
+					 "-n", NFE,
+					 "-v", problem$nvars,
+					 "-o", problem$nobjs,
+					 "-c", problem$nconstrs,
+					 "-l", paste(problem$bounds[1,], collapse=","),
+					 "-u", paste(problem$bounds[2,], collapse=","),
+					 problem$command)
+	
+	print(command)
+}
+
 evaluate <- function(set, problem) {
 	check.length(set, problem)
 	
@@ -409,7 +430,11 @@ sensitivity <- function(problem, objective, samples, method="fast99", verbose=FA
 			}
 		}
 		
-		y <- sapply(1:nrow(output$vars), function(i) objective(downselect(output, i)))
+		y <- sapply(1:nrow(output$vars), function(i) {
+			cat(i)
+			cat("\n")
+			objective(downselect(output, i))
+		})
 	} else if (is.character(objective) && length(objective) == 1) {
 		if (objective %in% colnames(output$vars)) {
 			y <- output$vars[,objective]

@@ -59,16 +59,30 @@ mark1 <- mordm.mark.rule(function(x) x[21] < 0.1)
 
 
 # Compute robustness at each point and color the plot
-#lake.problem <- setup("lake5obj.exe", 20, 5, 1,
-#					  bounds=matrix(rep(range(0, 0.1), 20), nrow=2))
+lake.problem <- setup("lake5obj.exe", 20, 5, 1,
+					  bounds=matrix(rep(range(0, 0.1), 20), nrow=2))
 #r <- mordm.robustness(data, 0.01, 100, lake.problem, method=c("default", "variance", "constraints", "infogap"))
 #mordm.plot(data, color=r[,"default"])
 
 
 
 # Sensitivity analysis
-lake.problem <- setup("lake5obj.exe", 20, 5, 1,
-					  bounds=matrix(rep(range(0, 0.1), 20), nrow=2))
-r.fun <- function(x) mordm.robustness(x, 0.01, 100, lake.problem)
-sen <- sensitivity(lake.problem, r.fun, 1000, method="plischke")
-print(sen)
+#lake.problem <- setup("lake5obj.exe", 20, 5, 1,
+#					  bounds=matrix(rep(range(0, 0.1), 20), nrow=2))
+#r.fun <- function(x) mordm.robustness(x, 0.01, 100, lake.problem)
+#sen <- sensitivity(lake.problem, r.fun, 100, method="morris")
+#print(sen)
+
+
+
+# Robustness under deep uncertainty
+#lake.sows <- lapply(0:8, function(i) {
+#	setup(sprintf("lake5obj.exe SOWs_Type%d.txt", i),
+#		  20, 5, 1, bounds=matrix(rep(range(0, 0.1), 20), nrow=2))
+#})
+
+#r.deep <- mordm.uncertainty(data, 0.01, 100, lake.sows)
+#mordm.plot(data, color=r.deep)
+
+
+optimize(lake.problem, 10000)

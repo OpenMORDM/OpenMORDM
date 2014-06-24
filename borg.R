@@ -89,7 +89,7 @@ PROBABILITIES_RECENCY <- 1
 PROBABILITIES_BOTH <- 2
 PROBABILITIES_ADAPTIVE <- 3
 
-borglib <- dynbind(c("E:/Git/borg-moea/Borg-1.7/borg.dll", "./libborg.so", "borg"),"
+borglib <- dynbind(c("borg.dll", "./libborg.so", "borg"),"
 BORG_Debug_on()v;
 BORG_Debug_off()v;
 BORG_Debug_set_name(Z)v;

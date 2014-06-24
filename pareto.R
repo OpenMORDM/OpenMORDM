@@ -69,12 +69,12 @@ mordm.pareto.normalize <- function(set) {
 	minset
 }
 
-mordm.pareto.rank <- function(set) {
+mordm.pareto.rank <- function(set, objectives=1:ncol(set)) {
 	set <- mordm.pareto.normalize(set)
-	nds_rank(t(set))
+	t(nds_rank(t(set[,objectives])))
 }
 
-mordm.pareto.set <- function(set) {
+mordm.pareto.set <- function(set, objectives=1:ncol(set)) {
 	set <- mordm.pareto.normalize(set)
-	nondominated_points(t(set))
+	t(nondominated_points(t(set[,objectives])))
 }

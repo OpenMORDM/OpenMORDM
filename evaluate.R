@@ -67,13 +67,20 @@ setup <- function(command, nvars, nobjs, nconstrs=0, bounds=NULL, names=NULL) {
 	container
 }
 
-optimize <- function(problem, NFE, executable="borg.exe") {
-	if (!file.exists(executable)) {
-	#	stop(paste("Unable to locate ", executable, sep=""))
-	}
-	
+optimize <- function(problem, NFE, executable="./borg.exe", output=tempfile(), output.frequency=100, return.output=TRUE, verbose=TRUE) {
 	if (is.function(problem$command)) {
 		stop("Problem must be an external executable")
+	}
+	
+	if (!file.exists(executable)) {
+		stop(paste("Unable to locate ", executable, sep=""))
+	}
+	
+	# Hack for Unix systems where local commands need the path prefix
+	if (file.exists(problem$command) && dirname(problem$command) == "." && !substring(problem$command, 1, 1) == ".") {
+		executable <- paste("./", problem$command, sep="")
+	} else {
+		executable <- problem$command
 	}
 	
 	command <- paste(executable,
@@ -83,9 +90,24 @@ optimize <- function(problem, NFE, executable="borg.exe") {
 					 "-c", problem$nconstrs,
 					 "-l", paste(problem$bounds[1,], collapse=","),
 					 "-u", paste(problem$bounds[2,], collapse=","),
-					 problem$command)
+					 "-e", paste(matrix(0.01, nrow=1, ncol=problem$nobjs), collapse=","),
+					 "-R", output,
+					 "-F", output.frequency,
+					 executable)
 	
-	print(command)
+	if (VERBOSE) {
+		cat("Running command: ")
+		cat(command)
+		cat("\n")
+	}
+	
+	system(command)
+	
+	if (return.output) {
+		mordm.read(output, problem$nvars, problem$nobjs, problem$nconstrs, problem$bounds, problem$names)
+	} else {
+		NULL
+	}
 }
 
 evaluate <- function(set, problem) {
@@ -124,6 +146,8 @@ evaluate.external <- function(set, problem) {
 	input <- append(input, "")
 	
 	output <- system(problem$command, intern=TRUE, input=input)
+	
+	stop(output)
 	
 	t(sapply(output, function(line) as.double(unlist(strsplit(line, " ", fixed=TRUE))), USE.NAMES=FALSE))
 }

@@ -2,5 +2,3 @@
 .Rhistory
 demo/cache/**
 demo/data/output_*
-*.png
-*.gif

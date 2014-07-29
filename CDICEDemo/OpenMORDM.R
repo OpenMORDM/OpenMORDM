@@ -225,16 +225,16 @@ mordm.colorize <- function(set, objectives, mark=NULL, palette=heat.colors, n=10
 		}
 		
 		if (is.null(clim)) {
-			denominator <- (max(colors, na.rm=TRUE) - min(colors, na.rm=TRUE))
-			
-			if (denominator > 0) {
-				colors <- (colors - min(colors, na.rm=TRUE)) / denominator
-			} else {
-				colors <- 0*colors + 1
-			}
+			clim <- range(colors, na.rm=TRUE)
+		}
+		
+		denominator <- clim[2] - clim[1]
+		colors <- pmin(pmax(colors, clim[1]), clim[2])
+		
+		if (denominator > 0) {
+			colors <- (colors - clim[1]) / denominator
 		} else {
-			colors <- pmin(pmax(colors, clim[1]), clim[2])
-			colors <- (colors - clim[1]) / (clim[2] - clim[1])
+			colors <- 0*colors + 1
 		}
 	} else if (is.null(mark)) {
 		colors <- set[,objectives[5]]
@@ -417,7 +417,7 @@ mordm.plotmark <- function(highlight=NULL) {
 #' @param ... additional options passed to \link{\code{plot3d}}
 #' @export
 #' 
-mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, identify=TRUE, colors=NULL, clim=NULL, ideal=FALSE, selection=NULL, xlim=NULL, ylim=NULL, zlim=NULL, slim=NULL, window=NULL, ...) {
+mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, identify=TRUE, colors=NULL, clim=NULL, ideal=FALSE, selection=NULL, xlim=NULL, ylim=NULL, zlim=NULL, slim=NULL, window=NULL, alpha=1, tick.size=1, label.size=1.2, label.line=1, radius.scale=1, ...) {
 	set <- mordm.getset(data, index)
 	nvars <- attr(data, "nvars")
 	nobjs <- attr(data, "nobjs")
@@ -449,21 +449,20 @@ mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, id
 		sizes <- set[,objectives[4]]
 		
 		if (is.null(slim)) {
-			denominator <- (max(sizes, na.rm=TRUE) - min(sizes, na.rm=TRUE))
-			
-			if (denominator > 0) {
-				sizes <- (sizes - min(sizes, na.rm=TRUE)) / denominator
-				sizes <- 1.6*sizes + 0.4
-			} else {
-				sizes <- 0*sizes + 1
-			}
+			slim <- range(sizes, na.rm=TRUE)
+		}
+		
+		denominator <- slim[2] - slim[1]
+		sizes <- pmin(pmax(sizes, slim[1]), slim[2])
+		
+		if (denominator > 0) {
+			sizes <- (sizes - slim[1]) / denominator
+			sizes <- 5.6*sizes + 0.4
 		} else {
-			sizes <- pmin(pmax(sizes, slim[1]), slim[2])
-			sizes <- (sizes - slim[1]) / (slim[2] - slim[1])
-			sizes <- 1.6*sizes + 0.4
+			sizes <- 0*sizes + 5
 		}
 	} else {
-		sizes <- rep(2,nrow(set))
+		sizes <- rep(5,nrow(set))
 	}
 	
 	if (nobjs >= 5 || !is.null(mark) || !is.null(colors)) {
@@ -473,17 +472,22 @@ mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, id
 	}
 	
 	# create the plot
+	par3d(cex=tick.size)
+	
 	plot3d(x, y, z,
 				 type="s",
 				 col=colors,
-				 size=sizes,
-				 xlab=xlab,
-				 ylab=ylab,
-				 zlab=zlab,
+				 radius=sizes*radius.scale,
+				 xlab="",
+				 ylab="",
+				 zlab="",
 				 xlim=xlim,
 				 ylim=ylim,
 				 zlim=zlim,
+		         alpha=alpha,
 				 ...)
+	
+	title3d(xlab=xlab, ylab=ylab, zlab=zlab, cex=label.size, line=label.line)
 	
 	if (!is.null(window)) {
 		if (length(window) == 1) {
@@ -533,7 +537,7 @@ mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, id
 		
 		par3d(ignoreExtent=TRUE)
 		cube <- cube3d(scaleMatrix((rangex[2]-rangex[1])/50, (rangey[2]-rangey[1])/50, (rangez[2]-rangez[1])/50) %*% translationMatrix(ideal[1], ideal[2], ideal[3]))
-		shade3d(cube, col="blue", alpha=0.5)
+		shade3d(cube, col="black", alpha=0.5)
 	}
 	
 	if (stay) {

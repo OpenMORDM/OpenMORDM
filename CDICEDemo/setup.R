@@ -79,7 +79,7 @@ if (install.local) {
 	install_local(file.path(install.local.dir, "rgl"))	
 } else {
 	install_github("shinyRGL", "dhadka")
-	install_github("rgl", "dhadka", "js-class")
+	install_github("rgl", "dhadka", "js-class", args=c("--enable-libpng"))
 }
 
 # Unzip the data files - these are available on the "demo" branch

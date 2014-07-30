@@ -27,10 +27,9 @@ library("shinyRGL")
 
 objectives <- list("Reliability of Temperature Goal", "Climate Damages", "Abatement Costs", "Expected Utility", "Constant")
 colors <- list("Rainbow (Red to Blue)", "Inv. Rainbow (Blue to Red)", "Heat (White to Red)")
-reduced <- TRUE
 
 shinyUI(fluidPage(navbarPage("OpenMORDM", id="main",
-	tabPanel("Climate Snake",
+	tabPanel("3D Plot",
 			 sidebarLayout(
 			 	sidebarPanel(
 			 		tabsetPanel(
@@ -42,6 +41,7 @@ shinyUI(fluidPage(navbarPage("OpenMORDM", id="main",
 					 			selectInput("y", "Y-Axis", objectives, objectives[2]),
 					 			selectInput("z", "Z-Axis", objectives, objectives[3]),
 					 			selectInput("color", "Color", objectives, objectives[4]),
+			 					selectInput("size", "Size", objectives, objectives[5]),
 			 					style="height: 550px")),
 			 			tabPanel("Brush",
 			 				div(
@@ -65,7 +65,7 @@ shinyUI(fluidPage(navbarPage("OpenMORDM", id="main",
 			 			tabPanel("Download",
 			 				div(
 				 				h3("Image Download"),
-				 				helpText("Download images / PDF files of the data."),
+				 				helpText("Download images / PDF files of the data.  PDF generation may take a while."),
 				 				downloadButton("download.png", "PNG Image"),
 				 				downloadButton("download.pdf", "PDF File"),
 				 				br(),
@@ -87,5 +87,57 @@ shinyUI(fluidPage(navbarPage("OpenMORDM", id="main",
 				 				style="height: 550px")))),
 				 mainPanel(
 				 	div(webGLOutput("plot3d", width="100%", height="600px"), style="overflow: hidden"),
-				 	plotOutput("colorbar", height="150px"))))
+				 	plotOutput("colorbar", height="150px")))),
+	tabPanel("2D Plots",
+			 tabsetPanel(
+			 	tabPanel("Parallel Coords.",
+			 			 sidebarLayout(
+			 			 	sidebarPanel(
+			 			 		h3("Plotting Options"),
+			 			 		sliderInput("parallel.transparency", "Transparency", min=0.1, max=1, value=1, step=0.1),
+			 			 		sliderInput("parallel.cex", "Label Size", min=0.1, max=2, value=1, step=0.1),
+			 			 		br(),
+			 			 		br(),
+			 			 		h4("Download"),
+			 			 		downloadButton("download.parallel.png", "PNG Image"),
+			 			 		downloadButton("download.parallel.svg", "SVG Image"),
+			 			 		downloadButton("download.parallel.eps", "EPS File"),
+			 			 		br(),
+			 			 		br(),
+			 			 		helpText("Note: EPS export does not support transparency.  Transparent lines will not appear.")),
+			 			 	mainPanel(
+			 			 		plotOutput("plot2d.parallel")))),
+			 	tabPanel("Scatter Plots",
+			 			 sidebarLayout(
+			 			 	sidebarPanel(
+			 			 		h3("Plotting Options"),
+			 			 		sliderInput("scatter.cex", "Label Size", min=0.1, max=2, value=1, step=0.1),
+			 			 		br(),
+			 			 		br(),
+			 			 		h4("Download"),
+			 			 		downloadButton("download.scatter.png", "PNG Image"),
+			 			 		downloadButton("download.scatter.svg", "SVG Image"),
+			 			 		downloadButton("download.scatter.eps", "EPS File"),
+			 			 		br(),
+			 			 		br(),
+			 			 		helpText("Note: EPS export does not support transparency.  Transparent lines will not appear.")),
+			 			 	mainPanel(
+			 			 		plotOutput("plot2d.scatter")))),
+			 	tabPanel("Operators",
+			 			 sidebarLayout(
+			 			 	sidebarPanel(
+			 			 		h3("Plotting Options"),
+			 			 		checkboxInput("operators.time", "Show Wall Time", value=FALSE),
+			 			 		checkboxInput("operators.improvements", "Show Number of Improvements", value=TRUE),
+			 			 		checkboxInput("operators.log", "Log Scale", value=FALSE),
+			 			 		br(),
+			 			 		br(),
+			 			 		h4("Download"),
+			 			 		downloadButton("download.operators.png", "PNG Image"),
+			 			 		downloadButton("download.operators.svg", "SVG Image"),
+			 			 		downloadButton("download.operators.eps", "EPS File")),
+			 			 	mainPanel(
+			 			 		plotOutput("plot2d.operators")))))),
+	tabPanel("Raw Data",
+			 dataTableOutput("raw.data"))
 )))

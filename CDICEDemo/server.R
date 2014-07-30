@@ -31,14 +31,7 @@ source("OpenMORDM.R")
 
 # Setup and load the CDICE data
 objectives <- c("Expected Utility", "Reliability of Temperature Goal", "Climate Damages", "Abatement Costs")
-colors <- list("Rainbow (Red to Blue)", "Inv. Rainbow (Blue to Red)", "Heat (White to Red)")
-reduced <- TRUE
-
-if (reduced) {
-	filename <- "runtime_util_ptemp_pvdam_pvabate_100cs_short_10k.txt"
-} else {
-	filename <- "runtime_util_ptemp_pvdam_pvabate_100cs_short_parsed.txt"	
-}
+filename <- "runtime_util_ptemp_pvdam_pvabate_100cs_short_10k.txt"
 
 cat("Loading data, this may take several minutes...\n")
 data <- mordm.read(filename, 0, 4,
@@ -49,6 +42,7 @@ cat("Finished loading data!\n")
 min.nfe <- attr(data[[1]], "NFE")
 max.nfe <- attr(data[[length(data)]], "NFE")
 step.nfe <- max.nfe / length(data)
+colors <- list("Rainbow (Red to Blue)", "Inv. Rainbow (Blue to Red)", "Heat (White to Red)")
 
 # Compute the limits on the data
 compute.limits <- function(data) {
@@ -129,12 +123,12 @@ get.palette <- function(name) {
 	}
 }
 
-do.plot <- function(input) {
+do.plot3d <- function(input) {
 	args <- list()
 	args$show.x <- input$x
 	args$show.y <- input$y
 	args$show.z <- input$z
-	args$show.size <- "Constant"
+	args$show.size <- input$size
 	args$show.color <- input$color
 	args$show.label <- input$label
 	args$show.ideal <- input$ideal
@@ -216,7 +210,7 @@ plot.snake <- function(selection=NULL, index=-1, show.x="None", show.y="None", s
 	
 	if (plot.toobj(show.size) > 0) {
 		objectives <- c(objectives, plot.toobj(show.size))
-		#slim <- limits[,plot.toobj(show.size)]
+		slim <- limits[,plot.toobj(show.size)]
 	}
 	
 	if (show.color == "Selected Point") {
@@ -276,10 +270,55 @@ plot.colorbar <- function(show.color="None", index=-1, colormap="Rainbow (Blue o
 	par(mai=oldmai)
 }
 
+do.plotParallel <- function(input) {
+	# plot 3D plot to set the appropriate colors
+	do.plot3d(input)
+	
+	original.set <- mordm.currentset
+	original.colors <- mordm.currentcolors
+	
+	# modify the colors for brushing
+	set <- original.set[,1:4,drop=FALSE]
+	colnames(set) <- colnames(data[[1]])[1:4]
+	brush.limits <- plot.limits(input$brush.reliability, input$brush.damages, input$brush.cost, input$brush.utility)
+	transparency <- input$parallel.transparency * plot.brush(set, brush.limits[,1:4], input$slider.transparency)
+	
+	mordm.currentset <<- set
+	mordm.currentcolors <<- alpha(original.colors, transparency)
+	
+	# generate the parallel coordinates plot
+	mordm.plotpar(alpha=NA, label.size=input$parallel.cex)
+	
+	# restore the original settings
+	mordm.currentset <<- original.set
+	mordm.currentcolors <<- original.colors
+}
+
+do.plotOps <- function(input) {
+	mordm.plotops(data, time=input$operators.time,
+				  improvements=input$operators.improvements,
+				  log=input$operators.log)
+}
+
+do.scatter <- function(input) {
+	do.plot3d(input)
+	
+	original.set <- mordm.currentset
+	original.colors <- mordm.currentcolors
+	
+	set <- original.set[,1:4,drop=FALSE]
+	colnames(set) <- colnames(data[[1]])[1:4]
+	brush.limits <- plot.limits(input$brush.reliability, input$brush.damages, input$brush.cost, input$brush.utility)
+	transparency <- input$parallel.transparency * plot.brush(set, brush.limits[,1:4], input$slider.transparency)	
+	
+	par(cex=input$scatter.cex)
+	pairs(set, col=alpha(original.colors, transparency), cex.labels=input$scatter.cex)
+}
+
 shinyServer(
 	function(input, output, session) {
 		output$plot3d <- renderWebGL({
-			do.plot(input)
+			do.plot3d(input)
 		})
 		
 		output$colorbar <- renderPlot({
@@ -332,7 +371,7 @@ shinyServer(
 			filename = "snapshot.png",
 			content = function(file) {
 				open3d(useNULL=FALSE, windowRect=c(0, 0, 600, 600))
-				do.plot(input)
+				do.plot3d(input)
 				
 				zoom <- isolate(session$clientData[["gl_output_plot3d_zoom"]])
 				fov <- isolate(session$clientData[["gl_output_plot3d_fov"]])
@@ -356,10 +395,10 @@ shinyServer(
 			})
 		
 		output$download.pdf <- downloadHandler(
-			filename = "snapshot.ps",
+			filename = "snapshot.eps",
 			content = function(file) {
 				open3d(useNULL=FALSE, windowRect=c(0, 0, 600, 600))
-				do.plot(input)
+				do.plot3d(input)
 				
 				zoom <- isolate(session$clientData[["gl_output_plot3d_zoom"]])
 				fov <- isolate(session$clientData[["gl_output_plot3d_fov"]])
@@ -378,7 +417,7 @@ shinyServer(
 					par3d(userMatrix=mat)
 				}
 				
-				rgl.postscript(file, fmt="ps")
+				rgl.postscript(file, fmt="eps")
 				rgl.close()
 			})
 		
@@ -396,5 +435,102 @@ shinyServer(
 				alpha <- plot.brush(set, brush.limits[,1:4], 0.0)
 				write.csv(set[alpha==1,,drop=FALSE], file)
 			})
+		
+		output$plot2d.parallel <- renderPlot({
+			do.plotParallel(input)
+		})
+		
+		output$download.parallel.png <- downloadHandler(
+			filename = "parallel.png",
+			content = function(file) {
+				png(file, height=400, width=600)
+				do.plotParallel(input)
+				dev.off()
+			})
+		
+		output$download.parallel.svg <- downloadHandler(
+			filename = "parallel.svg",
+			content = function(file) {
+				svg(file, height=4, width=6)
+				do.plotParallel(input)
+				dev.off()
+			})
+		
+		output$download.parallel.eps <- downloadHandler(
+			filename = "parallel.eps",
+			content = function(file) {
+				postscript(file, height=4, width=6)
+				do.plotParallel(input)
+				dev.off()
+			})
+		
+		output$plot2d.operators <- renderPlot({
+			do.plotOps(input)
+		})
+		
+		output$download.operators.png <- downloadHandler(
+			filename = "operators.png",
+			content = function(file) {
+				png(file, height=400, width=600)
+				do.plotOps(input)
+				dev.off()
+			})
+		
+		output$download.operators.svg <- downloadHandler(
+			filename = "operators.svg",
+			content = function(file) {
+				svg(file, height=4, width=6)
+				do.plotOps(input)
+				dev.off()
+			})
+		
+		output$download.operators.eps <- downloadHandler(
+			filename = "operators.eps",
+			content = function(file) {
+				postscript(file, height=4, width=6)
+				do.plotOps(input)
+				dev.off()
+			})
+		
+		output$plot2d.scatter <- renderPlot({
+			do.scatter(input)
+		})
+		
+		output$download.scatter.png <- downloadHandler(
+			filename = "scatter.png",
+			content = function(file) {
+				png(file, height=400, width=600)
+				do.scatter(input)
+				dev.off()
+			})
+		
+		output$download.scatter.svg <- downloadHandler(
+			filename = "scatter.svg",
+			content = function(file) {
+				svg(file, height=4, width=6)
+				do.scatter(input)
+				dev.off()
+			})
+		
+		output$download.scatter.eps <- downloadHandler(
+			filename = "scatter.eps",
+			content = function(file) {
+				postscript(file, height=4, width=6)
+				do.scatter(input)
+				dev.off()
+			})
+		
+		output$raw.data <- renderDataTable({
+			if (is.null(input$nfe) || is.na(input$nfe)) {
+				index = length(data)
+			} else {
+				index = input$nfe / step.nfe
+			}
+			
+			set <- mordm.getset(data, index)
+			brush.limits <- plot.limits(input$brush.reliability, input$brush.damages, input$brush.cost, input$brush.utility)
+			alpha <- plot.brush(set, brush.limits[,1:4], 0.0)
+			set[alpha==1,,drop=FALSE]
+		})
 	}
 )

@@ -277,13 +277,15 @@ mordm.colorize <- function(set, objectives, mark=NULL, palette=heat.colors, n=10
 #' set.  All display attributes are taken from the current plotting options.
 #' 
 #' @param highlight vector of row indices to be highlighted in the plot
+#' @param alpha the transparency value; or \code{NA}
+#' @param label.size the font size of labels
 #' @export
-mordm.plotpar <- function(highlight=NULL) {
+mordm.plotpar <- function(highlight=NULL, alpha=0.4, label.size=1) {
 	set <- mordm.currentset
 	objectives <- mordm.currentobjectives
 	mark <- mordm.currentmark
-	colors <- alpha(mordm.currentcolors, 0.4)
-	
+	colors <- alpha(mordm.currentcolors, alpha)
+
 	# highlight selected solutions
 	if (is.null(highlight)) {
 		lwd <- 1
@@ -308,6 +310,7 @@ mordm.plotpar <- function(highlight=NULL) {
 	}
 	
 	# create the plot
+	par(mgp=c(3,1,0.9), cex=label.size)
 	parcoord(set, col=colors, lwd=lwd, var.label=TRUE)
 	
 	# store the plot settings
@@ -457,12 +460,12 @@ mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, id
 		
 		if (denominator > 0) {
 			sizes <- (sizes - slim[1]) / denominator
-			sizes <- 5.6*sizes + 0.4
+			sizes <- 1.6*sizes + 0.4
 		} else {
-			sizes <- 0*sizes + 5
+			sizes <- 0*sizes + 1
 		}
 	} else {
-		sizes <- rep(5,nrow(set))
+		sizes <- rep(1,nrow(set))
 	}
 	
 	if (nobjs >= 5 || !is.null(mark) || !is.null(colors)) {
@@ -470,6 +473,11 @@ mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, id
 	} else {
 		colors <- rep("#888888",nrow(set))
 	}
+	
+	rangex <- range(x, xlim)
+	rangey <- range(y, ylim)
+	rangez <- range(z, zlim)
+	sizes <- sizes * (max(c(rangex, rangey, rangez)) / 100)
 	
 	# create the plot
 	par3d(cex=tick.size)
@@ -498,10 +506,6 @@ mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, id
 		
 		par3d(windowRect=window)
 	}
-	
-	rangex <- range(x, xlim)
-	rangey <- range(y, ylim)
-	rangez <- range(z, zlim)
 	
 	# highlight any selected points
 	if (!is.null(selection)) {

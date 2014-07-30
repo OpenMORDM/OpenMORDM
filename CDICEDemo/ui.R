@@ -24,8 +24,9 @@
 # THE SOFTWARE.
 library("shiny")
 library("shinyRGL")
+source("config.R")
 
-objectives <- list("Reliability of Temperature Goal", "Climate Damages", "Abatement Costs", "Expected Utility", "Constant")
+options <- c(objectives, "Constant")
 colors <- list("Rainbow (Red to Blue)", "Inv. Rainbow (Blue to Red)", "Heat (White to Red)")
 
 shinyUI(fluidPage(navbarPage("OpenMORDM", id="main",
@@ -37,24 +38,21 @@ shinyUI(fluidPage(navbarPage("OpenMORDM", id="main",
 			 				div(
 			 					h3("Plotting Controls"),
 			 					helpText("Use the controls below to explore the multidimensional tradeoffs."),
-					 			selectInput("x", "X-Axis", objectives, objectives[1]),
-					 			selectInput("y", "Y-Axis", objectives, objectives[2]),
-					 			selectInput("z", "Z-Axis", objectives, objectives[3]),
-					 			selectInput("color", "Color", objectives, objectives[4]),
-			 					selectInput("size", "Size", objectives, objectives[5]),
+					 			selectInput("x", "X-Axis", options, options[order[1]]),
+					 			selectInput("y", "Y-Axis", options, ifelse(length(objectives) < 2, "Constant", options[order[2]])),
+					 			selectInput("z", "Z-Axis", options, ifelse(length(objectives) < 3, "Constant", options[order[3]])),
+					 			selectInput("color", "Color", options, ifelse(length(objectives) < 4, "Constant", options[order[4]])),
+			 					selectInput("size", "Size", options, ifelse(length(objectives) < 5, "Constant", options[order[5]])),
 			 					style="height: 550px")),
 			 			tabPanel("Brush",
 			 				div(
 				 				h3("Brushing Controls"),
 				 				helpText("Brushing selects a subset of the data for further analysis."),
-				 				uiOutput("slider.reliability"),
-				 				uiOutput("slider.damages"),
-				 				uiOutput("slider.cost"),
-				 				uiOutput("slider.utility"),
+				 				uiOutput("brush.sliders"),
 				 				br(),
 				 				br(),
 				 				h4("Additional Options"),
-				 				sliderInput("slider.transparency", "Brush Transparency", min=0, max=0.01, value=0.005),
+				 				sliderInput("slider.transparency", "Brush Transparency", min=0, max=0.05, value=0.005),
 				 				style="height: 550px")),
 			 			tabPanel("Animate",
 			 				div(
@@ -130,6 +128,7 @@ shinyUI(fluidPage(navbarPage("OpenMORDM", id="main",
 			 			 		checkboxInput("operators.time", "Show Wall Time", value=FALSE),
 			 			 		checkboxInput("operators.improvements", "Show Number of Improvements", value=TRUE),
 			 			 		checkboxInput("operators.log", "Log Scale", value=FALSE),
+			 			 		checkboxInput("operators.current", "Show Current Time", value=TRUE),
 			 			 		br(),
 			 			 		br(),
 			 			 		h4("Download"),
@@ -139,5 +138,26 @@ shinyUI(fluidPage(navbarPage("OpenMORDM", id="main",
 			 			 	mainPanel(
 			 			 		plotOutput("plot2d.operators")))))),
 	tabPanel("Raw Data",
-			 dataTableOutput("raw.data"))
+			 dataTableOutput("raw.data")),
+	tabPanel("Options",
+			 h3("Global Plotting Options"),
+			 helpText("The options below control which variables and/or objectives are displayed on plots."),
+			 br(),
+			 br(),
+			 h4("Visible Decision Variables"),
+			 uiOutput("variable.selection"),
+			 actionButton("variables.all", "All"),
+			 actionButton("variables.none", "None"),
+			 br(),
+			 br(),
+			 h4("Visible Objectives"),
+			 uiOutput("objective.selection"),
+			 actionButton("objectives.all", "All"),
+			 actionButton("objectives.none", "None"),
+			 br(),
+			 br(),
+			 h4("Image Size"),
+			 helpText("Specify the size of the downloaded images."),
+			 numericInput("image.width", "Width (in)", 6, min=1, step=0.5),
+			 numericInput("image.height", "Height (in)", 4, min=1, step=0.5))
 )))

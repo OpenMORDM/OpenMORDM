@@ -28,15 +28,12 @@ library("rgl")
 library("scales")
 library("functional")
 source("OpenMORDM.R")
+source("config.R")
 
-# Setup and load the CDICE data
-objectives <- c("Expected Utility", "Reliability of Temperature Goal", "Climate Damages", "Abatement Costs")
-filename <- "runtime_util_ptemp_pvdam_pvabate_100cs_short_10k.txt"
-
+# Setup and load the data
 cat("Loading data, this may take several minutes...\n")
-data <- mordm.read(filename, 0, 4,
-				   names=objectives,
-				   maximize=objectives[1:2])
+data <- mordm.read(filename, nvars, nobjs, nconstrs, bounds=bounds,
+				   names=objectives, maximize=maximize, digits=5)
 cat("Finished loading data!\n")
 
 min.nfe <- attr(data[[1]], "NFE")
@@ -52,9 +49,9 @@ compute.limits <- function(data) {
 		temp.set <- mordm.getset(data, i)
 		
 		if (is.null(limits)) {
-			limits <- apply(temp.set[,1:4], 2, range)
+			limits <- apply(temp.set, 2, range)
 		} else {
-			limits <- apply(rbind(temp.set[,1:4], limits), 2, range)
+			limits <- apply(rbind(temp.set, limits), 2, range)
 		}
 	}
 
@@ -69,35 +66,29 @@ limits <- compute.limits(data)
 # Returns the column index for the given objective.
 plot.toobj <- function(name) {
 	if (name %in% objectives) {
-		which(objectives == name)
+		nvars + which(objectives == name)
 	} else if (name == "Constant") {
-		5
+		nvars + length(objectives) + 1
 	} else {
 		0
 	}
 }
 
-plot.limits <- function(brush.reliability=NULL, brush.damages=NULL, brush.cost=NULL, brush.utility=NULL) {
-	if (is.null(brush.utility)) {
-		brush.utility <- limits[,1]
-	}
+to.limits <- function(input, ignore.constant=FALSE) {
+	brush.limits <- limits
 	
-	if (is.null(brush.reliability)) {
-		brush.reliability <- limits[,2]
+	for (i in 1:nobjs) {
+		name <- paste("brush.", objectives[i], sep="")
+		
+		if (!is.null(input[[name]])) {
+			brush.limits[,nvars+i] <- input[[name]]
+		}
 	}
-	
-	if (is.null(brush.damages)) {
-		brush.damages <- limits[,3]
-	}
-	
-	if (is.null(brush.cost)) {
-		brush.cost <- limits[,4]
-	}
-	
-	brush.limits <- cbind(brush.utility, brush.reliability, brush.damages, brush.cost, c(0,0))
 	
 	if (all(brush.limits == limits)) {
 		NULL
+	} else if (ignore.constant) {
+		brush.limits[,1:(nvars+nobjs)]
 	} else {
 		brush.limits
 	}
@@ -113,7 +104,7 @@ plot.brush <- function(set, limits=NULL, slider.transparency=0.01) {
 	}
 }
 
-get.palette <- function(name) {
+to.palette <- function(name) {
 	if (name == colors[1]) {
 		palette <- rainbow(100, start=0, end=0.66)
 	} else if (name == colors[2]) {
@@ -124,37 +115,28 @@ get.palette <- function(name) {
 }
 
 do.plot3d <- function(input) {
-	args <- list()
-	args$show.x <- input$x
-	args$show.y <- input$y
-	args$show.z <- input$z
-	args$show.size <- input$size
-	args$show.color <- input$color
-	args$show.label <- input$label
-	args$show.ideal <- input$ideal
-	args$colormap <- input$colormap
-	args$brush.reliability <- input$brush.reliability
-	args$brush.damages <- input$brush.damages
-	args$brush.cost <- input$brush.cost
-	args$brush.utility <- input$brush.utility
-	args$slider.transparency <- input$slider.transparency
-	args$fontsize <- input$fontsize
-	args$tick.size <- input$tick.size
-	args$label.size <- input$label.size
-	args$label.line <- input$label.line
-	args$radius.scale <- input$radius.scale
+	show.x <- input$x
+	show.y <- input$y
+	show.z <- input$z
+	show.size <- input$size
+	show.color <- input$color
+	show.label <- input$label
+	show.ideal <- input$ideal
+	colormap <- input$colormap
+	slider.transparency <- input$slider.transparency
+	fontsize <- input$fontsize
+	tick.size <- input$tick.size
+	label.size <- input$label.size
+	label.line <- input$label.line
+	radius.scale <- input$radius.scale
+	selection <- NULL
 	
 	if (is.null(input$nfe) || is.na(input$nfe)) {
-		args$index = length(data)
+		index <- length(data)
 	} else {
-		args$index = input$nfe / step.nfe
+		index <- input$nfe / step.nfe
 	}
 	
-	do.call(plot.snake, args)
-}
-
-# Generates the 3D plot.
-plot.snake <- function(selection=NULL, index=-1, show.x="None", show.y="None", show.z="None", show.color="None", show.size="None", show.ideal=TRUE, show.label=FALSE, colormap="Rainbow (Blue ot Red)", brush.reliability=NULL, brush.damages=NULL, brush.cost=NULL, brush.utility=NULL, slider.transparency=0.01, fontsize=12, tick.size=1, label.size=1.2, label.line=1, radius.scale=1, window=NULL) {
 	set <- mordm.getset(data, index)
 	
 	objectives <- vector()
@@ -165,7 +147,7 @@ plot.snake <- function(selection=NULL, index=-1, show.x="None", show.y="None", s
 	names <- c(names, "Constant")
 	
 	# brush the set
-	brush.limits <- plot.limits(brush.reliability, brush.damages, brush.cost, brush.utility)
+	brush.limits <- to.limits(input)
 	alpha <- plot.brush(set, brush.limits, slider.transparency)
 	
 	# pick the user-defined axes
@@ -225,7 +207,7 @@ plot.snake <- function(selection=NULL, index=-1, show.x="None", show.y="None", s
 			clim <- limits[,plot.toobj(show.color)]
 		}
 	}
-
+	
 	# update maximize array to match renamed axes
 	maximize <- attr(data, "maximize")
 	maximize <- sapply(maximize, function(name) ifelse(is.character(name), which(colnames(set)==name), maximize))
@@ -235,7 +217,7 @@ plot.snake <- function(selection=NULL, index=-1, show.x="None", show.y="None", s
 	colnames(set) <- names
 	
 	# select the color map
-	palette <- get.palette(colormap)
+	palette <- to.palette(colormap)
 	
 	# generate the plot
 	mordm.plot(set, mark=mark, objectives=objectives, identify=FALSE,
@@ -258,7 +240,7 @@ plot.colorbar <- function(show.color="None", index=-1, colormap="Rainbow (Blue o
 	} else {
 		if (plot.toobj(show.color) > 0) {
 			crange <- limits[,plot.toobj(show.color)]
-			palette <- get.palette(colormap)
+			palette <- to.palette(colormap)
 			image(seq(crange[1], crange[2], (crange[2]-crange[1])/100), 0, matrix(seq(0, 1, 0.01), ncol=1), col=palette, axes=FALSE, xlab=show.color, ylab="")
 			box("plot")
 			axis(1)
@@ -270,6 +252,50 @@ plot.colorbar <- function(show.color="None", index=-1, colormap="Rainbow (Blue o
 	par(mai=oldmai)
 }
 
+to.columns <- function(input, ignore.constant=FALSE) {
+	vars.null <- is.null(input$visible.variables) || is.na(input$visible.variables)
+	objs.null <- is.null(input$visible.objectives) || is.na(input$visible.objectives)
+	
+	if (vars.null) {
+		if (objs.null) {
+			vars <- rep(TRUE, nvars)
+		} else {
+			vars <- rep(FALSE, nvars)
+		}
+	} else {
+		vars <- colnames(data[[1]])[1:nvars] %in% input$visible.variables
+	}
+	
+	if (objs.null) {
+		if (vars.null) {
+			objs <- rep(TRUE, nobjs)
+		} else {
+			objs <- rep(FALSE, nobjs)
+		}
+	} else {
+		objs <- colnames(data[[1]])[(nvars+1):(nvars+nobjs)] %in% input$visible.objectives
+	}
+	
+	cols <- c(vars, objs)
+	
+	# remove the constant column
+	if (!ignore.constant) {
+		cols <- c(cols, FALSE)
+	}
+	
+	cols
+}
+
+to.index <- function(input) {
+	if (is.null(input$nfe) || is.na(input$nfe)) {
+		index <- length(data)
+	} else {
+		index <- input$nfe / step.nfe
+	}
+	
+	index
+}
+
 do.plotParallel <- function(input) {
 	# plot 3D plot to set the appropriate colors
 	do.plot3d(input)
@@ -277,11 +303,14 @@ do.plotParallel <- function(input) {
 	original.set <- mordm.currentset
 	original.colors <- mordm.currentcolors
 	
+	# determine which columns to plot
+	cols <- to.columns(input)
+	
 	# modify the colors for brushing
-	set <- original.set[,1:4,drop=FALSE]
-	colnames(set) <- colnames(data[[1]])[1:4]
-	brush.limits <- plot.limits(input$brush.reliability, input$brush.damages, input$brush.cost, input$brush.utility)
-	transparency <- input$parallel.transparency * plot.brush(set, brush.limits[,1:4], input$slider.transparency)
+	set <- original.set[,cols,drop=FALSE]
+	colnames(set) <- c(colnames(data[[1]]), "Constant")[cols]
+	brush.limits <- to.limits(input)
+	transparency <- input$parallel.transparency * plot.brush(original.set, brush.limits, input$slider.transparency)
 	
 	mordm.currentset <<- set
 	mordm.currentcolors <<- alpha(original.colors, transparency)
@@ -295,9 +324,16 @@ do.plotParallel <- function(input) {
 }
 
 do.plotOps <- function(input) {
+	if (input$operators.current) {
+		current <- to.index(input)
+	} else {
+		current <- NULL
+	}
+	
 	mordm.plotops(data, time=input$operators.time,
 				  improvements=input$operators.improvements,
-				  log=input$operators.log)
+				  log=input$operators.log,
+				  current=current)
 }
 
 do.scatter <- function(input) {
@@ -306,17 +342,34 @@ do.scatter <- function(input) {
 	original.set <- mordm.currentset
 	original.colors <- mordm.currentcolors
 	
-	set <- original.set[,1:4,drop=FALSE]
-	colnames(set) <- colnames(data[[1]])[1:4]
-	brush.limits <- plot.limits(input$brush.reliability, input$brush.damages, input$brush.cost, input$brush.utility)
-	transparency <- input$parallel.transparency * plot.brush(set, brush.limits[,1:4], input$slider.transparency)	
+	# determine which columns to plot
+	cols <- to.columns(input)
+	
+	set <- original.set[,cols,drop=FALSE]
+	colnames(set) <- c(colnames(data[[1]]), "Constant")[cols]
+	brush.limits <- to.limits(input)
+	transparency <- input$parallel.transparency * plot.brush(original.set, brush.limits, input$slider.transparency)	
 	
 	par(cex=input$scatter.cex)
 	pairs(set, col=alpha(original.colors, transparency), cex.labels=input$scatter.cex)
 }
 
+do.raw <- function(input) {
+	index <- to.index(input)
+	cols <- to.columns(input, ignore.constant=TRUE)
+
+	set <- mordm.getset(data, index)
+	brush.limits <- to.limits(input, ignore.constant=TRUE)
+	alpha <- plot.brush(set, brush.limits, 0.0)
+	set[alpha==1,cols]
+}
+
 shinyServer(
 	function(input, output, session) {
+		observe({
+			to.columns(input)
+		})
+		
 		output$plot3d <- renderWebGL({
 			do.plot3d(input)
 		})
@@ -335,36 +388,28 @@ shinyServer(
 			do.call(plot.colorbar, args)
 		})
 		
-		output$slider.reliability <- renderUI({
-			index <- 2
-			min <- floor(limits[1,index])
-			max <- ceil(limits[2,index])
-			sliderInput("brush.reliability", objectives[index], min=min, max=max, value=c(min, max))
-		})
-		
-		output$slider.damages <- renderUI({
-			index <- 3
-			min <- floor(limits[1,index])
-			max <- ceil(limits[2,index])
-			sliderInput("brush.damages", objectives[index], min=min, max=max, value=c(min, max))
-		})
-		
-		output$slider.cost <- renderUI({
-			index <- 4
-			min <- floor(limits[1,index])
-			max <- ceil(limits[2,index])
-			sliderInput("brush.cost", objectives[index], min=min, max=max, value=c(min, max))
-		})
-		
-		output$slider.utility <- renderUI({
-			index <- 1
-			min <- floor(limits[1,index])
-			max <- ceil(limits[2,index])
-			sliderInput("brush.utility", objectives[index], min=min, max=max, value=c(min, max))
+		output$brush.sliders <- renderUI({
+			lapply(1:nobjs, function(i) {
+				name <- paste("brush.", objectives[i], sep="")
+				
+				if (limits[2,nvars+i] - limits[1,nvars+i] < 0.8) {
+					min <- limits[1,nvars+i]-0.00001
+					max <- limits[2,nvars+i]+0.00001
+				} else {
+					min <- floor(limits[1,nvars+i])
+					max <- ceil(limits[2,nvars+i])
+				}
+
+				sliderInput(name, objectives[i], min=min, max=max, value=c(min, max), step=0.00001)
+			})
 		})
 		
 		output$slider.nfe <- renderUI({
-			sliderInput("nfe", "Current NFE", min=min.nfe, max=max.nfe, value=max.nfe, step=step.nfe, animate=TRUE)
+			if (length(data) > 1) {
+				sliderInput("nfe", "Current NFE", min=min.nfe, max=max.nfe, value=max.nfe, step=step.nfe, animate=TRUE)
+			} else {
+				p("The data does not contain any time series.")
+			}
 		})
 		
 		output$download.png <- downloadHandler(
@@ -431,8 +476,8 @@ shinyServer(
 				}
 				
 				set <- mordm.getset(data, index)
-				brush.limits <- plot.limits(input$brush.reliability, input$brush.damages, input$brush.cost, input$brush.utility)
-				alpha <- plot.brush(set, brush.limits[,1:4], 0.0)
+				brush.limits <- to.limits(input, ignore.constant=TRUE)
+				alpha <- plot.brush(set, brush.limits, 0.0)
 				write.csv(set[alpha==1,,drop=FALSE], file)
 			})
 		
@@ -443,7 +488,7 @@ shinyServer(
 		output$download.parallel.png <- downloadHandler(
 			filename = "parallel.png",
 			content = function(file) {
-				png(file, height=400, width=600)
+				png(file, height=input$image.height, width=input$image.width, units="in", res=72)
 				do.plotParallel(input)
 				dev.off()
 			})
@@ -451,7 +496,7 @@ shinyServer(
 		output$download.parallel.svg <- downloadHandler(
 			filename = "parallel.svg",
 			content = function(file) {
-				svg(file, height=4, width=6)
+				svg(file, height=input$image.height, width=input$image.width)
 				do.plotParallel(input)
 				dev.off()
 			})
@@ -459,7 +504,7 @@ shinyServer(
 		output$download.parallel.eps <- downloadHandler(
 			filename = "parallel.eps",
 			content = function(file) {
-				postscript(file, height=4, width=6)
+				postscript(file, height=input$image.height, width=input$image.width)
 				do.plotParallel(input)
 				dev.off()
 			})
@@ -471,7 +516,7 @@ shinyServer(
 		output$download.operators.png <- downloadHandler(
 			filename = "operators.png",
 			content = function(file) {
-				png(file, height=400, width=600)
+				png(file, height=input$image.height, width=input$image.width, units="in", res=72)
 				do.plotOps(input)
 				dev.off()
 			})
@@ -479,7 +524,7 @@ shinyServer(
 		output$download.operators.svg <- downloadHandler(
 			filename = "operators.svg",
 			content = function(file) {
-				svg(file, height=4, width=6)
+				svg(file, height=input$image.height, width=input$image.width)
 				do.plotOps(input)
 				dev.off()
 			})
@@ -487,7 +532,7 @@ shinyServer(
 		output$download.operators.eps <- downloadHandler(
 			filename = "operators.eps",
 			content = function(file) {
-				postscript(file, height=4, width=6)
+				postscript(file, height=input$image.height, width=input$image.width)
 				do.plotOps(input)
 				dev.off()
 			})
@@ -499,7 +544,7 @@ shinyServer(
 		output$download.scatter.png <- downloadHandler(
 			filename = "scatter.png",
 			content = function(file) {
-				png(file, height=400, width=600)
+				png(file, height=input$image.height, width=input$image.width, units="in", res=72)
 				do.scatter(input)
 				dev.off()
 			})
@@ -507,7 +552,7 @@ shinyServer(
 		output$download.scatter.svg <- downloadHandler(
 			filename = "scatter.svg",
 			content = function(file) {
-				svg(file, height=4, width=6)
+				svg(file, height=input$image.height, width=input$image.width)
 				do.scatter(input)
 				dev.off()
 			})
@@ -515,22 +560,55 @@ shinyServer(
 		output$download.scatter.eps <- downloadHandler(
 			filename = "scatter.eps",
 			content = function(file) {
-				postscript(file, height=4, width=6)
+				postscript(file, height=input$image.height, width=input$image.width)
 				do.scatter(input)
 				dev.off()
 			})
 		
-		output$raw.data <- renderDataTable({
-			if (is.null(input$nfe) || is.na(input$nfe)) {
-				index = length(data)
+		output$variable.selection <- renderUI({
+			if (nvars > 0) {
+				names <- colnames(data[[1]])[1:nvars]
+				checkboxGroupInput("visible.variables", NULL, names, names, inline=TRUE)
 			} else {
-				index = input$nfe / step.nfe
+				p("No variables in data.")
 			}
-			
-			set <- mordm.getset(data, index)
-			brush.limits <- plot.limits(input$brush.reliability, input$brush.damages, input$brush.cost, input$brush.utility)
-			alpha <- plot.brush(set, brush.limits[,1:4], 0.0)
-			set[alpha==1,,drop=FALSE]
+		})
+		
+		output$objective.selection <- renderUI({
+			if (nobjs > 0) {
+				names <- colnames(data[[1]])[(nvars+1):(nvars+nobjs)]
+				checkboxGroupInput("visible.objectives", NULL, names, names, inline=TRUE)
+			} else {
+				p("No objectives in data.")
+			}
+		})
+		
+		observe({
+			if (input$variables.all > 0) {
+				updateCheckboxGroupInput(session, "visible.variables", selected=colnames(data[[1]])[1:nvars])
+			}
+		})
+		
+		observe({
+			if (input$variables.none > 0) {
+				updateCheckboxGroupInput(session, "visible.variables", selected=list())
+			}
+		})
+		
+		observe({
+			if (input$objectives.all > 0) {
+				updateCheckboxGroupInput(session, "visible.objectives", selected=colnames(data[[1]])[(nvars+1):(nvars+nobjs)])
+			}
+		})
+		
+		observe({
+			if (input$objectives.none > 0) {
+				updateCheckboxGroupInput(session, "visible.objectives", selected=list())
+			}
+		})
+		
+		output$raw.data <- renderDataTable({
+			do.raw(input)
 		})
 	}
 )

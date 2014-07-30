@@ -66,8 +66,9 @@ mordm.defaultnames <- function(nvars, nobjs) {
 #' @param bounds the lower and upper bounds of each decision variable
 #' @param names override the column names
 #' @param maximize vector indicating the columns to be maximized
+#' @param digits number of digits to retain
 #' @export
-mordm.read <- function(file, nvars, nobjs, nconstrs=0, bounds=NULL, names=NULL, maximize=NULL) {
+mordm.read <- function(file, nvars, nobjs, nconstrs=0, bounds=NULL, names=NULL, maximize=NULL, digits=NULL) {
 	text <- readLines(file)
 	solutions <- vector()
 	attributes <- vector()
@@ -92,6 +93,10 @@ mordm.read <- function(file, nvars, nobjs, nconstrs=0, bounds=NULL, names=NULL, 
 					
 					for (j in 1:length(tokens)) {
 						entry[i,j] <- as.double(tokens[j])
+						
+						if (!is.null(digits)) {
+							entry[i,j] <- round(entry[i,j], digits=digits)
+						}
 					}
 				}
 				
@@ -631,8 +636,9 @@ mordm.identify <- function(enabled=TRUE, label=FALSE) {
 #' @param improvements if \code{TRUE}, displays a trace of the number of Pareto
 #'        improvements
 #' @param log if \code{TRUE}, plot the x-axis with a log scale
+#' @param current draw a line at the current time
 #' @export
-mordm.plotops <- function(data, time=FALSE, improvements=FALSE, log=FALSE, improvement.nfe=1000) {
+mordm.plotops <- function(data, time=FALSE, improvements=FALSE, log=FALSE, improvement.nfe=1000, current=NULL) {
 	names <- c("SBX", "DE", "PCX", "SPX", "UNDX", "UM")
 	colors <- c("cyan", "red", "blue", "green", "orange", "purple")
 	attributes <- mordm.attributes(data)
@@ -701,6 +707,11 @@ mordm.plotops <- function(data, time=FALSE, improvements=FALSE, log=FALSE, impro
 	
 	for (i in 1:length(names)) {
 		lines(attributes[,ifelse(time, "ElapsedTime", "NFE")], attributes[,names[i]]*100, lwd=4, col=colors[i])
+	}
+	
+	if (!is.null(current)) {
+		value <- attr(mordm.getset(data, current), ifelse(time, "ElapsedTime", "NFE"))
+		segments(value, 0, value, 100)
 	}
 	
 	par(mar=c(0,0,0,0))

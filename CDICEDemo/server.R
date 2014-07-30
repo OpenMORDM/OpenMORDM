@@ -129,8 +129,38 @@ get.palette <- function(name) {
 	}
 }
 
+do.plot <- function(input) {
+	args <- list()
+	args$show.x <- input$x
+	args$show.y <- input$y
+	args$show.z <- input$z
+	args$show.size <- "Constant"
+	args$show.color <- input$color
+	args$show.label <- input$label
+	args$show.ideal <- input$ideal
+	args$colormap <- input$colormap
+	args$brush.reliability <- input$brush.reliability
+	args$brush.damages <- input$brush.damages
+	args$brush.cost <- input$brush.cost
+	args$brush.utility <- input$brush.utility
+	args$slider.transparency <- input$slider.transparency
+	args$fontsize <- input$fontsize
+	args$tick.size <- input$tick.size
+	args$label.size <- input$label.size
+	args$label.line <- input$label.line
+	args$radius.scale <- input$radius.scale
+	
+	if (is.null(input$nfe) || is.na(input$nfe)) {
+		args$index = length(data)
+	} else {
+		args$index = input$nfe / step.nfe
+	}
+	
+	do.call(plot.snake, args)
+}
+
 # Generates the 3D plot.
-plot.snake <- function(selection=NULL, index=-1, show.x="None", show.y="None", show.z="None", show.color="None", show.size="None", show.ideal=TRUE, show.label=FALSE, colormap="Rainbow (Blue ot Red)", brush.reliability=NULL, brush.damages=NULL, brush.cost=NULL, brush.utility=NULL, slider.transparency=0.01, fontsize=12, tick.size=1, label.size=1.2, label.line=1, radius.scale=1) {
+plot.snake <- function(selection=NULL, index=-1, show.x="None", show.y="None", show.z="None", show.color="None", show.size="None", show.ideal=TRUE, show.label=FALSE, colormap="Rainbow (Blue ot Red)", brush.reliability=NULL, brush.damages=NULL, brush.cost=NULL, brush.utility=NULL, slider.transparency=0.01, fontsize=12, tick.size=1, label.size=1.2, label.line=1, radius.scale=1, window=NULL) {
 	set <- mordm.getset(data, index)
 	
 	objectives <- vector()
@@ -219,7 +249,8 @@ plot.snake <- function(selection=NULL, index=-1, show.x="None", show.y="None", s
 			   palette=palette, crev=FALSE, alpha=alpha,
 			   xlim=xlim, ylim=ylim, zlim=zlim, clim=clim,
 			   tick.size=tick.size, label.size=label.size,
-			   label.line=label.line, radius.scale=radius.scale)
+			   label.line=label.line, radius.scale=radius.scale,
+			   window=window)
 }
 
 # Generates the colorbar
@@ -248,33 +279,7 @@ plot.colorbar <- function(show.color="None", index=-1, colormap="Rainbow (Blue o
 shinyServer(
 	function(input, output, session) {
 		output$plot3d <- renderWebGL({
-			args <- list()
-			args$show.x <- input$x
-			args$show.y <- input$y
-			args$show.z <- input$z
-			args$show.size <- "Constant"
-			args$show.color <- input$color
-			args$show.label <- input$label
-			args$show.ideal <- input$ideal
-			args$colormap <- input$colormap
-			args$brush.reliability <- input$brush.reliability
-			args$brush.damages <- input$brush.damages
-			args$brush.cost <- input$brush.cost
-			args$brush.utility <- input$brush.utility
-			args$slider.transparency <- input$slider.transparency
-			args$fontsize <- input$fontsize
-			args$tick.size <- input$tick.size
-			args$label.size <- input$label.size
-			args$label.line <- input$label.line
-			args$radius.scale <- input$radius.scale
-			
-			if (is.null(input$nfe) || is.na(input$nfe)) {
-				args$index = length(data)
-			} else {
-				args$index = input$nfe / step.nfe
-			}
-			
-			do.call(plot.snake, args)
+			do.plot(input)
 		})
 		
 		output$colorbar <- renderPlot({
@@ -326,13 +331,55 @@ shinyServer(
 		output$download.png <- downloadHandler(
 			filename = "snapshot.png",
 			content = function(file) {
-				rgl.snapshot(filename, fmt="png")
+				open3d(useNULL=FALSE, windowRect=c(0, 0, 600, 600))
+				do.plot(input)
+				
+				zoom <- isolate(session$clientData[["gl_output_plot3d_zoom"]])
+				fov <- isolate(session$clientData[["gl_output_plot3d_fov"]])
+				pan <- isolate(session$clientData[["gl_output_plot3d_pan"]])
+
+				if (!is.null(zoom)){
+					par3d(zoom=zoom)  
+				}
+				
+				if (!is.null(fov)){
+					par3d(FOV=fov)
+				}
+				
+				if (!is.null(pan)){
+					mat <- matrix(pan, ncol=4)
+					par3d(userMatrix=mat)
+				}
+				
+				rgl.snapshot(file, fmt="png")
+				rgl.close()
 			})
 		
 		output$download.pdf <- downloadHandler(
-			filename = "snapshot.pdf",
+			filename = "snapshot.ps",
 			content = function(file) {
-				rgl.postscript(filename, fmt="pdf")
+				open3d(useNULL=FALSE, windowRect=c(0, 0, 600, 600))
+				do.plot(input)
+				
+				zoom <- isolate(session$clientData[["gl_output_plot3d_zoom"]])
+				fov <- isolate(session$clientData[["gl_output_plot3d_fov"]])
+				pan <- isolate(session$clientData[["gl_output_plot3d_pan"]])
+				
+				if (!is.null(zoom)){
+					par3d(zoom=zoom)  
+				}
+				
+				if (!is.null(fov)){
+					par3d(FOV=fov)
+				}
+				
+				if (!is.null(pan)){
+					mat <- matrix(pan, ncol=4)
+					par3d(userMatrix=mat)
+				}
+				
+				rgl.postscript(file, fmt="ps")
+				rgl.close()
 			})
 		
 		output$download.csv <- downloadHandler(

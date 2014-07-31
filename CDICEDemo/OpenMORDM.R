@@ -285,7 +285,7 @@ mordm.colorize <- function(set, objectives, mark=NULL, palette=heat.colors, n=10
 #' @param alpha the transparency value; or \code{NA}
 #' @param label.size the font size of labels
 #' @export
-mordm.plotpar <- function(highlight=NULL, alpha=0.4, label.size=1) {
+mordm.plotpar <- function(highlight=NULL, alpha=0.4, label.size=1, line.width=1) {
 	set <- mordm.currentset
 	objectives <- mordm.currentobjectives
 	mark <- mordm.currentmark
@@ -293,10 +293,10 @@ mordm.plotpar <- function(highlight=NULL, alpha=0.4, label.size=1) {
 
 	# highlight selected solutions
 	if (is.null(highlight)) {
-		lwd <- 1
+		lwd <- line.width
 	} else {
-		lwd <- rep(1, nrow(set))
-		lwd[highlight] <- 3
+		lwd <- rep(line.width, nrow(set))
+		lwd[highlight] <- 3*line.width
 		colors[highlight] <- alpha(colors[highlight], 1.0)
 		
 		order <- 1:nrow(set)

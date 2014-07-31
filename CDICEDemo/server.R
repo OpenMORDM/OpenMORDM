@@ -316,7 +316,7 @@ do.plotParallel <- function(input) {
 	mordm.currentcolors <<- alpha(original.colors, transparency)
 	
 	# generate the parallel coordinates plot
-	mordm.plotpar(alpha=NA, label.size=input$parallel.cex)
+	mordm.plotpar(alpha=NA, label.size=input$parallel.cex, line.width=input$parallel.lwd)
 	
 	# restore the original settings
 	mordm.currentset <<- original.set
@@ -348,10 +348,9 @@ do.scatter <- function(input) {
 	set <- original.set[,cols,drop=FALSE]
 	colnames(set) <- c(colnames(data[[1]]), "Constant")[cols]
 	brush.limits <- to.limits(input)
-	transparency <- input$parallel.transparency * plot.brush(original.set, brush.limits, input$slider.transparency)	
+	transparency <- input$scatter.transparency * plot.brush(original.set, brush.limits, input$slider.transparency)	
 	
-	par(cex=input$scatter.cex)
-	pairs(set, col=alpha(original.colors, transparency), cex.labels=input$scatter.cex)
+	pairs(set, col=alpha(original.colors, transparency), cex.labels=input$scatter.label, cex=input$scatter.point, pch=20)
 }
 
 do.raw <- function(input) {
@@ -366,10 +365,6 @@ do.raw <- function(input) {
 
 shinyServer(
 	function(input, output, session) {
-		observe({
-			to.columns(input)
-		})
-		
 		output$plot3d <- renderWebGL({
 			do.plot3d(input)
 		})
@@ -412,7 +407,7 @@ shinyServer(
 			}
 		})
 		
-		output$download.png <- downloadHandler(
+		output$download.plot3d.png <- downloadHandler(
 			filename = "snapshot.png",
 			content = function(file) {
 				open3d(useNULL=FALSE, windowRect=c(0, 0, 600, 600))
@@ -439,10 +434,10 @@ shinyServer(
 				rgl.close()
 			})
 		
-		output$download.pdf <- downloadHandler(
-			filename = "snapshot.eps",
+		output$download.plot3d.svg <- downloadHandler(
+			filename = "snapshot.svg",
 			content = function(file) {
-				open3d(useNULL=FALSE, windowRect=c(0, 0, 600, 600))
+				open3d(useNULL=FALSE)#, windowRect=c(0, 0, 600, 600))
 				do.plot3d(input)
 				
 				zoom <- isolate(session$clientData[["gl_output_plot3d_zoom"]])
@@ -462,7 +457,34 @@ shinyServer(
 					par3d(userMatrix=mat)
 				}
 				
-				rgl.postscript(file, fmt="eps")
+				rgl.postscript(file, fmt="svg", drawText=FALSE)
+				rgl.close()
+			})
+		
+		output$download.plot3d.eps <- downloadHandler(
+			filename = "snapshot.eps",
+			content = function(file) {
+				open3d(useNULL=FALSE)#, windowRect=c(0, 0, 600, 600))
+				do.plot3d(input)
+				
+				zoom <- isolate(session$clientData[["gl_output_plot3d_zoom"]])
+				fov <- isolate(session$clientData[["gl_output_plot3d_fov"]])
+				pan <- isolate(session$clientData[["gl_output_plot3d_pan"]])
+				
+				if (!is.null(zoom)){
+					par3d(zoom=zoom)  
+				}
+				
+				if (!is.null(fov)){
+					par3d(FOV=fov)
+				}
+				
+				if (!is.null(pan)){
+					mat <- matrix(pan, ncol=4)
+					par3d(userMatrix=mat)
+				}
+				
+				rgl.postscript(file, fmt="eps", drawText=FALSE)
 				rgl.close()
 			})
 		

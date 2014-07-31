@@ -208,7 +208,7 @@ smooth.pdf <- function(y, ys, yy, ysupp2, quadrature.points=110, kd.shape="epane
 #' @param ks.level critical value for the KS statistic
 #' @param zero.crossing detect zero crossings when \code{"on"}
 #' @param kd.estimator the kernel density estimator to use (cheap, stats,
-#'        diffustion, hist)
+#'        diffusion, hist)
 #' @param kd.width the bandwidth for kernel density estimation, or \code{"auto"}
 #' @param complement compute sensitivities for the complement
 #' @param plot.enabled if {TRUE}, generate a plot showing the PDFs

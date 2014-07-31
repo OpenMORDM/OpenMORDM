@@ -771,7 +771,7 @@ mordm.correlation <- function(data, ht=0.75, lt=0.25) {
 	
 	cat("High Correlations:\n")
 	if (length(correlation.high) > 0) {
-		for (i in order(correlation.high[,3])) {
+		for (i in rev(order(correlation.high[,3]))) {
 			cat("    ")
 			cat(sprintf("%-8s", names[correlation.high[i,1]]))
 			cat(" <-> ")
@@ -1670,8 +1670,10 @@ mordm.sensitivity <- function(data, objective, all=FALSE, ...) {
 	varargs <- list(...)
 	
 	if (all) {
-		for (i in seq(length(data)-1, 1, -1)) {
-			set <- rbind(set, mordm.getset(data, i))
+		if (length(data) > 1) {
+			for (i in seq(length(data)-1, 1, -1)) {
+				set <- rbind(set, mordm.getset(data, i))
+			}
 		}
 	}
 	
@@ -1692,7 +1694,7 @@ mordm.sensitivity <- function(data, objective, all=FALSE, ...) {
 		y <- set[,nvars+objective]
 	}
 	
-	print(do.call(deltamim, c(list(set[,1:nvars], y), varargs)))
+	do.call(deltamim, c(list(set[,1:nvars], y), varargs))
 }
 
 #' Computes robustness under uncertainty.

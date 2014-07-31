@@ -363,6 +363,30 @@ do.raw <- function(input) {
 	set[alpha==1,cols]
 }
 
+to.image.size <- function(session, id, dpi=72) {
+	if (session$input$custom_image) {
+		list(width=session$input$image.width, height=session$input$image.height)
+	} else {
+		list(width=session$clientData[[paste("output_", id, "_width", sep="")]]/dpi,
+			 height=session$clientData[[paste("output_", id, "_height", sep="")]]/dpi)
+	}
+}
+
+do.sensitivity <- function(input) {
+	objective <- plot.toobj(input$sensitivity.response)-nvars
+	result <- mordm.sensitivity(data, objective,
+								all=input$sensitivity.all,
+								kd.estimator=input$sensitivity.kd.estimator)
+	
+	indices <- result$Si
+	
+	if (input$sensitivity.order) {
+		indices <- indices[,result$rank,drop=FALSE]
+	}
+	
+	barplot(indices, ylim=c(0,1), ylab="Sensitivity Indices")
+}
+
 shinyServer(
 	function(input, output, session) {
 		output$plot3d <- renderWebGL({
@@ -510,7 +534,8 @@ shinyServer(
 		output$download.parallel.png <- downloadHandler(
 			filename = "parallel.png",
 			content = function(file) {
-				png(file, height=input$image.height, width=input$image.width, units="in", res=72)
+				size <- to.image.size(session, "plot2d.parallel")
+				png(file, height=size$height, width=size$width, units="in", res=72)
 				do.plotParallel(input)
 				dev.off()
 			})
@@ -518,7 +543,8 @@ shinyServer(
 		output$download.parallel.svg <- downloadHandler(
 			filename = "parallel.svg",
 			content = function(file) {
-				svg(file, height=input$image.height, width=input$image.width)
+				size <- to.image.size(session, "plot2d.parallel")
+				svg(file, height=size$height, width=size$width)
 				do.plotParallel(input)
 				dev.off()
 			})
@@ -526,7 +552,8 @@ shinyServer(
 		output$download.parallel.eps <- downloadHandler(
 			filename = "parallel.eps",
 			content = function(file) {
-				postscript(file, height=input$image.height, width=input$image.width)
+				size <- to.image.size(session, "plot2d.parallel")
+				postscript(file, height=size$height, width=size$width)
 				do.plotParallel(input)
 				dev.off()
 			})
@@ -538,7 +565,8 @@ shinyServer(
 		output$download.operators.png <- downloadHandler(
 			filename = "operators.png",
 			content = function(file) {
-				png(file, height=input$image.height, width=input$image.width, units="in", res=72)
+				size <- to.image.size(session, "plot2d.operators")
+				png(file, height=size$height, width=size$width, units="in", res=72)
 				do.plotOps(input)
 				dev.off()
 			})
@@ -546,7 +574,8 @@ shinyServer(
 		output$download.operators.svg <- downloadHandler(
 			filename = "operators.svg",
 			content = function(file) {
-				svg(file, height=input$image.height, width=input$image.width)
+				size <- to.image.size(session, "plot2d.operators")
+				svg(file, height=size$height, width=size$width)
 				do.plotOps(input)
 				dev.off()
 			})
@@ -554,7 +583,8 @@ shinyServer(
 		output$download.operators.eps <- downloadHandler(
 			filename = "operators.eps",
 			content = function(file) {
-				postscript(file, height=input$image.height, width=input$image.width)
+				size <- to.image.size(session, "plot2d.operators")
+				postscript(file, height=size$height, width=size$width)
 				do.plotOps(input)
 				dev.off()
 			})
@@ -566,7 +596,8 @@ shinyServer(
 		output$download.scatter.png <- downloadHandler(
 			filename = "scatter.png",
 			content = function(file) {
-				png(file, height=input$image.height, width=input$image.width, units="in", res=72)
+				size <- to.image.size(session, "plot2d.scatter")
+				png(file, height=size$height, width=size$width, units="in", res=72)
 				do.scatter(input)
 				dev.off()
 			})
@@ -574,7 +605,8 @@ shinyServer(
 		output$download.scatter.svg <- downloadHandler(
 			filename = "scatter.svg",
 			content = function(file) {
-				svg(file, height=input$image.height, width=input$image.width)
+				size <- to.image.size(session, "plot2d.scatter")
+				svg(file, height=size$height, width=size$width)
 				do.scatter(input)
 				dev.off()
 			})
@@ -582,7 +614,8 @@ shinyServer(
 		output$download.scatter.eps <- downloadHandler(
 			filename = "scatter.eps",
 			content = function(file) {
-				postscript(file, height=input$image.height, width=input$image.width)
+				size <- to.image.size(session, "plot2d.scatter")
+				postscript(file, height=size$height, width=size$width)
 				do.scatter(input)
 				dev.off()
 			})
@@ -632,5 +665,40 @@ shinyServer(
 		output$raw.data <- renderDataTable({
 			do.raw(input)
 		})
+		
+		output$correlations <- renderPrint({
+			mordm.correlation(data)
+		})
+
+		output$sensitivity <- renderPlot({
+			do.sensitivity(input)
+		})
+		
+		output$download.sensitivity.png <- downloadHandler(
+			filename = "sensitivity.png",
+			content = function(file) {
+				size <- to.image.size(session, "sensitivity")
+				png(file, height=size$height, width=size$width, units="in", res=72)
+				do.sensitivity(input)
+				dev.off()
+			})
+		
+		output$download.sensitivity.svg <- downloadHandler(
+			filename = "sensitivity.svg",
+			content = function(file) {
+				size <- to.image.size(session, "sensitivity")
+				svg(file, height=size$height, width=size$width)
+				do.sensitivity(input)
+				dev.off()
+			})
+		
+		output$download.sensitivity.eps <- downloadHandler(
+			filename = "sensitivity.eps",
+			content = function(file) {
+				size <- to.image.size(session, "sensitivity")
+				postscript(file, height=size$height, width=size$width)
+				do.sensitivity(input)
+				dev.off()
+			})
 	}
 )

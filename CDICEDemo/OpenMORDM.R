@@ -514,10 +514,11 @@ mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, id
 	
 	# highlight any selected points
 	if (!is.null(selection)) {
+		scale <- radius.scale*3/max(c(rangex, rangey, rangez))
+		
 		for (i in selection) {
-			if (i >= 0 && i <= nrow(set)) {
-				scale <- 50
-				cube <- cube3d(scaleMatrix(sizes[i]*(rangex[2]-rangex[1])/scale, sizes[i]*(rangey[2]-rangey[1])/scale, sizes[i]*(rangez[2]-rangez[1])/scale) %*% translationMatrix(x[i], y[i], z[i]))
+			if (i > 0 && i <= nrow(set)) {
+				cube <- cube3d(scaleMatrix(scale*sizes[i]*(rangex[2]-rangex[1]), scale*sizes[i]*(rangey[2]-rangey[1]), scale*sizes[i]*(rangez[2]-rangez[1])) %*% translationMatrix(x[i], y[i], z[i]))
 				wire3d(cube, col=colors[i], alpha=0.5)
 			}
 		}

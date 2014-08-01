@@ -112,7 +112,8 @@ shinyUI(fluidPage(navbarPage("OpenMORDM", id="main",
 			 			 		br(),
 			 			 		helpText("Note: EPS export does not support transparency.  Transparent lines will not appear.")),
 			 			 	mainPanel(
-			 			 		plotOutput("plot2d.parallel")))),
+			 			 		plotOutput("plot2d.parallel"),
+			 			 		plotOutput("plot2d.parallel.colorbar", height="150px")))),
 			 	tabPanel("Scatter Plots",
 			 			 sidebarLayout(
 			 			 	sidebarPanel(
@@ -130,7 +131,8 @@ shinyUI(fluidPage(navbarPage("OpenMORDM", id="main",
 			 			 		br(),
 			 			 		helpText("Note: EPS export does not support transparency.  Transparent lines will not appear.")),
 			 			 	mainPanel(
-			 			 		plotOutput("plot2d.scatter")))),
+			 			 		plotOutput("plot2d.scatter"),
+			 			 		plotOutput("plot2d.scatter.colorbar", height="150px")))),
 			 	tabPanel("Operators",
 			 			 sidebarLayout(
 			 			 	sidebarPanel(
@@ -224,5 +226,6 @@ shinyUI(fluidPage(navbarPage("OpenMORDM", id="main",
 				 conditionalPanel("input.custom_image == true",
 				 	numericInput("image.width", "Width (in)", 8, min=1, step=0.5),
 				 	numericInput("image.height", "Height (in)", 6, min=1, step=0.5)),
-				 style="margin-left: 25px"))
+				 style="margin-left: 25px"),
+			 div(numericInput("selection", "Selected Point", NULL)))#, style="display: none;"))
 )))

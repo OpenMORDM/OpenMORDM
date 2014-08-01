@@ -1,4 +1,4 @@
-model <- "cdice"
+model <- "lake"
 
 if (model == "lake") {
 	filename <- "../demo/data/lake5obj.txt"
@@ -19,3 +19,5 @@ if (model == "lake") {
 	maximize <- objectives[1:2]
 	order <- c(2,3,4,1)
 }
+
+colors <- list("Rainbow (Red to Blue)", "Inv. Rainbow (Blue to Red)", "Heat (White to Red)", "Inv. Heat (Red to White)", "Grayscale (White to Black)", "Inv. Grayscale (Black to White)")

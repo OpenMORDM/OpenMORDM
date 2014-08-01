@@ -27,7 +27,6 @@ library("shinyRGL")
 source("config.R")
 
 options <- c(objectives, "Constant")
-colors <- list("Rainbow (Red to Blue)", "Inv. Rainbow (Blue to Red)", "Heat (White to Red)")
 
 shinyUI(fluidPage(navbarPage("OpenMORDM", id="main",
 	tabPanel("3D Plot",

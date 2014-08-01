@@ -40,7 +40,6 @@ cat("Finished loading data!\n")
 min.nfe <- attr(data[[1]], "NFE")
 max.nfe <- attr(data[[length(data)]], "NFE")
 step.nfe <- max.nfe / length(data)
-colors <- list("Rainbow (Red to Blue)", "Inv. Rainbow (Blue to Red)", "Heat (White to Red)")
 
 # Compute the limits on the data
 compute.limits <- function(data) {
@@ -106,12 +105,18 @@ plot.brush <- function(set, limits=NULL, slider.transparency=0.01) {
 }
 
 to.palette <- function(name) {
-	if (name == colors[1]) {
+	if (name == "Rainbow (Red to Blue)") {
 		palette <- rainbow(100, start=0, end=0.66)
-	} else if (name == colors[2]) {
+	} else if (name == "Inv. Rainbow (Blue to Red)") {
 		palette <- rev(rainbow(100, start=0, end=0.66))
-	} else if (name == colors[3]) {
+	} else if (name == "Heat (White to Red)") {
 		palette <- rev(heat.colors(100))
+	} else if (name == "Inv. Heat (Red to White)") {
+		palette <- heat.colors(100)
+	} else if (name == "Grayscale (White to Black)") {
+		palette <- rev(gray(seq(0, 1, length.out=100)))
+	} else if (name == "Inv. Grayscale (Black to White)") {
+		palette <- gray(seq(0, 1, length.out=100))
 	}
 }
 

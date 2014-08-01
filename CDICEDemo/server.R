@@ -27,6 +27,7 @@ library("shinyRGL")
 library("rgl")
 library("scales")
 library("functional")
+library("R.utils")
 source("OpenMORDM.R")
 source("config.R")
 
@@ -230,7 +231,16 @@ do.plot3d <- function(input) {
 }
 
 # Generates the colorbar
-plot.colorbar <- function(show.color="None", index=-1, colormap="Rainbow (Blue ot Red)") {
+do.colorbar <- function(input) {
+	show.color <- input$color
+	colormap <- input$colormap
+	
+	if (is.null(input$nfe) || is.na(input$nfe)) {
+		index <- length(data)
+	} else {
+		index <- input$nfe / step.nfe
+	}
+	
 	oldmai <- par()$mai
 	par(mai=c(1, 2, 0.5, 2))
 	set <- mordm.getset(data, index)
@@ -372,11 +382,29 @@ to.image.size <- function(session, id, dpi=72) {
 	}
 }
 
+to.mark <- function(limits) {
+	mordm.mark.rule(function(x) {
+		all(x >= limits[1,] & x <= limits[2,])
+	})
+}
+
 do.sensitivity <- function(input) {
-	objective <- plot.toobj(input$sensitivity.response)-nvars
-	result <- mordm.sensitivity(data, objective,
+	if (input$sensitivity.response == "Brushed Set") {
+		brush.limits <- to.limits(input, ignore.constant=TRUE)
+		
+		if (is.null(brush.limits)) {
+			stop("Must brush at least one response")
+		}
+		
+		objective <- to.mark(brush.limits)
+	} else {
+		objective <- plot.toobj(input$sensitivity.response)-nvars
+	}
+	
+	result <- tryCatch(mordm.sensitivity(data, objective,
 								all=input$sensitivity.all,
-								kd.estimator=input$sensitivity.kd.estimator)
+								kd.estimator=input$sensitivity.kd.estimator),
+					   error=function(msg) stop("Unable to compute sensitivities, try a different option"))
 	
 	indices <- result$Si
 	
@@ -394,18 +422,35 @@ shinyServer(
 		})
 		
 		output$colorbar <- renderPlot({
-			args <- list()
-			args$show.color <- input$color
-			args$colormap <- input$colormap
-			
-			if (is.null(input$nfe) || is.na(input$nfe)) {
-				args$index = length(data)
-			} else {
-				args$index = input$nfe / step.nfe
-			}
-			
-			do.call(plot.colorbar, args)
+			do.colorbar(input)
 		})
+		
+		output$download.colorbar.png <- downloadHandler(
+			filename = "colorbar.png",
+			content = function(file) {
+				size <- to.image.size(session, "colorbar")
+				png(file, height=size$height, width=size$width, units="in", res=72)
+				do.colorbar(input)
+				dev.off()
+			})
+		
+		output$download.colorbar.svg <- downloadHandler(
+			filename = "colorbar.svg",
+			content = function(file) {
+				size <- to.image.size(session, "colorbar")
+				svg(file, height=size$height, width=size$width)
+				do.colorbar(input)
+				dev.off()
+			})
+		
+		output$download.colorbar.eps <- downloadHandler(
+			filename = "colorbar.eps",
+			content = function(file) {
+				size <- to.image.size(session, "colorbar")
+				postscript(file, height=size$height, width=size$width)
+				do.colorbar(input)
+				dev.off()
+			})
 		
 		output$brush.sliders <- renderUI({
 			lapply(1:nobjs, function(i) {

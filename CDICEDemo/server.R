@@ -27,7 +27,7 @@ library("shinyRGL")
 library("rgl")
 library("scales")
 library("functional")
-library("R.utils")
+library("dichromat")
 source("OpenMORDM.R")
 source("config.R")
 
@@ -107,16 +107,25 @@ plot.brush <- function(set, limits=NULL, slider.transparency=0.01) {
 to.palette <- function(name) {
 	if (name == "Rainbow (Red to Blue)") {
 		palette <- rainbow(100, start=0, end=0.66)
-	} else if (name == "Inv. Rainbow (Blue to Red)") {
-		palette <- rev(rainbow(100, start=0, end=0.66))
 	} else if (name == "Heat (White to Red)") {
 		palette <- rev(heat.colors(100))
-	} else if (name == "Inv. Heat (Red to White)") {
-		palette <- heat.colors(100)
 	} else if (name == "Grayscale (White to Black)") {
 		palette <- rev(gray(seq(0, 1, length.out=100)))
-	} else if (name == "Inv. Grayscale (Black to White)") {
-		palette <- gray(seq(0, 1, length.out=100))
+	} else if (name == "Dark Red to Blue*") {
+		palette <- colorRampPalette(colorschemes$DarkRedtoBlue.18)(100)
+	} else if (name == "Brown to Blue*") {
+		palette <- colorRampPalette(colorschemes$BrowntoBlue.12)(100)
+	} else if (name == "Blue to Green*") {
+		palette <- colorRampPalette(colorschemes$BluetoGreen.14)(100)
+	} else if (name == "Blue to Gray*") {
+		palette <- colorRampPalette(colorschemes$BluetoGray.8)(100)
+	} else if (name == "Light to Dark Blue*") {
+		palette <- colorRampPalette(colorschemes$LightBluetoDarkBlue.10)(100)
+	} else if (name == "Green to Magenta*") {
+		palette <- colorRampPalette(colorschemes$GreentoMagenta.16)(100)
+	} else if (name == "Categorical*") {
+	#	palette <- colorRampPalette(colorschemes$Categorical.12)(100)
+		palette <- colorschemes$Categorical.12
 	}
 }
 
@@ -129,6 +138,7 @@ do.plot3d <- function(input) {
 	show.label <- input$label
 	show.ideal <- input$ideal
 	colormap <- input$colormap
+	reverse <- input$colormap.reverse
 	slider.transparency <- input$slider.transparency
 	fontsize <- input$fontsize
 	tick.size <- input$tick.size
@@ -225,6 +235,10 @@ do.plot3d <- function(input) {
 	# select the color map
 	palette <- to.palette(colormap)
 	
+	if (reverse) {
+		palette <- rev(palette)
+	}
+	
 	# generate the plot
 	mordm.plot(set, mark=mark, objectives=objectives, identify=FALSE,
 			   stay=FALSE, ideal=show.ideal, selection=selection,
@@ -239,6 +253,7 @@ do.plot3d <- function(input) {
 do.colorbar <- function(input) {
 	show.color <- input$color
 	colormap <- input$colormap
+	reverse <- input$colormap.reverse
 	
 	if (is.null(input$nfe) || is.na(input$nfe)) {
 		index <- length(data)
@@ -256,6 +271,11 @@ do.colorbar <- function(input) {
 		if (plot.toobj(show.color) > 0) {
 			crange <- limits[,plot.toobj(show.color)]
 			palette <- to.palette(colormap)
+			
+			if (reverse) {
+				palette <- rev(palette)
+			}
+			
 			image(seq(crange[1], crange[2], (crange[2]-crange[1])/100), 0, matrix(seq(0, 1, 0.01), ncol=1), col=palette, axes=FALSE, xlab=show.color, ylab="")
 			box("plot")
 			axis(1)

@@ -56,7 +56,8 @@ cat("Installing required libraries\n");
 
 required.libraries <- c("shiny", "shinyRGL", "rgl", "scales", "R.cache",
 						"grid", "prim", "MASS", "animation", "sensitivity",
-						"boot", "pracma", "emoa", "devtools", "stringr", "functional")
+						"boot", "pracma", "emoa", "devtools", "stringr",
+						"functional", "dichromat")
 
 for (name in required.libraries) {
 	if (! name %in% rownames(installed.packages())) {

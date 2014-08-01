@@ -20,4 +20,13 @@ if (model == "lake") {
 	order <- c(2,3,4,1)
 }
 
-colors <- list("Rainbow (Red to Blue)", "Inv. Rainbow (Blue to Red)", "Heat (White to Red)", "Inv. Heat (Red to White)", "Grayscale (White to Black)", "Inv. Grayscale (Black to White)")
+colors <- list("Rainbow (Red to Blue)",
+			   "Heat (White to Red)",
+			   "Grayscale (White to Black)",
+			   "Dark Red to Blue*",
+			   "Brown to Blue*",
+			   "Blue to Green*",
+			   "Blue to Gray*",
+			   "Light to Dark Blue*",
+			   "Green to Magenta*",
+			   "Categorical*")

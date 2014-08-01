@@ -1,4 +1,4 @@
-model <- "cdice"
+model <- "lake"
 
 if (model == "lake") {
 	filename <- "../demo/data/lake5obj.txt"
@@ -11,7 +11,7 @@ if (model == "lake") {
 	order <- 1:5
 	selectable <- TRUE
 	selection.panel <- function(data, input, output, session) {
-		output$custom.view <- renderPlot({
+		do.custom <- function(input) {
 			if (is.null(input$nfe) || is.na(input$nfe)) {
 				index <- length(data)
 			} else {
@@ -34,7 +34,47 @@ if (model == "lake") {
 					ylim=range(0, 0.1), cex.lab=1.3, las=2, names.arg=names,
 					main="Pollution Control Strategy for the Selected Solution")
 			par(mai=oldmai)
+		}
+		
+		output$custom.view <- renderPlot({
+			do.custom(input)
 		})
+		
+		to.image.size <- function(session, id, dpi=72) {
+			if (session$input$custom_image) {
+				list(width=session$input$image.width, height=session$input$image.height)
+			} else {
+				list(width=session$clientData[[paste("output_", id, "_width", sep="")]]/dpi,
+					 height=session$clientData[[paste("output_", id, "_height", sep="")]]/dpi)
+			}
+		}
+		
+		output$download.custom.png <- downloadHandler(
+			filename = "custom.png",
+			content = function(file) {
+				size <- to.image.size(session, "custom.view")
+				png(file, height=size$height, width=size$width, units="in", res=72)
+				do.custom(input)
+				dev.off()
+			})
+		
+		output$download.custom.svg <- downloadHandler(
+			filename = "custom.svg",
+			content = function(file) {
+				size <- to.image.size(session, "custom.view")
+				svg(file, height=size$height, width=size$width)
+				do.custom(input)
+				dev.off()
+			})
+		
+		output$download.custom.eps <- downloadHandler(
+			filename = "custom.eps",
+			content = function(file) {
+				size <- to.image.size(session, "custom.view")
+				postscript(file, height=size$height, width=size$width)
+				do.custom(input)
+				dev.off()
+			})
 		
 		renderUI({
 			if (is.null(input$nfe) || is.na(input$nfe)) {
@@ -48,7 +88,16 @@ if (model == "lake") {
 			if (is.null(input$selection) || is.na(input$selection) || input$selection <= 0 || input$selection > nrow(set)) {
 				p("Select a point on the 3D Plot page to view details.")
 			} else {
-				plotOutput("custom.view")
+				sidebarLayout(
+					sidebarPanel(
+						p("You can provide a custom Shiny interface that will display details for the currently selected point.  In this example, the figure to the right shows the pollution control strategy for the lake problem."),
+						br(),
+						br(),
+						h4("Download"),
+						downloadButton("download.custom.png", "PNG Image"),
+						downloadButton("download.custom.svg", "SVG Image"),
+						downloadButton("download.custom.eps", "EPS File")),
+					mainPanel(plotOutput("custom.view")))
 			}
 		})
 	}

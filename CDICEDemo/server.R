@@ -152,7 +152,7 @@ do.plot3d <- function(input) {
 		index <- input$nfe / step.nfe
 	}
 	
-	if (!is.null(input$selection) && !is.na(input$selection)) {
+	if (!is.null(input$selection) && !is.na(input$selection) && input$selection.enabled) {
 		selection <- input$selection
 	}
 	
@@ -352,7 +352,7 @@ do.plotParallel <- function(input) {
 	colors <- alpha(original.colors, transparency)
 	
 	# highlight the selected point
-	if (is.null(input$selection)) {
+	if (is.null(input$selection) || !input$selection.enabled) {
 		highlight <- NULL
 	} else {
 		highlight <- input$selection
@@ -383,7 +383,8 @@ do.plotParallel <- function(input) {
 	mordm.currentcolors <<- colors
 	
 	# generate the parallel coordinates plot
-	mordm.plotpar(alpha=NA, highlight=highlight, label.size=input$parallel.cex, line.width=input$parallel.lwd)
+	mordm.plotpar(alpha=NA, highlight=highlight, label.size=input$parallel.cex,
+				  line.width=input$parallel.lwd, selection.scale=input$selection.scale)
 	
 	# restore the original settings
 	mordm.currentset <<- original.set
@@ -420,7 +421,7 @@ do.scatter <- function(input) {
 	point.sizes <- rep(input$scatter.point, nrow(set))
 	
 	# highlight the selected point
-	if (is.null(input$selection)) {
+	if (is.null(input$selection) || !input$selection.enabled) {
 		highlight <- NULL
 	} else {
 		highlight <- input$selection
@@ -451,14 +452,14 @@ do.scatter <- function(input) {
 	if (!is.null(highlight)) {
 		original.colors <- alpha(colors[highlight], 1.0)
 		colors[highlight] <- "black"
-		point.sizes[highlight] <- 4*input$scatter.point	
+		point.sizes[highlight] <- 2*input$selection.scale*input$scatter.point	
 		
 		order <- 1:nrow(set)
 		order <- append(order[-highlight], highlight)
 			
 		set <- rbind(set[order,], set[highlight,])
 		colors <- c(colors[order], original.colors)
-		point.sizes <- c(point.sizes[order], rep(2*input$scatter.point, length(highlight)))		
+		point.sizes <- c(point.sizes[order], rep(input$selection.scale*input$scatter.point, length(highlight)))		
 	}
 	
 	pairs(set, col=colors, cex.labels=input$scatter.label, cex=point.sizes, pch=20)
@@ -1075,7 +1076,7 @@ shinyServer(
 			})
 		
 		observe({
-			if (selectable && !is.null(input$plot3d.click)) {
+			if (selectable && input$selection.enabled && !is.null(input$plot3d.click)) {
 				x <- input$plot3d.click[1]
 				y <- input$plot3d.click[2]
 				

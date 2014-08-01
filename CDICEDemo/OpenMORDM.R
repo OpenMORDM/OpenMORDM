@@ -296,15 +296,16 @@ mordm.plotpar <- function(highlight=NULL, alpha=0.4, label.size=1, line.width=1)
 		lwd <- line.width
 	} else {
 		lwd <- rep(line.width, nrow(set))
-		lwd[highlight] <- 3*line.width
-		colors[highlight] <- alpha(colors[highlight], 1.0)
-		
+		lwd[highlight] <- 4*line.width
+		original.colors <- alpha(colors[highlight], 1.0)
+		colors[highlight] <- "black"
+			
 		order <- 1:nrow(set)
 		order <- append(order[-highlight], highlight)
-		
-		set <- set[order,]
-		lwd <- lwd[order]
-		colors <- colors[order]
+			
+		set <- rbind(set[order,], set[highlight,])
+		lwd <- c(lwd[order], rep(2*line.width, length(highlight)))
+		colors <- c(colors[order], original.colors)
 	}
 	
 	# reset plot settings
@@ -517,7 +518,7 @@ mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, id
 		scale <- radius.scale*3/max(c(rangex, rangey, rangez))
 		
 		for (i in selection) {
-			if (i > 0 && i <= nrow(set)) {
+			if (i > 0 && i <= nrow(set)) {				
 				cube <- cube3d(scaleMatrix(scale*sizes[i]*(rangex[2]-rangex[1]), scale*sizes[i]*(rangey[2]-rangey[1]), scale*sizes[i]*(rangez[2]-rangez[1])) %*% translationMatrix(x[i], y[i], z[i]))
 				wire3d(cube, col=colors[i], alpha=0.5)
 			}

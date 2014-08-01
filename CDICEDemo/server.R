@@ -351,6 +351,18 @@ do.plotParallel <- function(input) {
 	transparency <- input$parallel.transparency * plot.brush(original.set, brush.limits, input$slider.transparency)
 	colors <- alpha(original.colors, transparency)
 	
+	# highlight the selected point
+	if (is.null(input$selection)) {
+		highlight <- NULL
+	} else {
+		highlight <- input$selection
+		highlight <- highlight[highlight > 0 && highlight < nrow(set)]
+		
+		if (length(highlight) == 0) {
+			highlight <- NULL
+		}
+	}
+	
 	# apply a custom ordering
 	if (input$depth.order != "Default") {
 		ordering <- order(original.set[,plot.toobj(input$depth.order)])
@@ -361,13 +373,17 @@ do.plotParallel <- function(input) {
 		
 		set <- set[ordering,,drop=FALSE]
 		colors <- colors[ordering]
+		
+		if (!is.null(highlight)) {
+			highlight <- highlight[ordering]
+		}
 	}
 	
 	mordm.currentset <<- set
 	mordm.currentcolors <<- colors
 	
 	# generate the parallel coordinates plot
-	mordm.plotpar(alpha=NA, label.size=input$parallel.cex, line.width=input$parallel.lwd)
+	mordm.plotpar(alpha=NA, highlight=highlight, label.size=input$parallel.cex, line.width=input$parallel.lwd)
 	
 	# restore the original settings
 	mordm.currentset <<- original.set
@@ -401,6 +417,19 @@ do.scatter <- function(input) {
 	brush.limits <- to.limits(input)
 	transparency <- input$scatter.transparency * plot.brush(original.set, brush.limits, input$slider.transparency)	
 	colors <- alpha(original.colors, transparency)
+	point.sizes <- rep(input$scatter.point, nrow(set))
+	
+	# highlight the selected point
+	if (is.null(input$selection)) {
+		highlight <- NULL
+	} else {
+		highlight <- input$selection
+		highlight <- highlight[highlight > 0 && highlight < nrow(set)]
+		
+		if (length(highlight) == 0) {
+			highlight <- NULL
+		}
+	}
 	
 	# apply a custom ordering
 	if (input$depth.order != "Default") {
@@ -412,9 +441,27 @@ do.scatter <- function(input) {
 		
 		set <- set[ordering,,drop=FALSE]
 		colors <- colors[ordering]
+		
+		if (!is.null(highlight)) {
+			highlight <- highlight[ordering]
+		}
 	}
 	
-	pairs(set, col=colors, cex.labels=input$scatter.label, cex=input$scatter.point, pch=20)
+	# highlight selected solutions
+	if (!is.null(highlight)) {
+		original.colors <- colors[highlight]
+		colors[highlight] <- "black"
+		point.sizes[highlight] <- 4*input$scatter.point	
+		
+		order <- 1:nrow(set)
+		order <- append(order[-highlight], highlight)
+			
+		set <- rbind(set[order,], set[highlight,])
+		colors <- c(colors[order], original.colors)
+		point.sizes <- c(point.sizes[order], rep(2*input$scatter.point, length(highlight)))		
+	}
+	
+	pairs(set, col=colors, cex.labels=input$scatter.label, cex=point.sizes, pch=20)
 }
 
 do.raw <- function(input) {
@@ -1028,7 +1075,7 @@ shinyServer(
 			})
 		
 		observe({
-			if (!is.null(input$plot3d.click)) {
+			if (!is.null(selection.panel) && !is.null(input$plot3d.click)) {
 				x <- input$plot3d.click[1]
 				y <- input$plot3d.click[2]
 				
@@ -1076,5 +1123,13 @@ shinyServer(
 				}
 			}
 		})
+		
+		if (is.null(selection.panel)) {
+			output$selection.panel <- renderUI({
+				p("Detailed views are not available for this data set.")
+			})
+		} else {
+			output$selection.panel <- selection.panel(data, input, output, session)
+		}
 	}
 )

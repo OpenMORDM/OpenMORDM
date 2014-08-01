@@ -187,6 +187,9 @@ shinyUI(fluidPage(navbarPage("OpenMORDM", id="main",
 			 			 	mainPanel(
 			 			 		plotOutput("prim"),
 			 			 		pre(textOutput("prim.text"))))))),
+	tabPanel("Selection", 
+			 uiOutput("selection.panel"),
+			 style=ifelse(is.null("selection.panel"), "display: none;", "")),
 	tabPanel("Raw Data",
 			 dataTableOutput("raw.data")),
 	tabPanel("Options",
@@ -227,5 +230,5 @@ shinyUI(fluidPage(navbarPage("OpenMORDM", id="main",
 				 	numericInput("image.width", "Width (in)", 8, min=1, step=0.5),
 				 	numericInput("image.height", "Height (in)", 6, min=1, step=0.5)),
 				 style="margin-left: 25px"),
-			 div(numericInput("selection", "Selected Point", NULL)))#, style="display: none;"))
+			 div(numericInput("selection", "Selected Point", 0), style="display: none;"))
 )))

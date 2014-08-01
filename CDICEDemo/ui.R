@@ -151,7 +151,8 @@ shinyUI(fluidPage(navbarPage("OpenMORDM", id="main",
 			 			 		plotOutput("plot2d.operators")))))),
 	tabPanel("Selection", 
 			 uiOutput("selection.panel"),
-			 style=ifelse(is.null("selection.panel"), "display: none;", "")),
+			 style="display: none;"),
+			 #style=ifelse(is.null("selection.panel"), "display: none;", "")),
 	tabPanel("Analyze",
 			 tabsetPanel(
 			 	tabPanel("Correlations",
@@ -237,5 +238,52 @@ shinyUI(fluidPage(navbarPage("OpenMORDM", id="main",
 				 	numericInput("image.width", "Width (in)", 8, min=1, step=0.5),
 				 	numericInput("image.height", "Height (in)", 6, min=1, step=0.5)),
 				 style="margin-left: 25px"),
-			 div(numericInput("selection", "Selected Point", 0), style="display: none;"))
+			 div(numericInput("selection", "Selected Point", 0), style="display: none;")),
+	tabPanel("About",
+			 sidebarLayout(
+			 	sidebarPanel(
+			 		h4("License"),
+			 		p("Copyright 2014 The Pennsylvania State University"),
+			 		p("OpenMORDM was developed by Dr. David Hadka with guidance from Dr. Klaus
+					  Keller and Dr. Patrick Reed.  This work was supported by the National
+					  Science Foundation through the Network for Sustainable Climate Risk
+					  Management (SCRiM) under NSF cooperative agreement GEO-1240507."),
+			 		p("Permission is hereby granted, free of charge, to any person obtaining a copy
+					  of this software and associated documentation files (the \"Software\"), to deal
+					  in the Software without restriction, including without limitation the rights
+					  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+					  copies of the Software, and to permit persons to whom the Software is
+					  furnished to do so, subject to the following conditions:"),
+			 		p("The above copyright notice and this permission notice shall be included in
+					  all copies or substantial portions of the Software."),
+			 		p("THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+					  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+					  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+					  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+					  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+					  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+					  THE SOFTWARE.")),
+			 	mainPanel(
+			 		h3("About OpenMORDM"),
+			 		p("OpenMORDM is an open-source R library for multiobjective
+			 		  robust decision making (MORDM). It includes support for
+			 		  loading optimization output files (from the ",
+			 		  a("Borg MOEA", href="http://borgmoea.org/"), " and ",
+			 		  a("MOEA Framework", href="http://moeaframework.org/"),
+					  " software), visualizing the data sets using various 2D and
+			 		  3D plots, performing scenario discovery and tradeoff
+			 		  analysis, and computing uncertainty/robustness metrics.
+			 		  Development of OpenMORDM was supported by the National Science
+			 		  Foundation through the Network for Sustainable Climate Risk Management
+			 		  (SCRiM) under NSF cooperative agreement GEO-1240507.  Visit ",
+			 		  a("http://scrimhub.org/", href="http://scrimhub.org/"), " for more details."),
+			 		p("This web application is a demonstration of the capabilities
+			 		  of OpenMORDM.  OpenMORDM was written in the R statistical
+			 		  programming languages, and leverages a number of freely-available
+			 		  tools from the R ecosystem.  Not all functionality is available
+			 		  in this web application; please refer to the OpenMORDM R package
+			 		  to access the full functionality.")),
+			 	position="right"))
+
+			 
 )))

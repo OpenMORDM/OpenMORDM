@@ -449,7 +449,7 @@ do.scatter <- function(input) {
 	
 	# highlight selected solutions
 	if (!is.null(highlight)) {
-		original.colors <- colors[highlight]
+		original.colors <- alpha(colors[highlight], 1.0)
 		colors[highlight] <- "black"
 		point.sizes[highlight] <- 4*input$scatter.point	
 		
@@ -1075,7 +1075,7 @@ shinyServer(
 			})
 		
 		observe({
-			if (!is.null(selection.panel) && !is.null(input$plot3d.click)) {
+			if (selectable && !is.null(input$plot3d.click)) {
 				x <- input$plot3d.click[1]
 				y <- input$plot3d.click[2]
 				

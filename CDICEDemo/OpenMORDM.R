@@ -884,12 +884,14 @@ mordm.mark.selection <- function() {
 #' representation to a marking.
 #' 
 #' @export
-mordm.mark.box <- function(box) {
+mordm.mark.box <- function(box, mean, mass) {
 	result <- mordm.mark.rule(function(x) {
 		names <- colnames(box)
 		all(sapply(1:length(names), function(i) x[names[i]] >= box[1,names[i]] & x[names[i]] <= box[2,names[i]]))
 	})
 	
+	attr(result, "mean") <- mean
+	attr(result, "mass") <- mass
 	attr(result, "box") <- box
 	return(result)
 }
@@ -1205,7 +1207,7 @@ mordm.prim <- function(data, objective, minimize=TRUE, percentages=FALSE, expand
 		# for some reason, the following statement is needed for i to evaluate
 		# to the correct value
 		i <- eval(i)
-		mordm.mark.box(result$box[[i]])
+		mordm.mark.box(result$box[[i]], result$y.fun[i], result$mass[i])
 	})
 	
 	if (is.function(objective)) {
@@ -1259,7 +1261,7 @@ mordm.prim <- function(data, objective, minimize=TRUE, percentages=FALSE, expand
 		summary(result)
 	}
 	
-	return(rev(marks))
+	marks
 }
 
 #' Print descriptive representation of PRIM boxes.
@@ -1271,7 +1273,7 @@ mordm.prim <- function(data, objective, minimize=TRUE, percentages=FALSE, expand
 #' @param threshold fuzzy factor when determining if two numbers are equal
 #' @param digits number of digits to round numbers
 #' @export
-mordm.printbox <- function(data, mark, threshold=0.01, digits=3) {
+mordm.printbox <- function(data, mark, threshold=0.01, digits=3, indent="") {
 	nvars <- attr(data, "nvars")
 	bounds <- attr(data, "bounds")
 	
@@ -1289,6 +1291,17 @@ mordm.printbox <- function(data, mark, threshold=0.01, digits=3) {
 	names <- colnames(box)
 	unbound <- vector()
 	
+	cat(indent)
+	cat("Mean Response: ")
+	cat(attr(mark, "mean"))
+	cat("\n\n")
+	
+	cat(indent)
+	cat("Mass: ")
+	cat(attr(mark, "mass"))
+	cat("\n\n")
+	
+	cat(indent)
 	cat("Bound Variables:\n")
 	
 	for (i in 1:nvars) {
@@ -1313,6 +1326,7 @@ mordm.printbox <- function(data, mark, threshold=0.01, digits=3) {
 		}
 		
 		if (show.min & show.max) {
+			cat(indent)
 			cat("  ")
 			cat(limits[1])
 			cat(" <= ")
@@ -1321,6 +1335,7 @@ mordm.printbox <- function(data, mark, threshold=0.01, digits=3) {
 			cat(limits[2])
 			cat("\n")
 		} else if (show.min) {
+			cat(indent)
 			cat("  ")
 			cat(names[i])
 			
@@ -1333,6 +1348,7 @@ mordm.printbox <- function(data, mark, threshold=0.01, digits=3) {
 			cat(limits[1])
 			cat("\n")
 		} else if (show.max) {
+			cat(indent)
 			cat("  ")
 			cat(names[i])
 			
@@ -1350,15 +1366,18 @@ mordm.printbox <- function(data, mark, threshold=0.01, digits=3) {
 	}
 	
 	cat("\n")
+	cat(indent)
 	cat("Unbound Variables:\n")
 	
 	if (length(unbound) > 0) {
 		for (i in 1:length(unbound)) {
+			cat(indent)
 			cat("  ")
 			cat(unbound[i])
 			cat("\n")
 		}
 	} else {
+		cat(indent)
 		cat("  None\n")
 	}
 	
@@ -1662,8 +1681,8 @@ mordm.animate <- function(data, output="animation.gif", indices=1:length(data), 
 #'        series; otherwise, only the last entry is included
 #' @param ... additional options for Plischke's method
 #' @export
-mordm.sensitivity <- function(data, objective, all=FALSE, ...) {
-	set <- mordm.getset(data)
+mordm.sensitivity <- function(data, objective, index=-1, all=FALSE, ...) {
+	set <- mordm.getset(data, index)
 	nvars <- attr(set, "nvars")
 	nobjs <- attr(set, "nobjs")
 	names <- colnames(set)

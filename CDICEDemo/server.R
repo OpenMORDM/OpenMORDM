@@ -321,9 +321,22 @@ do.plotParallel <- function(input) {
 	colnames(set) <- c(colnames(data[[1]]), "Constant")[cols]
 	brush.limits <- to.limits(input)
 	transparency <- input$parallel.transparency * plot.brush(original.set, brush.limits, input$slider.transparency)
+	colors <- alpha(original.colors, transparency)
+	
+	# apply a custom ordering
+	if (input$depth.order != "Default") {
+		ordering <- order(original.set[,plot.toobj(input$depth.order)])
+		
+		if (input$depth.order.rev) {
+			ordering <- rev(ordering)
+		}
+		
+		set <- set[ordering,,drop=FALSE]
+		colors <- colors[ordering]
+	}
 	
 	mordm.currentset <<- set
-	mordm.currentcolors <<- alpha(original.colors, transparency)
+	mordm.currentcolors <<- colors
 	
 	# generate the parallel coordinates plot
 	mordm.plotpar(alpha=NA, label.size=input$parallel.cex, line.width=input$parallel.lwd)
@@ -359,8 +372,21 @@ do.scatter <- function(input) {
 	colnames(set) <- c(colnames(data[[1]]), "Constant")[cols]
 	brush.limits <- to.limits(input)
 	transparency <- input$scatter.transparency * plot.brush(original.set, brush.limits, input$slider.transparency)	
+	colors <- alpha(original.colors, transparency)
 	
-	pairs(set, col=alpha(original.colors, transparency), cex.labels=input$scatter.label, cex=input$scatter.point, pch=20)
+	# apply a custom ordering
+	if (input$depth.order != "Default") {
+		ordering <- order(original.set[,plot.toobj(input$depth.order)])
+		
+		if (input$depth.order.rev) {
+			ordering <- rev(ordering)
+		}
+		
+		set <- set[ordering,,drop=FALSE]
+		colors <- colors[ordering]
+	}
+	
+	pairs(set, col=colors, cex.labels=input$scatter.label, cex=input$scatter.point, pch=20)
 }
 
 do.raw <- function(input) {
@@ -389,6 +415,8 @@ to.mark <- function(limits) {
 }
 
 do.sensitivity <- function(input) {
+	index <- to.index(input)
+	
 	if (input$sensitivity.response == "Brushed Set") {
 		brush.limits <- to.limits(input, ignore.constant=TRUE)
 		
@@ -401,9 +429,10 @@ do.sensitivity <- function(input) {
 		objective <- plot.toobj(input$sensitivity.response)-nvars
 	}
 	
-	result <- tryCatch(mordm.sensitivity(data, objective,
+	result <- tryCatch(mordm.sensitivity(data, objective, index=index,
 								all=input$sensitivity.all,
-								kd.estimator=input$sensitivity.kd.estimator),
+								kd.estimator=input$sensitivity.kd.estimator,
+								plot.enabled=input$sensitivity.pdfs),
 					   error=function(msg) stop("Unable to compute sensitivities, try a different option"))
 	
 	indices <- result$Si
@@ -412,7 +441,46 @@ do.sensitivity <- function(input) {
 		indices <- indices[,result$rank,drop=FALSE]
 	}
 	
-	barplot(indices, ylim=c(0,1), ylab="Sensitivity Indices")
+	if (!input$sensitivity.pdfs) {
+		barplot(indices, ylim=c(0,1), ylab="Sensitivity Indices")
+	}
+}
+
+do.prim <- function(input) {
+	index <- to.index(input)
+	
+	if (input$prim.response == "Brushed Set") {
+		brush.limits <- to.limits(input, ignore.constant=TRUE)
+		
+		if (is.null(brush.limits)) {
+			stop("Must brush at least one response")
+		}
+		
+		objective <- to.mark(brush.limits)
+		
+		# these values will be ignored within mordm.prim
+		threshold.type <- NULL
+		threshold <- NULL
+	} else {
+		objective <- plot.toobj(input$prim.response)-nvars
+		objective.range <- range(mordm.getset(data, index)[,plot.toobj(input$prim.response)])
+		
+		if (input$prim_threshold_type == ">=") {
+			threshold.type <- 1
+		} else if (input$prim_threshold_type == "<=") {
+			threshold.type <- -1
+		}
+		
+		threshold <- (input$prim.threshold * (objective.range[2]-objective.range[1])) + objective.range[1]
+	}
+
+	result <- mordm.prim(data, objective, threshold.type=threshold.type,
+						 threshold=threshold, minimize=FALSE,
+						 expand=input$prim.expand)
+	
+	mordm.plotbox(data, result[[1]])
+	
+	result
 }
 
 shinyServer(
@@ -743,6 +811,52 @@ shinyServer(
 				size <- to.image.size(session, "sensitivity")
 				postscript(file, height=size$height, width=size$width)
 				do.sensitivity(input)
+				dev.off()
+			})
+		
+		output$prim <- renderPlot({
+			result <- do.prim(input)
+
+			output$prim.text <- renderPrint({
+				count <- 1
+				
+				for (box in result) {
+					cat("--------------------------------------\n")
+					cat(" Box ")
+					cat(count)
+					cat("\n")
+					cat("--------------------------------------\n")
+					
+					mordm.printbox(data, box, indent="    ")
+					count <- count + 1
+				}
+			})
+		})
+		
+		output$download.prim.png <- downloadHandler(
+			filename = "prim.png",
+			content = function(file) {
+				size <- to.image.size(session, "prim")
+				png(file, height=size$height, width=size$width, units="in", res=72)
+				do.prim(input)
+				dev.off()
+			})
+		
+		output$download.prim.svg <- downloadHandler(
+			filename = "prim.svg",
+			content = function(file) {
+				size <- to.image.size(session, "prim")
+				svg(file, height=size$height, width=size$width)
+				do.prim(input)
+				dev.off()
+			})
+		
+		output$download.prim.eps <- downloadHandler(
+			filename = "prim.eps",
+			content = function(file) {
+				size <- to.image.size(session, "prim")
+				postscript(file, height=size$height, width=size$width)
+				do.prim(input)
 				dev.off()
 			})
 	}

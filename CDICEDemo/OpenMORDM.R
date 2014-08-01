@@ -245,16 +245,16 @@ mordm.colorize <- function(set, objectives, mark=NULL, palette=heat.colors, n=10
 		colors <- set[,objectives[5]]
 		
 		if (is.null(clim)) {
-			denominator <- (max(colors, na.rm=TRUE) - min(colors, na.rm=TRUE))
-			
-			if (denominator > 0) {
-				colors <- (colors - min(colors, na.rm=TRUE)) / denominator
-			} else {
-				colors <- 0*colors + 1
-			}
+			clim <- range(colors, na.rm=TRUE)
+		}
+		
+		denominator <- clim[2] - clim[1]
+		colors <- pmin(pmax(colors, clim[1]), clim[2])
+		
+		if (denominator > 0) {
+			colors <- (colors - clim[1]) / denominator
 		} else {
-			colors <- pmin(pmax(colors, clim[1]), clim[2])
-			colors <- (colors - clim[1]) / (clim[2] - clim[1])
+			colors <- 0*colors + 1
 		}
 	} else if (is.list(mark)) {
 		colors <- rep(0, nrow(set))

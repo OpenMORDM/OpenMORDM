@@ -1,4 +1,4 @@
-model <- "lake"
+model <- "cdice"
 
 if (model == "lake") {
 	filename <- "../demo/data/lake5obj.txt"

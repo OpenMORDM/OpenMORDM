@@ -415,6 +415,10 @@ to.mark <- function(limits) {
 }
 
 do.sensitivity <- function(input) {
+	if (nvars == 0) {
+		stop("Unable to compute sensitivities on data set with no decision variables")
+	}
+	
 	index <- to.index(input)
 	
 	if (input$sensitivity.response == "Brushed Set") {
@@ -447,6 +451,10 @@ do.sensitivity <- function(input) {
 }
 
 do.prim <- function(input) {
+	if (nvars == 0) {
+		stop("Unable to perform PRIM analysis on data set with no decision variables")
+	}
+	
 	index <- to.index(input)
 	
 	if (input$prim.response == "Brushed Set") {

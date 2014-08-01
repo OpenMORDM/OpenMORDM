@@ -28,7 +28,16 @@ source("config.R")
 
 options <- c(objectives, "Constant")
 
-shinyUI(fluidPage(navbarPage("OpenMORDM", id="main",
+if (selectable && !is.null(selection.panel)) {
+	script <- '$(document).read(function() {})'
+} else {
+	script <- '$(document).ready(function() { $("a").filter(function(index) { return $(this).text() === "Selection"; }).hide(); });'
+}
+
+shinyUI(
+	fluidPage(
+		tags$head(tags$script(script)),
+		navbarPage("OpenMORDM", id="main",
 	tabPanel("3D Plot",
 			 sidebarLayout(
 			 	sidebarPanel(

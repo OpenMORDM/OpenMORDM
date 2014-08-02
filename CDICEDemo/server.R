@@ -1035,7 +1035,7 @@ shinyServer(
 			})
 		
 		observe({
-			if (selectable && input$selection.enabled && !is.null(input$plot3d.click)) {
+			if (selectable && isolate(input$selection.enabled) && !is.null(input$plot3d.click)) {
 				x <- input$plot3d.click[1]
 				y <- input$plot3d.click[2]
 				nfe <- isolate(input$nfe)
@@ -1043,6 +1043,7 @@ shinyServer(
 				x.axis <- isolate(input$x)
 				y.axis <- isolate(input$y)
 				z.axis <- isolate(input$z)
+				old.selection <- isolate(input$selection)
 				
 				if (is.null(nfe) || is.na(nfe)) {
 					index <- length(data)
@@ -1083,10 +1084,20 @@ shinyServer(
 					cat(d[i[1]])
 					cat("\n")
 					
-					updateNumericInput(session, "selection", value=i[1])
+					if (old.selection != i[1]) {
+						updateNumericInput(session, "selection", value=i[1])
+					}
 				} else {
-					updateNumericInput(session, "selection", value=0)	
+					if (old.selection != 0) {
+						updateNumericInput(session, "selection", value=0)
+					}
 				}
+			}
+		})
+		
+		observe({
+			if (!is.null(input$selection) && input$selection != 0) {
+				session$sendCustomMessage(type="selection", message=paste("Selected item", input$selection, sep=""))
 			}
 		})
 		

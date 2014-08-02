@@ -29,14 +29,25 @@ source("config.R")
 options <- c(objectives, "Constant")
 
 if (selectable && !is.null(selection.panel)) {
-	script <- '$(document).read(function() {})'
+	script <- '$(document).ready(function() {})'
 } else {
 	script <- '$(document).ready(function() { $("a").filter(function(index) { return $(this).text() === "Selection"; }).hide(); });'
 }
 
+if (FALSE) {
+	selectionListener <- '$(document).ready(function() { Shiny.addCustomMessageHandler("selection", function(message) { var elem = $("a").filter(function(index) { return $(this).text() === "Selection"; }); var bkgd = elem.css("background-color"); elem.animate({backgroundColor: "#FFCCCC"}).animate({backgroundColor: bkgd}) })})'
+} else {
+	selectionListener <- '$(document).ready(function() { Shiny.addCustomMessageHandler("selection", function(message) { var elem = $("a").filter(function(index) { return $(this).text() === "Selection"; }); elem.effect("pulsate", { times:1 }, 2000); })})'
+}
+
 shinyUI(
 	fluidPage(
-		tags$head(tags$script(script)),
+		#tags$head(
+			#tags$script(script)
+			#tags$script(src="jquery-ui.min.js"),
+			#tags$script(src="jquery.color.js"),
+			#tags$script(selectionListener)
+		#	),
 		navbarPage("OpenMORDM", id="main",
 	tabPanel("3D Plot",
 			 sidebarLayout(

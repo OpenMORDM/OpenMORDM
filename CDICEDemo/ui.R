@@ -159,9 +159,7 @@ shinyUI(
 			 			 	mainPanel(
 			 			 		plotOutput("plot2d.operators")))))),
 	tabPanel("Selection", 
-			 uiOutput("selection.panel"),
-			 style="display: none;"),
-			 #style=ifelse(is.null("selection.panel"), "display: none;", "")),
+			 uiOutput("selection.panel")),
 	tabPanel("Analyze",
 			 tabsetPanel(
 			 	tabPanel("Correlations",

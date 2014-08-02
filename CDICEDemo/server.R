@@ -29,7 +29,6 @@ library("scales")
 library("functional")
 library("dichromat")
 source("OpenMORDM.R")
-source("config.R")
 
 # Setup and load the data
 cat("Loading data, this may take several minutes...\n")

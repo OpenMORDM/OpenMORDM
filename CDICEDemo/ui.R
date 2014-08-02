@@ -24,7 +24,6 @@
 # THE SOFTWARE.
 library("shiny")
 library("shinyRGL")
-source("config.R")
 
 options <- c(objectives, "Constant")
 

@@ -1035,7 +1035,7 @@ shinyServer(
 			})
 		
 		observe({
-			if (selectable && isolate(input$selection.enabled) && !is.null(input$plot3d.click)) {
+			if (isolate(input$selection.enabled) && !is.null(input$plot3d.click)) {
 				x <- input$plot3d.click[1]
 				y <- input$plot3d.click[2]
 				nfe <- isolate(input$nfe)

@@ -9,7 +9,6 @@ if (model == "lake") {
 	bounds <- matrix(rep(range(0.0, 0.1), 20), nrow=2)
 	maximize <- objectives[2:5]
 	order <- 1:5
-	selectable <- TRUE
 	selection.panel <- function(data, input, output, session) {
 		do.custom <- function(input) {
 			if (is.null(input$nfe) || is.na(input$nfe)) {
@@ -110,7 +109,6 @@ if (model == "lake") {
 	bounds <- NULL
 	maximize <- objectives[1:2]
 	order <- c(2,3,4,1)
-	selectable <- TRUE
 	selection.panel <- NULL
 }
 

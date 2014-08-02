@@ -28,7 +28,7 @@ source("config.R")
 
 options <- c(objectives, "Constant")
 
-if (selectable && !is.null(selection.panel)) {
+if (!is.null(selection.panel)) {
 	script <- '$(document).ready(function() {})'
 } else {
 	script <- '$(document).ready(function() { $("a").filter(function(index) { return $(this).text() === "Selection"; }).hide(); });'

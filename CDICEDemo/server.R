@@ -1053,7 +1053,7 @@ shinyServer(
 				set <- mordm.getset(data, index)
 				
 				draw <- renderForPicking({
-					do.plot3d(input)
+					isolate(do.plot3d(input))
 				})
 				
 				proj <- draw(session, "plot3d")

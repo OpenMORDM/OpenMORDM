@@ -22,9 +22,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+library("rgl")
 library("shiny")
 library("shinyRGL")
-library("rgl")
 library("scales")
 library("functional")
 library("dichromat")
@@ -811,6 +811,30 @@ shinyServer(
 				brush.limits <- to.limits(input, ignore.constant=TRUE)
 				alpha <- plot.brush(set, brush.limits, 0.0)
 				write.csv(set[alpha==1,,drop=FALSE], file)
+			})
+		
+		output$download.rotate.gif <- downloadHandler(
+			filename = "rotate.gif",
+			content = function(file) {
+				palette <- to.palette(input$colormap)
+				
+				if (input$colormap.reverse) {
+					palette <- rev(palette)
+				}
+				
+				mordm.animate(data, output=file, indices=rep(length(data), 60), transform=spin3d(rpm=60/60), objectives=c(2,3,4), color=1, palette=palette, window=500)
+			})
+		
+		output$download.converge.gif <- downloadHandler(
+			filename = "converge.gif",
+			content = function(file) {
+				palette <- to.palette(input$colormap)
+				
+				if (input$colormap.reverse) {
+					palette <- rev(palette)
+				}
+				
+				mordm.animate(data, output=file, indices=1:length(data), transform=spin3d(rpm=0), objectives=c(2,3,4), color=1, palette=color.map, window=500)
 			})
 		
 		output$plot2d.parallel <- renderPlot({

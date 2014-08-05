@@ -41,12 +41,11 @@ if (FALSE) {
 
 shinyUI(
 	fluidPage(
-		#tags$head(
-			#tags$script(script)
-			#tags$script(src="jquery-ui.min.js"),
-			#tags$script(src="jquery.color.js"),
-			#tags$script(selectionListener)
-		#	),
+		tags$head(
+			tags$script(script),
+			tags$script(src="jquery-ui.min.js"),
+			tags$script(src="jquery.color.js"),
+			tags$script(selectionListener)),
 		navbarPage("OpenMORDM", id="main",
 	tabPanel("3D Plot",
 			 sidebarLayout(
@@ -77,6 +76,11 @@ shinyUI(
 				 				h3("Animation Controls"),
 				 				helpText("User the slider below to show the set at different times during optimization."),
 				 				uiOutput("slider.nfe"),
+				 				br(),
+				 				br(),
+				 				h4("GIF Plots"),
+				 				downloadButton("download.rotate.gif", "Rotate 360"),
+				 				downloadButton("download.converge.gif", "Convergence"),
 				 				style="height: 550px")),
 			 			tabPanel("Download",
 			 				div(

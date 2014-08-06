@@ -22,6 +22,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+options(rgl.useNULL=TRUE)
 library("shiny")
 library("shinyRGL")
 
@@ -76,11 +77,11 @@ shinyUI(
 				 				h3("Animation Controls"),
 				 				helpText("User the slider below to show the set at different times during optimization."),
 				 				uiOutput("slider.nfe"),
-				 				br(),
-				 				br(),
-				 				h4("GIF Plots"),
-				 				downloadButton("download.rotate.gif", "Rotate 360"),
-				 				downloadButton("download.converge.gif", "Convergence"),
+				 				#br(),
+				 				#br(),
+				 				#h4("GIF Plots"),
+				 				#downloadButton("download.rotate.gif", "Rotate 360"),
+				 				#downloadButton("download.converge.gif", "Convergence"),
 				 				style="height: 550px")),
 			 			tabPanel("Download",
 			 				div(
@@ -156,6 +157,32 @@ shinyUI(
 			 			 	mainPanel(
 			 			 		plotOutput("plot2d.scatter"),
 			 			 		plotOutput("plot2d.scatter.colorbar", height="150px")))),
+			 	tabPanel("Tradeoffs",
+			 			 sidebarLayout(
+			 			 	sidebarPanel(
+			 			 		h3("Plotting Options"),
+			 			 		selectInput("tradeoff.x", "X-Axis", objectives, objectives[order[1]]),
+			 			 		selectInput("tradeoff.y", "Y-Axis", objectives, objectives[order[2]]),
+			 			 		sliderInput("tradeoff.point", "Point Size", min=0.2, max=4, value=1, step=0.2),
+			 			 		sliderInput("tradeoff.transparency", "Point Transparency", min=0.1, max=1, value=1, step=0.1),
+			 			 		sliderInput("tradeoff.label", "Label Size", min=0.1, max=2, value=1, step=0.1),
+			 			 		sliderInput("tradeoff.tick", "Tick Size", min=0.1, max=2, value=1, step=0.1),
+			 			 		checkboxInput("tradeoff.circle", "Draw black border around points", value=FALSE),
+			 			 		checkboxInput("tradeoff.pareto", "Show only Pareto set", value=FALSE),
+			 			 		checkboxInput("tradeoff.curve", "Fit curve to points", value=FALSE),
+			 			 		br(),
+			 			 		br(),
+			 			 		h4("Download"),
+			 			 		downloadButton("download.tradeoff.png", "PNG Image"),
+			 			 		downloadButton("download.tradeoff.svg", "SVG Image"),
+			 			 		downloadButton("download.tradeoff.eps", "EPS File"),
+			 			 		br(),
+			 			 		br(),
+			 			 		helpText("Note: EPS export does not support transparency.  Transparent lines will not appear.")),
+			 			 	mainPanel(
+			 			 		plotOutput("plot2d.tradeoff"),
+			 			 		plotOutput("plot2d.tradeoff.colorbar", height="150px"),
+			 			 		uiOutput("plot2d.tradeoff.function")))),
 			 	tabPanel("Operators",
 			 			 sidebarLayout(
 			 			 	sidebarPanel(

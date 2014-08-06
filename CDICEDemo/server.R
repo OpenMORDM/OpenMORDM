@@ -22,6 +22,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+options(rgl.useNULL=TRUE)
 library("rgl")
 library("shiny")
 library("shinyRGL")
@@ -391,6 +392,10 @@ do.plotParallel <- function(input) {
 }
 
 do.plotOps <- function(input) {
+	if (length(data) <= 1) {
+		stop("The data does not contain any operator information.")
+	}
+	
 	if (input$operators.current) {
 		current <- to.index(input)
 	} else {
@@ -401,6 +406,134 @@ do.plotOps <- function(input) {
 				  improvements=input$operators.improvements,
 				  log=input$operators.log,
 				  current=current)
+}
+
+do.tradeoff <- function(input) {
+	do.plot3d(input)
+	
+	original.set <- mordm.currentset
+	original.colors <- mordm.currentcolors
+	
+	# determine which columns to plot
+	cols <- c(plot.toobj(input$tradeoff.x), plot.toobj(input$tradeoff.y))
+	
+	set <- original.set[,cols,drop=FALSE]
+	colnames(set) <- c(colnames(data[[1]]), "Constant")[cols]
+	brush.limits <- to.limits(input)
+	transparency <- input$tradeoff.transparency * plot.brush(original.set, brush.limits, input$slider.transparency)	
+	colors <- alpha(original.colors, transparency)
+	point.sizes <- rep(input$tradeoff.point, nrow(set))
+	
+	# highlight the selected point
+	if (is.null(input$selection) || !input$selection.enabled) {
+		highlight <- NULL
+	} else {
+		highlight <- input$selection
+		highlight <- highlight[highlight > 0 && highlight < nrow(set)]
+		
+		if (length(highlight) == 0) {
+			highlight <- NULL
+		}
+	}
+	
+	# apply a custom ordering
+	if (input$depth.order != "Default") {
+		ordering <- order(original.set[,plot.toobj(input$depth.order)])
+		
+		if (input$depth.order.rev) {
+			ordering <- rev(ordering)
+		}
+		
+		set <- set[ordering,,drop=FALSE]
+		colors <- colors[ordering]
+		
+		if (!is.null(highlight)) {
+			highlight <- highlight[ordering]
+		}
+	}
+	
+	# highlight selected solutions
+	if (!is.null(highlight)) {
+		original.colors <- alpha(colors[highlight], 1.0)
+		colors[highlight] <- "black"
+		point.sizes[highlight] <- 2*input$selection.scale*input$tradeoff.point	
+		
+		order <- 1:nrow(set)
+		order <- append(order[-highlight], highlight)
+		
+		set <- rbind(set[order,], set[highlight,])
+		colors <- c(colors[order], original.colors)
+		point.sizes <- c(point.sizes[order], rep(input$selection.scale*input$tradeoff.point, length(highlight)))		
+	}
+	
+	xlim <- range(set[,1])
+	ylim <- range(set[,2])
+	
+	if (input$tradeoff.pareto) {
+		# determine which objectives need to be negated (for maximization)
+		maximizeTF <- rep(FALSE, nvars+nobjs)
+		names(maximizeTF) <- colnames(data[[1]])
+		
+		if (!is.null(maximize)) {
+			maximizeTF[maximize] <- TRUE
+		}
+		
+		# negate the maximized objectives
+		minset <- set
+		minset[,maximizeTF[cols]] <- -minset[,maximizeTF[cols]]
+		minset
+		
+		subset <- t(nondominated_points(t(minset)))
+		
+		# determine which indices were selected so we can select the appropriate colors/sizes
+		indices <- apply(minset, 1, function(x) {
+			for (i in 1:nrow(subset)) {
+				match <- TRUE
+				
+				for (j in 1:ncol(subset)) {
+					if (subset[i,j] != x[j]) {
+						match <- FALSE
+						break
+					}
+				}
+				
+				if (match) {
+					return(TRUE)
+				}
+			}
+			
+			return(FALSE)
+		})
+		
+		colors <- colors[indices]
+		point.sizes <- point.sizes[indices]
+		
+		# return the maximized objectives to their original sign
+		subset[,maximizeTF[cols]] <- -subset[,maximizeTF[cols]]		
+	} else {
+		subset <- set
+	}
+
+	if (input$tradeoff.circle) {
+		plot(subset, bg=colors, col="black", cex.axis=input$tradeoff.tick, cex.lab=input$tradeoff.label, cex=point.sizes, pch=21, xlim=xlim, ylim=ylim)
+	} else {
+		plot(subset, col=colors, cex.axis=input$tradeoff.tick, cex.lab=input$tradeoff.label, cex=point.sizes, pch=20, xlim=xlim, ylim=ylim)
+	}
+	
+	
+	if (input$tradeoff.curve) {
+		ordering <- order(subset[,1])
+		
+		#lo <- loess(subset[ordering,2]~subset[ordering,1])
+		#lines(subset[ordering,1], predict(lo), lwd=3)
+		
+		fit <- lm(subset[ordering,2] ~ subset[ordering,1] + I(subset[ordering,1]^2), x=TRUE)
+		lines(subset[ordering,1], predict(fit), lwd=3)
+		
+		return(fit)
+	} else {
+		return(NULL)
+	}
 }
 
 do.scatter <- function(input) {
@@ -647,7 +780,6 @@ renderForPicking <- function(expr, width="auto", height="auto", env = parent.fra
 	})
 }
 
-
 shinyServer(
 	function(input, output, session) {
 		output$plot3d <- renderWebGL({
@@ -663,6 +795,10 @@ shinyServer(
 		})
 		
 		output$plot2d.scatter.colorbar <- renderPlot({
+			do.colorbar(input)
+		})
+		
+		output$plot2d.tradeoff.colorbar <- renderPlot({
 			do.colorbar(input)
 		})
 		
@@ -927,6 +1063,50 @@ shinyServer(
 				size <- to.image.size(session, "plot2d.scatter")
 				postscript(file, height=size$height, width=size$width)
 				do.scatter(input)
+				dev.off()
+			})
+		
+		output$plot2d.tradeoff <- renderPlot({
+			fit <- do.tradeoff(input)
+			
+			if (is.null(fit)) {
+				output$plot2d.tradeoff.function <- renderUI({})
+			} else {
+				fit.range <- range(fit$x[,2])
+				output$plot2d.tradeoff.function <- renderUI({
+					pre(paste("The displayed curve is defined by the function\n    f(x) = ",
+							  ifelse(!is.na(fit$coefficients[3]) && fit$coefficients[3] > 0.0000001, paste(fit$coefficients[3], "x^2 + ", sep=""), ""),
+							  ifelse(!is.na(fit$coefficients[2]) && fit$coefficients[2] > 0.0000001, paste(fit$coefficients[2], "x + ", sep=""), ""),
+							  fit$coefficients[1], "\nfor x in [", fit.range[1], ", ",
+							  fit.range[2], "].", sep=""))
+				})
+			}
+		})
+		
+		output$download.tradeoff.png <- downloadHandler(
+			filename = "tradeoff.png",
+			content = function(file) {
+				size <- to.image.size(session, "plot2d.tradeoff")
+				png(file, height=size$height, width=size$width, units="in", res=72)
+				do.tradeoff(input)
+				dev.off()
+			})
+		
+		output$download.tradeoff.svg <- downloadHandler(
+			filename = "tradeoff.svg",
+			content = function(file) {
+				size <- to.image.size(session, "plot2d.tradeoff")
+				svg(file, height=size$height, width=size$width)
+				do.tradeoff(input)
+				dev.off()
+			})
+		
+		output$download.tradeoff.eps <- downloadHandler(
+			filename = "tradeoff.eps",
+			content = function(file) {
+				size <- to.image.size(session, "plot2d.tradeoff")
+				postscript(file, height=size$height, width=size$width)
+				do.tradeoff(input)
 				dev.off()
 			})
 		

@@ -183,6 +183,22 @@ shinyUI(
 			 			 		plotOutput("plot2d.tradeoff"),
 			 			 		plotOutput("plot2d.tradeoff.colorbar", height="150px"),
 			 			 		uiOutput("plot2d.tradeoff.function")))),
+			 	tabPanel("Histograms",
+			 			 sidebarLayout(
+			 			 	sidebarPanel(
+			 			 		h3("Plotting Options"),
+			 			 		sliderInput("histogram.splits", "Number of Splits", min=2, max=20, value=10, step=1),
+			 			 		sliderInput("histogram.label", "Label Size", min=0.1, max=2, value=1, step=0.1),
+			 			 		checkboxInput("histogram.smooth", "Show smooth density", value=FALSE),
+			 			 		checkboxInput("histogram.brushed", "Show brushed set overlay", value=TRUE),
+			 			 		br(),
+			 			 		br(),
+			 			 		h4("Download"),
+			 			 		downloadButton("download.histogram.png", "PNG Image"),
+			 			 		downloadButton("download.histogram.svg", "SVG Image"),
+			 			 		downloadButton("download.histogram.eps", "EPS File")),
+			 			 	mainPanel(
+			 			 		plotOutput("plot2d.histogram")))),
 			 	tabPanel("Operators",
 			 			 sidebarLayout(
 			 			 	sidebarPanel(

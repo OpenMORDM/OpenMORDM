@@ -597,6 +597,51 @@ do.scatter <- function(input) {
 	pairs(set, col=colors, cex.labels=input$scatter.label, cex=point.sizes, pch=20)
 }
 
+do.histogram <- function(input) {
+	oldpar <- par(no.readonly=TRUE)
+	index <- to.index(input)
+	set <- mordm.getset(data, index)
+	brush.limits <- to.limits(input, ignore.constant=TRUE)
+	alpha <- plot.brush(set, brush.limits, 0.0)
+	brushed.set <- set[alpha==1,,drop=FALSE]
+	
+	layout(matrix(c(1:nobjs, rep(nobjs+1, nobjs)), nrow=2, byrow=TRUE), heights=matrix(c(rep(7, nobjs), rep(1, nobjs)), nrow=2, byrow=TRUE))
+	
+	for (i in 1:nobjs) {
+		if (input$histogram.smooth) {
+			par(cex=input$histogram.label)
+			d <- density(set[,nvars+i], n=input$histogram.splits*10)
+			plot(d, main=colnames(set)[nvars+i], xlim=limits[,nvars+i], xlab="")
+			polygon(d, col="red", border="black")
+			
+			if (input$histogram.brushed && nrow(set) != nrow(brushed.set)) {
+				d2 <- density(brushed.set[,nvars+i], n=input$histogram.splits*10)
+				d2$y <- d2$y * (d2$n / d$n)
+				polygon(d2, col="blue", border="black")
+			}	
+		} else {
+			breaks <- seq(from=limits[1,nvars+i], to=limits[2,nvars+i], length.out=input$histogram.splits+1)
+			par(cex=input$histogram.label)
+			hist(set[,nvars+i], main=colnames(set)[nvars+i], xlim=limits[,nvars+i], xlab="", col="red", breaks=breaks)
+			
+			if (input$histogram.brushed && nrow(set) != nrow(brushed.set)) {
+				hist(brushed.set[,nvars+i], main="", xlim=limits[,nvars+i], xlab="", col="blue", add=TRUE, breaks=breaks)
+			}	
+		}
+	}
+	
+	par(mar=c(0,0,0,0))
+	plot.new()
+	
+	if (input$histogram.brushed && nrow(set) != nrow(brushed.set)) {
+		legend("center", c("Original Set", "Brushed Set"), fill=c("red", "blue"), horiz=TRUE)
+	} else {
+		legend("center", c("Frequency"), fill=c("red"), horiz=TRUE)
+	}
+	
+	par(oldpar)
+}
+
 do.raw <- function(input) {
 	index <- to.index(input)
 	cols <- to.columns(input, ignore.constant=TRUE)
@@ -1107,6 +1152,37 @@ shinyServer(
 				size <- to.image.size(session, "plot2d.tradeoff")
 				postscript(file, height=size$height, width=size$width)
 				do.tradeoff(input)
+				dev.off()
+			})
+		
+		output$plot2d.histogram <- renderPlot({
+			do.histogram(input)
+		})
+		
+		output$download.histogram.png <- downloadHandler(
+			filename = "histogram.png",
+			content = function(file) {
+				size <- to.image.size(session, "plot2d.histogram")
+				png(file, height=size$height, width=size$width, units="in", res=72)
+				do.histogram(input)
+				dev.off()
+			})
+		
+		output$download.histogram.svg <- downloadHandler(
+			filename = "histogram.svg",
+			content = function(file) {
+				size <- to.image.size(session, "plot2d.histogram")
+				svg(file, height=size$height, width=size$width)
+				do.histogram(input)
+				dev.off()
+			})
+		
+		output$download.histogram.eps <- downloadHandler(
+			filename = "histogram.eps",
+			content = function(file) {
+				size <- to.image.size(session, "plot2d.histogram")
+				postscript(file, height=size$height, width=size$width)
+				do.histogram(input)
 				dev.off()
 			})
 		

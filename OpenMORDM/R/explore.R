@@ -30,7 +30,7 @@ options(rgl.useNULL=TRUE)
 #' display custom resources, use \code{\link{addResourcePath}} to register the
 #' directory containing the resources.
 #' 
-#' @param filename the name of the file
+#' @param filename the name of the file, a matrix, or a data frame
 #' @param nvars the number of decision variables
 #' @param nobjs the number of objectives
 #' @param nconstrs the number of constraints
@@ -45,7 +45,7 @@ options(rgl.useNULL=TRUE)
 #' @param selection.panel optional panel for displaying info about the selected
 #'        point
 #' @export
-explore <- function(filename, nvars, nobjs, nconstrs=0, names=NULL, bounds=NULL,
+explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bounds=NULL,
 					maximize=NULL, order=1:nobjs, visible.variables=FALSE,
 					plot3d.width="600px", plot3d.height="500px",
 					welcome.panel=NULL, selection.panel=NULL) {
@@ -69,15 +69,32 @@ explore <- function(filename, nvars, nobjs, nconstrs=0, names=NULL, bounds=NULL,
 	############################################################################
 	
 	# Setup and load the data
-	cat("Loading data, this may take several minutes...\n")
-	if (tolower(substr(filename, nchar(filename)-3, nchar(filename))) == ".csv") {
-		data <- mordm.read.csv(filename, bounds=bounds, maximize=maximize)
+	if (is.data.frame(filename)) {
+		data <- mordm.read.matrix(as.matrix(filename), bounds=bounds, maximize=maximize, names=names)
+	} else if (is.matrix(filename)) {
+		data <- mordm.read.matrix(filename, bounds=bounds, maximize=maximize, names=names)
+	} else if (is.character(filename)) {
+		if (!file.exists(filename)) {
+			stop("The file does not exist")
+		}
+		
+		if (tolower(substr(filename, nchar(filename)-3, nchar(filename))) == ".csv") {
+			data <- mordm.read.csv(filename, bounds=bounds, maximize=maximize)
+		} else {
+			if (is.null(nvars) || is.null(nobjs)) {
+				stop("Must specify the number of variables and objectives when loading an MOEA runtime file")
+			}
+			
+			data <- mordm.read(filename, nvars, nobjs, nconstrs, bounds=bounds,
+							   names=names, maximize=maximize, digits=5)
+		}
 	} else {
-		data <- mordm.read(filename, nvars, nobjs, nconstrs, bounds=bounds,
-						   names=names, maximize=maximize, digits=5)
+		stop("The first argument must be a filename, a matrix, or a data frame")
 	}
-	cat("Finished loading data!\n")
 	
+	nvars <- attr(data, "nvars")
+	nobjs <- attr(data, "nobjs")
+	nconstrs <- attr(data, "nconstrs")
 	min.nfe <- attr(data[[1]], "NFE")
 	max.nfe <- attr(data[[length(data)]], "NFE")
 	step.nfe <- max.nfe / length(data)

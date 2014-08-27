@@ -51,11 +51,27 @@ mordm.defaultnames <- function(nvars, nobjs) {
 #' @param mat the matrix
 #' @param bounds the lower and upper bounds of each decision variable
 #' @param maximize vector indicating the columns to be maximized
-#' 
-mordm.read.matrix <- function(mat, bounds=NULL, maximize=NULL) {
+#' @param names override the column names
+#' @export
+mordm.read.matrix <- function(mat, bounds=NULL, maximize=NULL, names=NULL) {
 	entry <- mat
 	nvars <- ifelse(is.null(bounds), 0, ncol(bounds))
 	nobjs <- ncol(entry) - nvars
+	
+	if (is.null(names)) {
+		if (is.null(colnames(entry))) {
+			names <- mordm.defaultnames(nvars, nobjs)
+		} else {
+			names <- colnames(entry)
+		}
+	} else if (length(names) == nobjs) {
+		names <- append(mordm.defaultnames(nvars, 0), names)
+	} else if (length(names) != nvars + nobjs) {
+		warning("Incorrect number of names, using defaults")
+		names <- mordm.defaultnames(nvars, nobjs)
+	}
+	
+	colnames(entry) <- names
 	
 	attr(entry, "nvars") <- nvars
 	attr(entry, "nobjs") <- nobjs
@@ -86,9 +102,10 @@ mordm.read.matrix <- function(mat, bounds=NULL, maximize=NULL) {
 #' @param file the file name
 #' @param bounds the lower and upper bounds of each decision variable
 #' @param maximize vector indicating the columns to be maximized
+#' @param names override the column names
 #' @param ... optional arguments passed to read.csv
-#' 
-mordm.read.csv <- function(file, bounds=NULL, maximize=NULL, ...) {
+#' @export
+mordm.read.csv <- function(file, bounds=NULL, maximize=NULL, names=NULL, ...) {
 	varargs <- list(...)
 	
 	if (is.null(varargs$check.names)) {
@@ -101,7 +118,7 @@ mordm.read.csv <- function(file, bounds=NULL, maximize=NULL, ...) {
 	
 	mat <- as.matrix(do.call(read.csv, c(list(file), varargs)))
 	
-	mordm.read.matrix(mat, bounds=bounds, maximize=maximize)
+	mordm.read.matrix(mat, bounds=bounds, maximize=maximize, names=names)
 }
 
 #' Loads the time series data output from an optimization algorithm.

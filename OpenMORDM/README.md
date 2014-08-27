@@ -4,9 +4,11 @@ OpenMORDM is an open-source R library for multiobjective robust decision making 
 It includes support for loading optimization output files (from [Borg](http://www.borgmoea.org/)
 or the [MOEA Framework](http://www.moeaframework.org/)), visualizing the data sets using
 various 2D and 3D plots, performing scenario discovery and tradeoff analysis, and computing
-uncertainty/robustness metrics.
+uncertainty/robustness metrics.  OpenMORDM also includes a web-based data exploration and 
+visualization toolkit that can be launched through the `runVisDemo` or `explore` commands.
 
-Note: This software requires a custom version of RGL and ShinyRGL.  Other software that uses
+### Note on Custom Packages ###
+This software requires a custom version of RGL and ShinyRGL.  Other software that uses
 RGL or ShinyRGL should be compatible, but if problems arise, you can always reinstall the
 original versions from CRAN.
 
@@ -19,19 +21,17 @@ original versions from CRAN.
 3. [R version 3.0](http://www.r-project.org/) or later
 
 ### Installation ###
-
 * Install the prerequisite software
 * Clone the OpenMORDM repository: `git clone https://bitbucket.org/dmh309/openmordm.git`
 * Start R: `R`
 * If using Windows, run the following command:
-  * `options(devtools.install.args="--force-biarch")`
+    * `options(devtools.install.args="--force-biarch")`
 * Run the following commands:
-  * `install_github("rgl", "dhadka", "mobile")`
-  * `install_github("shinyRGL", "dhadka")`
-  * `install_local("path/to/openmordm/OpenMORDM")`
+    * `install_github("rgl", "dhadka", "mobile")`
+    * `install_github("shinyRGL", "dhadka")`
+    * `install_local("path/to/openmordm/OpenMORDM")`
 
 ### Running the Demo ###
-
 * Start R: `R`
 * Load the OpenMORDM library: `library(OpenMORDM)`
 * Run the demo: `runVisDemo()`

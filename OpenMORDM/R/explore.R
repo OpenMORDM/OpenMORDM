@@ -26,6 +26,10 @@ options(rgl.useNULL=TRUE)
 
 #' A web-based tool (powered by Shiny) for exploring high-dimensional data sets.
 #' 
+#' If you are providing a custom welcome or selection panel and would like to
+#' display custom resources, use \code{\link{addResourcePath}} to register the
+#' directory containing the resources.
+#' 
 #' @param filename the name of the file
 #' @param nvars the number of decision variables
 #' @param nobjs the number of objectives
@@ -57,6 +61,8 @@ explore <- function(filename, nvars, nobjs, nconstrs=0, names=NULL, bounds=NULL,
 				   "Light to Dark Blue*",
 				   "Green to Magenta*",
 				   "Categorical*")
+	
+	addResourcePath("OpenMORDM", system.file("www", package="OpenMORDM"))
 	
 	############################################################################
 	# Server Code                                                              #
@@ -1841,7 +1847,7 @@ explore <- function(filename, nvars, nobjs, nconstrs=0, names=NULL, bounds=NULL,
 		selectionListener <- '$(document).ready(function() { Shiny.addCustomMessageHandler("selection", function(message) { var elem = $("a").filter(function(index) { return $(this).text() === "Selection"; }); elem.effect("pulsate", { times:1 }, 2000); })})'
 	}
 	
-	bgListener <- HTML('$(document).ready(function() { Shiny.addCustomMessageHandler("bgChange", function(message) { if (message == "black") { $("head").append(\'<link id="blackStylesheet" href="shared/OpenMORDM/www/bootstrap.css" rel="stylesheet" type="text/css"></link>\'); } else { $("#blackStylesheet").remove(); } })})')
+	bgListener <- HTML('$(document).ready(function() { Shiny.addCustomMessageHandler("bgChange", function(message) { if (message == "black") { $("head").append(\'<link id="blackStylesheet" href="OpenMORDM/bootstrap.css" rel="stylesheet" type="text/css"></link>\'); } else { $("#blackStylesheet").remove(); } })})')
 	
 	# Define each of the tabs
 	tab.welcome <- tabPanel("Welcome", 
@@ -2226,13 +2232,11 @@ explore <- function(filename, nvars, nobjs, nconstrs=0, names=NULL, bounds=NULL,
 	
 	ui <- fluidPage(
 			tags$head(
-				tags$script(src="shared/OpenMORDM/www/jquery-ui.min.js"),
-				tags$script(src="shared/OpenMORDM/www/jquery.color.js"),
+				tags$script(src="OpenMORDM/jquery-ui.min.js"),
+				tags$script(src="OpenMORDM/jquery.color.js"),
 				tags$script(selectionListener),
 				tags$script(bgListener)),
 			navbar)
 	
-	dir.create(file.path(system.file("www/shared", package="shiny"), "OpenMORDM"), showWarnings=FALSE)
-	file.copy(system.file("www", package="OpenMORDM"), system.file("www/shared/OpenMORDM/", package="shiny"), recursive=TRUE)
 	runApp(list(server=server, ui=ui))
 }

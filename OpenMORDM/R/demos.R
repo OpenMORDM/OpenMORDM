@@ -27,6 +27,8 @@
 #' 
 #' @export
 runVisDemo <- function() {
+	addResourcePath("LakeProblem", system.file("LakeProblem", package="OpenMORDM"))
+	
 	filename <- system.file("LakeProblem/lake5obj.txt", package="OpenMORDM")
 	names <- c("Phosphorus in Lake", "Bentham's Utility", "Today's Utility", "Future Utility", "Reliability")
 	nvars <- 20
@@ -47,7 +49,7 @@ runVisDemo <- function() {
 				   phosphorus.  Additionally, there is some amount of uncontrolled
 				   natural inflow into the lake.  The lake, over time, is able to
 				   remove part of this pollution."),
-				 div(img(src=ifelse(input$colormap.black, "shared/OpenMORDM/www/lake_model_simple_inverted.png", "shared/OpenMORDM/www/lake_model_simple.png")), style="text-align: center"),
+				 div(img(src=ifelse(input$colormap.black, "LakeProblem/lake_model_simple_inverted.png", "LakeProblem/lake_model_simple.png")), style="text-align: center"),
 				 p("The inhabitants of the town have to decide on the amount of
 				   allowable pollution that can be emitted into the lake for a
 				   given planning horizon (100 years).  Allowing more pollution
@@ -65,9 +67,9 @@ runVisDemo <- function() {
 				 h3("Quick Tutorial"),
 				 p("Please refer to the Visualizing Data with OpenMORDM tutorial
 				   for instructions on using this software, available as a",
-				   a("PowerPoint (PPTX) presentation", href="shared/OpenMORDM/www/Visualizing_Data_with_OpenMORDM.pptx", target="_blank"),
+				   a("PowerPoint (PPTX) presentation", href="LakeProblem/Visualizing_Data_with_OpenMORDM.pptx", target="_blank"),
 				   "or a",
-				   a("PDF file", href="shared/OpenMORDM/www/Visualizing_Data_with_OpenMORDM.pdf", target="_blank"), "."),
+				   a("PDF file", href="LakeProblem/Visualizing_Data_with_OpenMORDM.pdf", target="_blank"), "."),
 				 h3("Compatability Note"),
 				 p(HTML("This website uses WebGL, a 3D library supported only by the
 				 	   most recent web browsers.  For the best experience, please

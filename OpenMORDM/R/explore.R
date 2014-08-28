@@ -368,8 +368,11 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		
 		# update maximize array to match renamed axes
 		maximize <- attr(data, "maximize")
-		maximize <- sapply(maximize, function(name) ifelse(is.character(name), which(colnames(set)==name), maximize))
-		attr(set, "maximize") <- maximize
+		
+		if (!is.null(maximize)) {
+			maximize <- sapply(maximize, function(name) ifelse(is.character(name), which(colnames(set)==name), maximize))
+			attr(set, "maximize") <- maximize
+		}
 		
 		# update column names
 		colnames(set) <- names

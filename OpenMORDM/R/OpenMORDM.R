@@ -576,7 +576,7 @@ mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, id
 			xat <- NULL
 			xtick <- NULL
 		}
-		
+
 		y <- set[,objectives[2]]
 		ylab <- names[objectives[2]]
 		yfactors <- factors[[objectives[2]]]
@@ -605,6 +605,8 @@ mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, id
 	} else {
 		z <- rep(0,nrow(set))
 		zlab <- ""
+		ztick <- c("")
+		zat <- NULL
 	}
 	
 	if (nobjs >= 4) {
@@ -637,6 +639,25 @@ mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, id
 	rangey <- range(y, ylim)
 	rangez <- range(z, zlim)
 	sizes <- sizes * (max(c(rangex, rangey, rangez)) / 100)
+	
+	# hide the labels on any collapsed dimensions
+	if (diff(rangex) == 0) {
+		xlab <- ""
+		xtick <- c("")
+		xat <- c(rangex[1])
+	}
+	
+	if (diff(rangey) == 0) {
+		ylab <- ""
+		ytick <- c("")
+		yat <- c(rangey[1])
+	}
+	
+	if (diff(rangez) == 0) {
+		zlab <- ""
+		ztick <- c("")
+		zat <- c(rangez[1])
+	}
 	
 	# create the plot
 	par3d(cex=tick.size)
@@ -681,8 +702,9 @@ mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, id
 	}
 	
 	# indicate the ideal point
-	if (ideal) {
-		maximize <- attr(data, "maximize")
+	maximize <- attr(data, "maximize")
+
+	if (ideal && !is.null(maximize)) {
 		ideal <- c(rangex[1] - (rangex[2]-rangex[1])*0.015,
 							 rangey[1] - (rangey[2]-rangey[1])*0.015,
 							 rangez[1] - (rangez[2]-rangez[1])*0.015)

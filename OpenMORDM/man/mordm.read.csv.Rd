@@ -3,7 +3,7 @@
 \alias{mordm.read.csv}
 \title{Loads a data set stored in a CSV file.}
 \usage{
-mordm.read.csv(file, bounds = NULL, maximize = NULL, ...)
+mordm.read.csv(file, bounds = NULL, maximize = NULL, names = NULL, ...)
 }
 \arguments{
 \item{file}{the file name}
@@ -11,6 +11,8 @@ mordm.read.csv(file, bounds = NULL, maximize = NULL, ...)
 \item{bounds}{the lower and upper bounds of each decision variable}
 
 \item{maximize}{vector indicating the columns to be maximized}
+
+\item{names}{override the column names}
 
 \item{...}{optional arguments passed to read.csv}
 }

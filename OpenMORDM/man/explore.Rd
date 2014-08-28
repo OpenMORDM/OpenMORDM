@@ -3,13 +3,13 @@
 \alias{explore}
 \title{A web-based tool (powered by Shiny) for exploring high-dimensional data sets.}
 \usage{
-explore(filename, nvars, nobjs, nconstrs = 0, names = NULL, bounds = NULL,
-  maximize = NULL, order = 1:nobjs, visible.variables = FALSE,
-  plot3d.width = "600px", plot3d.height = "500px", welcome.panel = NULL,
-  selection.panel = NULL)
+explore(filename, nvars = NULL, nobjs = NULL, nconstrs = 0,
+  names = NULL, bounds = NULL, maximize = NULL, order = 1:nobjs,
+  visible.variables = FALSE, plot3d.width = "600px",
+  plot3d.height = "500px", welcome.panel = NULL, selection.panel = NULL)
 }
 \arguments{
-\item{filename}{the name of the file}
+\item{filename}{the name of the file, a matrix, or a data frame}
 
 \item{nvars}{the number of decision variables}
 
@@ -31,12 +31,14 @@ explore(filename, nvars, nobjs, nconstrs = 0, names = NULL, bounds = NULL,
 
 \item{plot3d.height}{the hight of the 3D window}
 
-\item{welcome.panel}{optional panel for displaying a intro message}
+\item{welcome.panel}{omordm.plotptional panel for displaying a intro message}
 
 \item{selection.panel}{optional panel for displaying info about the selected
 point}
 }
 \description{
-A web-based tool (powered by Shiny) for exploring high-dimensional data sets.
+If you are providing a custom welcome or selection panel and would like to
+display custom resources, use \code{\link{addResourcePath}} to register the
+directory containing the resources.
 }
 

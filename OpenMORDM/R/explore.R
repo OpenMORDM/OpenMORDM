@@ -299,12 +299,13 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		
 		set <- mordm.getset(data, index)
 		
+		# append a list of 0's in case the constant (column 5) option is selected
+		const <- matrix(rep(0, nrow(set), ncol=1))
+		colnames(const) <- c("Constant")
+		set <- mordm.cbind(set, const)
+		
 		objectives <- vector()
 		names <- colnames(set)
-		
-		# append a list of 0's in case the constant (column 5) option is selected
-		set <- mordm.cbind(set, rep(0, nrow(set)))
-		names <- c(names, "Constant")
 		
 		# brush the set
 		brush.limits <- to.limits(input)
@@ -521,7 +522,6 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		
 		# modify the colors for brushing
 		set <- original.set[,cols,drop=FALSE]
-		colnames(set) <- c(colnames(data[[1]]), "Constant")[cols]
 		brush.limits <- to.limits(input)
 		alpha <- plot.brush(original.set, brush.limits, input$slider.transparency)
 		alpha <- plot.brush.preference(original.set, alpha, input, input$slider.transparency)
@@ -598,7 +598,6 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		cols <- c(plot.toobj(input$tradeoff.x), plot.toobj(input$tradeoff.y))
 		
 		set <- original.set[,cols,drop=FALSE]
-		colnames(set) <- c(colnames(data[[1]]), "Constant")[cols]
 		brush.limits <- to.limits(input)
 		alpha <- plot.brush(original.set, brush.limits, input$slider.transparency)
 		alpha <- plot.brush.preference(original.set, alpha, input, input$slider.transparency)
@@ -730,7 +729,6 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		cols <- to.columns(input)
 		
 		set <- original.set[,cols,drop=FALSE]
-		colnames(set) <- c(colnames(data[[1]]), "Constant")[cols]
 		brush.limits <- to.limits(input)
 		alpha <- plot.brush(original.set, brush.limits, input$slider.transparency)
 		alpha <- plot.brush.preference(original.set, alpha, input, input$slider.transparency)

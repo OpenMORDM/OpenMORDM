@@ -77,7 +77,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		}
 		
 		if (tolower(substr(filename, nchar(filename)-3, nchar(filename))) == ".csv") {
-			data <- mordm.read.csv(filename, bounds=bounds, maximize=maximize)
+			data <- mordm.read.csv(filename, nvars=nvars, nobjs=nobjs, bounds=bounds, maximize=maximize, names=names)
 		} else {
 			if (is.null(nvars) || is.null(nobjs)) {
 				stop("Must specify the number of variables and objectives when loading an MOEA runtime file")

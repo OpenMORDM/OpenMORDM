@@ -79,9 +79,13 @@ mordm.as.data.frame <- function(entry) {
 mordm.read.matrix <- function(mat, nvars=NULL, nobjs=NULL, bounds=NULL, maximize=NULL, names=NULL) {
 	entry <- mat
 	
-	if (is.null(nvars) || is.null(nobjs)) {
+	if (is.null(nvars) && is.null(nobjs)) {
 		nvars <- ifelse(is.null(bounds), 0, ncol(bounds))
 		nobjs <- ncol(entry) - nvars
+	} else if (is.null(nobjs)) {
+		nobjs <- ncol(entry) - nvars
+	} else if (is.null(nvars)) {
+		nvars <- ncol(entry) - nobjs
 	}
 	
 	# Provide column names
@@ -147,12 +151,14 @@ mordm.read.matrix <- function(mat, nvars=NULL, nobjs=NULL, bounds=NULL, maximize
 #' \code{header=TRUE}.
 #' 
 #' @param file the file name
+#' @param nvars the number of decision variables
+#' @param nobjs the number of objectives
 #' @param bounds the lower and upper bounds of each decision variable
 #' @param maximize vector indicating the columns to be maximized
 #' @param names override the column names
 #' @param ... optional arguments passed to read.csv
 #' @export
-mordm.read.csv <- function(file, bounds=NULL, maximize=NULL, names=NULL, ...) {
+mordm.read.csv <- function(file, nvars=NULL, nobjs=NULL, bounds=NULL, maximize=NULL, names=NULL, ...) {
 	varargs <- list(...)
 	
 	if (is.null(varargs$check.names)) {
@@ -165,7 +171,7 @@ mordm.read.csv <- function(file, bounds=NULL, maximize=NULL, names=NULL, ...) {
 	
 	mat <- as.matrix(do.call(read.csv, c(list(file), varargs)))
 	
-	mordm.read.matrix(mat, bounds=bounds, maximize=maximize, names=names)
+	mordm.read.matrix(mat, nvars=nvars, nobjs=nobjs, bounds=bounds, maximize=maximize, names=names)
 }
 
 #' Loads the time series data output from an optimization algorithm.

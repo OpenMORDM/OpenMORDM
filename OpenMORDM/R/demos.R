@@ -163,7 +163,7 @@ runVisDemo <- function() {
 					do.custom(input)
 					dev.off()
 				})
-		}, priority=1)
+		})
 		
 		renderUI({
 			index <- to.index(input)

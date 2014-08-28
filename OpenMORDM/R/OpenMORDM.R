@@ -1298,6 +1298,43 @@ mordm.select <- function(data, marking, index=-1, not=FALSE, or=FALSE) {
 	return(subset)
 }
 
+#' Ignore columns in time series data.
+#' 
+#' Similar to \code{\link{mordm.subset}}, except this is applied to all sets
+#' contained within time series data.
+#' 
+#' @param data the time series data
+#' @param ignore the columns to ignore
+#' @export
+mordm.ignore <- function(data, ignore=NULL) {
+	if (!is.null(ignore)) {
+		set <- data[[1]]
+		
+		if (is.logical(ignore)) {
+			keep.objs <- !ignore
+		} else {
+			names <- colnames(set)
+			keep.objs <- sapply(1:ncol(set), function(i) {
+				!(i %in% ignore || names[i] %in% ignore)
+			})
+		}
+		
+		for (i in 1:length(data)) {
+			data[[i]] <- mordm.subset(data[[i]], columns=keep.objs)
+		}
+	}
+	
+	# Also update the attributes on the data time series
+	set <- data[[1]]
+	attr(data, "nvars") <- attr(set, "nvars")
+	attr(data, "nobjs") <- attr(set, "nobjs")
+	attr(data, "nconstrs") <- attr(set, "nconstrs")
+	attr(data, "bounds") <- attr(set, "bounds")
+	attr(data, "maximize") <- attr(set, "maximize")
+	attr(data, "factors") <- attr(set, "factors")
+	data
+}
+
 #' Returns a subset of a data set.
 #' 
 #' @param set the data set

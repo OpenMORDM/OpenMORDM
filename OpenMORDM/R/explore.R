@@ -44,11 +44,13 @@ options(rgl.useNULL=TRUE)
 #' @param welcome.panel omordm.plotptional panel for displaying a intro message
 #' @param selection.panel optional panel for displaying info about the selected
 #'        point
+#' @param ignore columns to remove from the dataset
 #' @export
 explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bounds=NULL,
 					maximize=NULL, order=NULL, visible.variables=FALSE,
 					plot3d.width="600px", plot3d.height="500px",
-					welcome.panel=NULL, selection.panel=NULL) {
+					welcome.panel=NULL, selection.panel=NULL,
+					ignore=NULL) {
 	# The available color palettes.  To add new palettes, you must also modify
 	# to.palette(...)
 	colors <- list("Rainbow (Red to Blue)",
@@ -95,6 +97,10 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		stop("The first argument must be a filename, a matrix, or a data frame")
 	}
 
+	# Remove any ignored columns
+	data <- mordm.ignore(data, ignore)
+
+	# Update static variables
 	nvars <- attr(data, "nvars")
 	nobjs <- attr(data, "nobjs")
 	nconstrs <- attr(data, "nconstrs")

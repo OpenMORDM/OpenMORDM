@@ -35,6 +35,7 @@ original versions from CRAN.
 * Start R: `R`
 * Load the OpenMORDM library: `library(OpenMORDM)`
 * Run the demo: `runVisDemo()`
+* Use `explore` to visualize CSV or XLS files, matrices, or data.frames: `library(datasets); data(iris); explore(iris)`
 
 ### Notes ###
 * Linux users may need to run R with admin permissions when installing: `sudo R`

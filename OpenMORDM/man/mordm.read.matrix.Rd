@@ -4,7 +4,7 @@
 \title{Loads a data set stored in a matrix or data.frame.}
 \usage{
 mordm.read.matrix(mat, nvars = NULL, nobjs = NULL, bounds = NULL,
-  maximize = NULL, names = NULL)
+  maximize = NULL, names = NULL, ignore = NULL, metadata = NULL)
 }
 \arguments{
 \item{mat}{the matrix or data.frame}
@@ -18,6 +18,10 @@ mordm.read.matrix(mat, nvars = NULL, nobjs = NULL, bounds = NULL,
 \item{maximize}{vector indicating the columns to be maximized}
 
 \item{names}{override the column names}
+
+\item{ignore}{columns to remove from the dataset}
+
+\item{metadata}{columns to retain in a metadata attribute}
 }
 \description{
 This method assumes the first N columns are decision variables, and all other

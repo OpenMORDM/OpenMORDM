@@ -75,18 +75,12 @@ mordm.as.data.frame <- function(entry) {
 #' @param bounds the lower and upper bounds of each decision variable
 #' @param maximize vector indicating the columns to be maximized
 #' @param names override the column names
+#' @param ignore columns to remove from the dataset
+#' @param metadata columns to retain in a metadata attribute
 #' @export
-mordm.read.matrix <- function(mat, nvars=NULL, nobjs=NULL, bounds=NULL, maximize=NULL, names=NULL) {
+mordm.read.matrix <- function(mat, nvars=NULL, nobjs=NULL, bounds=NULL, maximize=NULL, names=NULL, ignore=NULL, metadata=NULL) {
 	entry <- mat
-	
-	if (is.null(nvars) && is.null(nobjs)) {
-		nvars <- ifelse(is.null(bounds), 0, ncol(bounds))
-		nobjs <- ncol(entry) - nvars
-	} else if (is.null(nobjs)) {
-		nobjs <- ncol(entry) - nvars
-	} else if (is.null(nvars)) {
-		nvars <- ncol(entry) - nobjs
-	}
+	meta <- NULL
 	
 	# Provide column names
 	if (is.null(names)) {
@@ -103,6 +97,36 @@ mordm.read.matrix <- function(mat, nvars=NULL, nobjs=NULL, bounds=NULL, maximize
 	}
 	
 	colnames(entry) <- names
+	
+	# Copy any metadata columns
+	if (!is.null(metadata)) {
+		if (!is.logical(metadata)) {
+			metadata <- sapply(1:ncol(entry), function(i) { i %in% metadata | names[i] %in% metadata})
+		}
+		
+		meta <- entry[,metadata,drop=FALSE]
+	} else {
+		metadata <- rep(FALSE, ncol(entry))
+	}
+	
+	# Strip any ignored/metadata columns
+	if (!is.null(ignore)) {
+		if (!is.logical(ignore)) {
+			ignore <- sapply(1:ncol(entry), function(i) { i %in% ignore | names[i] %in% ignore})
+		}
+
+		entry <- entry[,!metadata & !ignore,drop=FALSE]
+	}
+	
+	# Determine number of variables and objectives
+	if (is.null(nvars) && is.null(nobjs)) {
+		nvars <- ifelse(is.null(bounds), 0, ncol(bounds))
+		nobjs <- ncol(entry) - nvars
+	} else if (is.null(nobjs)) {
+		nobjs <- ncol(entry) - nvars
+	} else if (is.null(nvars)) {
+		nvars <- ncol(entry) - nobjs
+	}
 	
 	# Check if any columns contain character data, treat as factors
 	factors <- list()
@@ -128,6 +152,10 @@ mordm.read.matrix <- function(mat, nvars=NULL, nobjs=NULL, bounds=NULL, maximize
 	attr(entry, "bounds") <- bounds
 	attr(entry, "maximize") <- maximize
 	attr(entry, "factors") <- factors
+	
+	if (!is.null(meta)) {
+		attr(entry, "metadata") <- meta
+	}
 	
 	result <- list()
 	result <- append(result, list(entry))
@@ -156,9 +184,11 @@ mordm.read.matrix <- function(mat, nvars=NULL, nobjs=NULL, bounds=NULL, maximize
 #' @param bounds the lower and upper bounds of each decision variable
 #' @param maximize vector indicating the columns to be maximized
 #' @param names override the column names
+#' @param ignore columns to remove from the dataset
+#' @param metadata columns to retain in a metadata attribute
 #' @param ... optional arguments passed to read.csv
 #' @export
-mordm.read.csv <- function(file, nvars=NULL, nobjs=NULL, bounds=NULL, maximize=NULL, names=NULL, ...) {
+mordm.read.csv <- function(file, nvars=NULL, nobjs=NULL, bounds=NULL, maximize=NULL, names=NULL, ignore=NULL, metadata=NULL, ...) {
 	varargs <- list(...)
 	
 	if (is.null(varargs$check.names)) {
@@ -171,7 +201,7 @@ mordm.read.csv <- function(file, nvars=NULL, nobjs=NULL, bounds=NULL, maximize=N
 	
 	mat <- do.call(read.csv, c(list(file), varargs))
 	
-	mordm.read.matrix(mat, nvars=nvars, nobjs=nobjs, bounds=bounds, maximize=maximize, names=names)
+	mordm.read.matrix(mat, nvars=nvars, nobjs=nobjs, bounds=bounds, maximize=maximize, names=names, ignore=ignore, metadata=metadata)
 }
 
 #' Loads a data set stored in a XLS or XLSX file.
@@ -185,9 +215,11 @@ mordm.read.csv <- function(file, nvars=NULL, nobjs=NULL, bounds=NULL, maximize=N
 #' @param bounds the lower and upper bounds of each decision variable
 #' @param maximize vector indicating the columns to be maximized
 #' @param names override the column names
+#' @param ignore columns to remove from the dataset
+#' @param metadata columns to retain in a metadata attribute
 #' @param ... optional arguments passed to read.xls
 #' @export
-mordm.read.xls <- function(file, nvars=NULL, nobjs=NULL, bounds=NULL, maximize=NULL, names=NULL, ...) {
+mordm.read.xls <- function(file, nvars=NULL, nobjs=NULL, bounds=NULL, maximize=NULL, names=NULL, ignore=NULL, metadata=NULL, ...) {
 	require(gdata)
 	varargs <- list(...)
 	
@@ -201,7 +233,7 @@ mordm.read.xls <- function(file, nvars=NULL, nobjs=NULL, bounds=NULL, maximize=N
 	
 	mat <- do.call(read.xls, c(list(file), varargs))
 	
-	mordm.read.matrix(mat, nvars=nvars, nobjs=nobjs, bounds=bounds, maximize=maximize, names=names)
+	mordm.read.matrix(mat, nvars=nvars, nobjs=nobjs, bounds=bounds, maximize=maximize, names=names, ignore=ignore, metadata=metadata)
 }
 
 #' Loads the time series data output from an optimization algorithm.
@@ -1298,52 +1330,17 @@ mordm.select <- function(data, marking, index=-1, not=FALSE, or=FALSE) {
 	return(subset)
 }
 
-#' Ignore columns in time series data.
-#' 
-#' Similar to \code{\link{mordm.subset}}, except this is applied to all sets
-#' contained within time series data.
-#' 
-#' @param data the time series data
-#' @param ignore the columns to ignore
-#' @export
-mordm.ignore <- function(data, ignore=NULL) {
-	if (!is.null(ignore)) {
-		set <- data[[1]]
-		
-		if (is.logical(ignore)) {
-			keep.objs <- !ignore
-		} else {
-			names <- colnames(set)
-			keep.objs <- sapply(1:ncol(set), function(i) {
-				!(i %in% ignore || names[i] %in% ignore)
-			})
-		}
-		
-		for (i in 1:length(data)) {
-			data[[i]] <- mordm.subset(data[[i]], columns=keep.objs)
-		}
-	}
-	
-	# Also update the attributes on the data time series
-	set <- data[[1]]
-	attr(data, "nvars") <- attr(set, "nvars")
-	attr(data, "nobjs") <- attr(set, "nobjs")
-	attr(data, "nconstrs") <- attr(set, "nconstrs")
-	attr(data, "bounds") <- attr(set, "bounds")
-	attr(data, "maximize") <- attr(set, "maximize")
-	attr(data, "factors") <- attr(set, "factors")
-	data
-}
-
 #' Returns a subset of a data set.
 #' 
 #' @param set the data set
-#' @param columns the columns to return
-#' @param rows the rows to return
+#' @param columns the columns to retain
+#' @param rows the rows to retain
 #' @export
 mordm.subset <- function(set, columns=1:ncol(set), rows=1:nrow(set)) {
 	nvars <- attr(set, "nvars")
 	nobjs <- attr(set, "nobjs")
+	maximize <- attr(set, "maximize")
+	names <- colnames(set)
 	
 	col.vars <- c()
 	col.objs <- c()
@@ -1357,28 +1354,48 @@ mordm.subset <- function(set, columns=1:ncol(set), rows=1:nrow(set)) {
 		if (nobjs > 0) {
 			col.objs <- (1:nobjs)[columns[(nvars+1):(nvars+nobjs)]]
 		}
-	} else if (is.numeric(columns)) {
+	} else {
 		if (nvars > 0) {
-			col.vars <- (1:nvars)[columns[which(columns >= 1 & columns <= nvars)]]
+			keep.objs <- sapply(1:nvars, function(i) {
+				!(i %in% columns || names[i] %in% columns)
+			})
+			col.vars <- (1:nvars)[keep.objs]
 		}
 		
 		if (nobjs > 0) {
-			col.objs <- (1:nobjs)[columns[which(columns >= nvars+1 & columns <= nvars+nobjs)] - nvars]
+			keep.objs <- sapply(1:nobjs, function(i) {
+				!(i+nvars %in% columns || names[i+nvars] %in% columns)
+			})
+			col.objs <- (1:nobjs)[keep.objs]
+		}
+	}
+	
+	if (!is.null(maximize)) {
+		if (is.logical(maximize)) {
+			maximize <- maximize[col.objs]
+		} else {
+			maximize <- maximize[maximize %in% names[col.objs+nvars] | maximize %in% (col.objs+nvars)]
+			
+			if (length(maximize) == 0) {
+				maximize <- NULL
+			}
 		}
 	}
 
-	result <- set[rows,columns,drop=FALSE]
+	result <- set[rows,c(col.vars, col.objs+nvars),drop=FALSE]
 	attr(result, "nvars") <- length(col.vars)
 	attr(result, "nobjs") <- length(col.objs)
 	attr(result, "nconstrs") <- attr(set, "nconstrs")
 	attr(result, "bounds") <- attr(set, "bounds")[col.vars]
-	attr(result, "maximize") <- attr(set, "maximize")
+	attr(result, "maximize") <- maximize
 	attr(result, "factors") <- attr(set, "factors")[c(col.vars, col.objs+nvars)]
 	
 	return(result)
 }
 
 #' Adds extra colums to the end of a data set.
+#' 
+#' The added columns are treated like objectives.
 #' 
 #' @param set the data set
 #' @param columns the extra columns
@@ -1406,13 +1423,22 @@ mordm.cbind <- function(set, columns) {
 	
 	columns <- as.matrix(columns)
 	
+	# Correctly handle different ways to express the maximized objectives
+	maximize <- attr(set, "maximize")
+	
+	if (is.logical(maximize)) {
+		maximize <- c(maximize, rep(FALSE, ncol(columns)))
+	} else {
+		maximize <- c(maximize, attr(columns, "maximize"))
+	}
+	
 	# Append the new columns to the data set
 	result <- cbind(set, columns)
 	attr(result, "nvars") <- attr(set, "nvars")
 	attr(result, "nobjs") <- attr(set, "nobjs")+ncol(columns)
 	attr(result, "nconstrs") <- attr(set, "nconstrs")
 	attr(result, "bounds") <- attr(set, "bounds")
-	attr(result, "maximize") <- attr(set, "maximize")
+	attr(result, "maximize") <- maximize
 	attr(result, "factors") <- factors
 
 	return(result)

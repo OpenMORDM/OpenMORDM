@@ -6,7 +6,8 @@
 explore(filename, nvars = NULL, nobjs = NULL, nconstrs = 0,
   names = NULL, bounds = NULL, maximize = NULL, order = NULL,
   visible.variables = FALSE, plot3d.width = "600px",
-  plot3d.height = "500px", welcome.panel = NULL, selection.panel = NULL)
+  plot3d.height = "500px", welcome.panel = NULL, selection.panel = NULL,
+  ignore = NULL, metadata = NULL)
 }
 \arguments{
 \item{filename}{the name of the file, a matrix, or a data frame}
@@ -35,8 +36,27 @@ explore(filename, nvars = NULL, nobjs = NULL, nconstrs = 0,
 
 \item{selection.panel}{optional panel for displaying info about the selected
 point}
+
+\item{ignore}{columns to remove from the dataset (CSV/Excel only)}
+
+\item{metadata}{columns to retain in a metadata attribute (CSV/Excel only)}
 }
 \description{
+This method currently supports loading CSV files (.csv), Excel files (.xls
+or .xlsx), and MOEA runtime files (any other extension).  For CSV and Excel
+files, you may optionally specify nvars and/or nobjs.  If unspecified, the
+method will assume every column is an objective.  For MOEA runtime files,
+nvars and nobjs are mandatory.
+}
+\details{
+For CSV and Excel files, you can optionally ignore certain columns or
+indicate a column is metadata.  Ignored columns are completely removed from
+the analysis.  Metadata is not shown in the visualizations, but will be
+saved in an attribute (\code{attr(data[[i]], "metadata")}).  For example, if
+each point has an associated GIF animation, you could treat the column
+storing the file path as metadata, allowing you to retrieve and display the
+GIF.
+
 If you are providing a custom welcome or selection panel and would like to
 display custom resources, use \code{\link{addResourcePath}} to register the
 directory containing the resources.

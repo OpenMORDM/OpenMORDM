@@ -8,9 +8,9 @@ mordm.subset(set, columns = 1:ncol(set), rows = 1:nrow(set))
 \arguments{
 \item{set}{the data set}
 
-\item{columns}{the columns to return}
+\item{columns}{the columns to retain}
 
-\item{rows}{the rows to return}
+\item{rows}{the rows to retain}
 }
 \description{
 Returns a subset of a data set.

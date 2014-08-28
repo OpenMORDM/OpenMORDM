@@ -11,6 +11,6 @@ mordm.cbind(set, columns)
 \item{columns}{the extra columns}
 }
 \description{
-Adds extra colums to the end of a data set.
+The added columns are treated like objectives.
 }
 

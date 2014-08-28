@@ -26,6 +26,20 @@ options(rgl.useNULL=TRUE)
 
 #' A web-based tool (powered by Shiny) for exploring high-dimensional data sets.
 #' 
+#' This method currently supports loading CSV files (.csv), Excel files (.xls
+#' or .xlsx), and MOEA runtime files (any other extension).  For CSV and Excel
+#' files, you may optionally specify nvars and/or nobjs.  If unspecified, the
+#' method will assume every column is an objective.  For MOEA runtime files,
+#' nvars and nobjs are mandatory.
+#' 
+#' For CSV and Excel files, you can optionally ignore certain columns or
+#' indicate a column is metadata.  Ignored columns are completely removed from
+#' the analysis.  Metadata is not shown in the visualizations, but will be
+#' saved in an attribute (\code{attr(data[[i]], "metadata")}).  For example, if
+#' each point has an associated GIF animation, you could treat the column
+#' storing the file path as metadata, allowing you to retrieve and display the
+#' GIF.
+#' 
 #' If you are providing a custom welcome or selection panel and would like to
 #' display custom resources, use \code{\link{addResourcePath}} to register the
 #' directory containing the resources.
@@ -44,13 +58,14 @@ options(rgl.useNULL=TRUE)
 #' @param welcome.panel omordm.plotptional panel for displaying a intro message
 #' @param selection.panel optional panel for displaying info about the selected
 #'        point
-#' @param ignore columns to remove from the dataset
+#' @param ignore columns to remove from the dataset (CSV/Excel only)
+#' @param metadata columns to retain in a metadata attribute (CSV/Excel only)
 #' @export
 explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bounds=NULL,
 					maximize=NULL, order=NULL, visible.variables=FALSE,
 					plot3d.width="600px", plot3d.height="500px",
 					welcome.panel=NULL, selection.panel=NULL,
-					ignore=NULL) {
+					ignore=NULL, metadata=NULL) {
 	# The available color palettes.  To add new palettes, you must also modify
 	# to.palette(...)
 	colors <- list("Rainbow (Red to Blue)",
@@ -75,16 +90,16 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 	
 	# Setup and load the data
 	if (is.data.frame(filename) || is.matrix(filename)) {
-		data <- mordm.read.matrix(filename, nvars=nvars, nobjs=nobjs, bounds=bounds, maximize=maximize, names=names)
+		data <- mordm.read.matrix(filename, nvars=nvars, nobjs=nobjs, bounds=bounds, maximize=maximize, names=names, ignore=ignore, metadata=metadata)
 	} else if (is.character(filename)) {
 		if (!file.exists(filename)) {
 			stop("The file does not exist")
 		}
 		
 		if (tolower(substr(filename, nchar(filename)-3, nchar(filename))) == ".csv") {
-			data <- mordm.read.csv(filename, nvars=nvars, nobjs=nobjs, bounds=bounds, maximize=maximize, names=names)
+			data <- mordm.read.csv(filename, nvars=nvars, nobjs=nobjs, bounds=bounds, maximize=maximize, names=names, ignore=ignore, metadata=metadata)
 		} else if (tolower(substr(filename, nchar(filename)-3, nchar(filename))) == ".xls" || tolower(substr(filename, nchar(filename)-4, nchar(filename))) == ".xlsx") {
-			data <- mordm.read.xls(filename, nvars=nvars, nobjs=nobjs, bounds=bounds, maximize=maximize, names=names)
+			data <- mordm.read.xls(filename, nvars=nvars, nobjs=nobjs, bounds=bounds, maximize=maximize, names=names, ignore=ignore, metadata=metadata)
 		} else {
 			if (is.null(nvars) || is.null(nobjs)) {
 				stop("Must specify the number of variables and objectives when loading an MOEA runtime file")
@@ -96,10 +111,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 	} else {
 		stop("The first argument must be a filename, a matrix, or a data frame")
 	}
-
-	# Remove any ignored columns
-	data <- mordm.ignore(data, ignore)
-
+	
 	# Update static variables
 	nvars <- attr(data, "nvars")
 	nobjs <- attr(data, "nobjs")

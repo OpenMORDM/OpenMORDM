@@ -4,7 +4,7 @@
 \title{A web-based tool (powered by Shiny) for exploring high-dimensional data sets.}
 \usage{
 explore(filename, nvars = NULL, nobjs = NULL, nconstrs = 0,
-  names = NULL, bounds = NULL, maximize = NULL, order = 1:nobjs,
+  names = NULL, bounds = NULL, maximize = NULL, order = NULL,
   visible.variables = FALSE, plot3d.width = "600px",
   plot3d.height = "500px", welcome.panel = NULL, selection.panel = NULL)
 }

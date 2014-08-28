@@ -46,7 +46,7 @@ options(rgl.useNULL=TRUE)
 #'        point
 #' @export
 explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bounds=NULL,
-					maximize=NULL, order=1:nobjs, visible.variables=FALSE,
+					maximize=NULL, order=NULL, visible.variables=FALSE,
 					plot3d.width="600px", plot3d.height="500px",
 					welcome.panel=NULL, selection.panel=NULL) {
 	# The available color palettes.  To add new palettes, you must also modify
@@ -64,6 +64,9 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 	
 	addResourcePath("OpenMORDM", system.file("www", package="OpenMORDM"))
 	
+	
+	
+	
 	############################################################################
 	# Server Code                                                              #
 	############################################################################
@@ -78,6 +81,8 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		
 		if (tolower(substr(filename, nchar(filename)-3, nchar(filename))) == ".csv") {
 			data <- mordm.read.csv(filename, nvars=nvars, nobjs=nobjs, bounds=bounds, maximize=maximize, names=names)
+		} else if (tolower(substr(filename, nchar(filename)-3, nchar(filename))) == ".xls" || tolower(substr(filename, nchar(filename)-4, nchar(filename))) == ".xlsx") {
+			data <- mordm.read.xls(filename, nvars=nvars, nobjs=nobjs, bounds=bounds, maximize=maximize, names=names)
 		} else {
 			if (is.null(nvars) || is.null(nobjs)) {
 				stop("Must specify the number of variables and objectives when loading an MOEA runtime file")
@@ -96,6 +101,10 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 	min.nfe <- attr(data[[1]], "NFE")
 	max.nfe <- attr(data[[length(data)]], "NFE")
 	step.nfe <- max.nfe / length(data)
+	
+	if (is.null(order)) {
+		order <- 1:nobjs
+	}
 	
 	# Compute the limits on the data
 	compute.limits <- function(data) {

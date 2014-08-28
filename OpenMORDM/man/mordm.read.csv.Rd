@@ -3,10 +3,15 @@
 \alias{mordm.read.csv}
 \title{Loads a data set stored in a CSV file.}
 \usage{
-mordm.read.csv(file, bounds = NULL, maximize = NULL, names = NULL, ...)
+mordm.read.csv(file, nvars = NULL, nobjs = NULL, bounds = NULL,
+  maximize = NULL, names = NULL, ...)
 }
 \arguments{
 \item{file}{the file name}
+
+\item{nvars}{the number of decision variables}
+
+\item{nobjs}{the number of objectives}
 
 \item{bounds}{the lower and upper bounds of each decision variable}
 

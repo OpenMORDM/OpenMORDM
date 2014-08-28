@@ -169,7 +169,37 @@ mordm.read.csv <- function(file, nvars=NULL, nobjs=NULL, bounds=NULL, maximize=N
 		varargs$header <- TRUE
 	}
 	
-	mat <- as.matrix(do.call(read.csv, c(list(file), varargs)))
+	mat <- do.call(read.csv, c(list(file), varargs))
+	
+	mordm.read.matrix(mat, nvars=nvars, nobjs=nobjs, bounds=bounds, maximize=maximize, names=names)
+}
+
+#' Loads a data set stored in a XLS or XLSX file.
+#' 
+#' This method is similar in use to \code{\link{mordm.read.csv}}.  Requires
+#' gdata and its dependencies, including a Perl interpreter on the host system.
+#' 
+#' @param file the file name
+#' @param nvars the number of decision variables
+#' @param nobjs the number of objectives
+#' @param bounds the lower and upper bounds of each decision variable
+#' @param maximize vector indicating the columns to be maximized
+#' @param names override the column names
+#' @param ... optional arguments passed to read.xls
+#' @export
+mordm.read.xls <- function(file, nvars=NULL, nobjs=NULL, bounds=NULL, maximize=NULL, names=NULL, ...) {
+	require(gdata)
+	varargs <- list(...)
+	
+	if (is.null(varargs$check.names)) {
+		varargs$check.names <- FALSE
+	}
+	
+	if (is.null(varargs$header)) {
+		varargs$header <- TRUE
+	}
+	
+	mat <- do.call(read.xls, c(list(file), varargs))
 	
 	mordm.read.matrix(mat, nvars=nvars, nobjs=nobjs, bounds=bounds, maximize=maximize, names=names)
 }

@@ -41,7 +41,7 @@ options(rgl.useNULL=TRUE)
 #' @param visible.variables determines if variables are visible by default
 #' @param plot3d.width the width of the 3D window
 #' @param plot3d.height the hight of the 3D window
-#' @param welcome.panel optional panel for displaying a intro message
+#' @param welcome.panel omordm.plotptional panel for displaying a intro message
 #' @param selection.panel optional panel for displaying info about the selected
 #'        point
 #' @export
@@ -70,7 +70,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 	
 	# Setup and load the data
 	if (is.data.frame(filename)) {
-		data <- mordm.read.matrix(as.matrix(filename), bounds=bounds, maximize=maximize, names=names)
+		data <- mordm.read.matrix(filename, bounds=bounds, maximize=maximize, names=names)
 	} else if (is.matrix(filename)) {
 		data <- mordm.read.matrix(filename, bounds=bounds, maximize=maximize, names=names)
 	} else if (is.character(filename)) {
@@ -91,7 +91,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 	} else {
 		stop("The first argument must be a filename, a matrix, or a data frame")
 	}
-	
+
 	nvars <- attr(data, "nvars")
 	nobjs <- attr(data, "nobjs")
 	nconstrs <- attr(data, "nconstrs")
@@ -296,7 +296,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		names <- colnames(set)
 		
 		# append a list of 0's in case the constant (column 5) option is selected
-		set <- cbind(set, rep(0, nrow(set)))
+		set <- mordm.cbind(set, rep(0, nrow(set)))
 		names <- c(names, "Constant")
 		
 		# brush the set
@@ -438,7 +438,15 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 				
 				image(seq(crange[1], crange[2], (crange[2]-crange[1])/100), 0, matrix(seq(0, 1, 0.01), ncol=1), col=palette, axes=FALSE, xlab=show.color, ylab="")
 				box("plot")
-				axis(1)
+				
+				factors <- attr(data, "factors")
+				cfactors <- factors[[plot.toobj(show.color)]]
+				
+				if (!is.null(cfactors)) {
+					axis(1, at=1:length(cfactors), labels=sprintf("%s\n(%d)", cfactors, 1:length(cfactors)))
+				} else {
+					axis(1)
+				}
 			} else {
 				plot.new()
 			}

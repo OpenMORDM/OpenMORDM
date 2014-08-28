@@ -43,12 +43,33 @@ mordm.defaultnames <- function(nvars, nobjs) {
 	return(names)
 }
 
-#' Loads a data set stored in a matrix.
+#' Converts a data set into a data frame.
+#' 
+#' When loading data into OpenMORDM, any non-numeric columns are converted into
+#' factors and represented internally as integers.  This method reverses that
+#' process to get a data frame storing the original values.
+#' 
+#' @param the data set to convert
+#' @export
+mordm.to.data.frame <- function(entry) {
+	result <- as.data.frame(entry)
+	factors <- attr(entry, "factors")
+	
+	for (i in 1:length(factors)) {
+		if (!is.null(factors[[i]])) {
+			result[[i]] <- factor(factors[[i]][entry[,i]], factors[[i]])
+		}
+	}
+	
+	result
+}
+
+#' Loads a data set stored in a matrix or data.frame.
 #' 
 #' This method assumes the first N columns are decision variables, and all other
 #' columns are objectives.  N is determined by \code{ncol(bounds)}.
 #' 
-#' @param mat the matrix
+#' @param mat the matrix or data.frame
 #' @param bounds the lower and upper bounds of each decision variable
 #' @param maximize vector indicating the columns to be maximized
 #' @param names override the column names
@@ -58,6 +79,7 @@ mordm.read.matrix <- function(mat, bounds=NULL, maximize=NULL, names=NULL) {
 	nvars <- ifelse(is.null(bounds), 0, ncol(bounds))
 	nobjs <- ncol(entry) - nvars
 	
+	# Provide column names
 	if (is.null(names)) {
 		if (is.null(colnames(entry))) {
 			names <- mordm.defaultnames(nvars, nobjs)
@@ -73,11 +95,30 @@ mordm.read.matrix <- function(mat, bounds=NULL, maximize=NULL, names=NULL) {
 	
 	colnames(entry) <- names
 	
+	# Check if any columns contain character data, treat as factors
+	factors <- list()
+	
+	for (i in 1:ncol(entry)) {
+		if (!all(apply(entry[,i,drop=FALSE], 1, is.numeric))) {
+			x <- as.factor(unlist(entry[,i]))
+			factors <- append(factors, list(levels(x)))
+			levels(x) <- 1:length(levels(x))
+			entry[,i] <- as.numeric(x)
+		} else {
+			factors <- append(factors, list(NULL))
+		}
+	}
+	
+	# If entry is a data.frame, convert to a matrix
+	entry <- as.matrix(entry)
+	
+	# Construct the data object used by OpenMORDM
 	attr(entry, "nvars") <- nvars
 	attr(entry, "nobjs") <- nobjs
 	attr(entry, "nconstrs") <- 0
 	attr(entry, "bounds") <- bounds
 	attr(entry, "maximize") <- maximize
+	attr(entry, "factors") <- factors
 	
 	result <- list()
 	result <- append(result, list(entry))
@@ -87,6 +128,7 @@ mordm.read.matrix <- function(mat, bounds=NULL, maximize=NULL, names=NULL) {
 	attr(result, "nconstrs") <- 0
 	attr(result, "bounds") <- bounds
 	attr(result, "maximize") <- maximize
+	attr(result, "factors") <- factors
 	class(result) <- "mordm"
 	
 	return(result)
@@ -506,6 +548,8 @@ mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, id
 	set <- mordm.getset(data, index)
 	nvars <- attr(data, "nvars")
 	nobjs <- attr(data, "nobjs")
+	factors <- attr(data, "factors")
+	
 	names <- colnames(set)
 	
 	if (is.null(objectives)) {
@@ -517,14 +561,42 @@ mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, id
 	# setup the plot
 	if (nobjs >= 2) {
 		x <- set[,objectives[1]]
-		y <- set[,objectives[2]]
 		xlab <- names[objectives[1]]
+		xfactors <- factors[[objectives[1]]]
+		
+		if (!is.null(xfactors)) {
+			xat <- 1:length(xfactors)
+			xtick <- xfactors
+		} else {
+			xat <- NULL
+			xtick <- NULL
+		}
+		
+		y <- set[,objectives[2]]
 		ylab <- names[objectives[2]]
+		yfactors <- factors[[objectives[2]]]
+		
+		if (!is.null(yfactors)) {
+			yat <- 1:length(yfactors)
+			ytick <- yfactors
+		} else {
+			yat <- NULL
+			ytick <- NULL
+		}
 	}
 	
 	if (nobjs >= 3) {
 		z <- set[,objectives[3]]
 		zlab <- names[objectives[3]]
+		zfactors <- factors[[objectives[3]]]
+		
+		if (!is.null(zfactors)) {
+			zat <- 1:length(zfactors)
+			ztick <- zfactors
+		} else {
+			zat <- NULL
+			ztick <- NULL
+		}
 	} else {
 		z <- rep(0,nrow(set))
 		zlab <- ""
@@ -578,7 +650,7 @@ mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, id
 				 alpha=alpha,
 				 ...)
 	
-	bbox3d(color=fg)
+	bbox3d(color=fg, xat=xat, xlab=xtick, yat=yat, ylab=ytick, zat=zat, zlab=ztick)
 	title3d(xlab=xlab, ylab=ylab, zlab=zlab, cex=label.size, line=label.line, color=fg)
 	
 	if (!is.null(window)) {
@@ -1125,14 +1197,14 @@ mordm.mark.not <- function(rule) {
 #'        return (default is the last entry)
 #' @export
 mordm.getset <- function(data, index=-1) {
-	if (is.list(data)) {
+	if (is.matrix(data) || is.data.frame(data)) {
+		set <- data
+	} else {
 		if (index < 1 | index > length(data)) {
 			index <- length(data)
 		}
 		
 		set <- data[[index]]
-	} else {
-		set <- data
 	}
 	
 	return(set)
@@ -1158,7 +1230,49 @@ mordm.select <- function(data, marking, index=-1, not=FALSE, or=FALSE) {
 	attr(subset, "nobjs") <- attr(set, "nobjs")
 	attr(subset, "nconstrs") <- attr(set, "nconstrs")
 	attr(subset, "bounds") <- attr(set, "bounds")
+	attr(subset, "maximize") <- attr(set, "maximize")
+	attr(subset, "factors") <- attr(set, "factors")
 	return(subset)
+}
+
+#' Adds extra colums to the end of a data set.
+#' 
+#' @param set the data set
+#' @param columns the extra columns
+#' @export
+mordm.cbind <- function(set, columns) {
+	if (is.vector(columns)) {
+		columns <- as.data.frame(columns)
+	}
+	
+	# Convert the new columns to numeric types
+	factors <- attr(set, "factors")
+	
+	if (!is.null(factors)) {
+		for (i in 1:ncol(columns)) {
+			if (!all(apply(columns[,i,drop=FALSE], 1, is.numeric))) {
+				x <- as.factor(unlist(columns[,i]))
+				factors <- append(factors, list(levels(x)))
+				levels(x) <- 1:length(levels(x))
+				columns[,i] <- as.numeric(x)
+			} else {
+				factors <- append(factors, list(NULL))
+			}
+		}
+	}
+	
+	columns <- as.matrix(columns)
+	
+	# Append the new columns to the data set
+	result <- cbind(set, columns)
+	attr(result, "nvars") <- attr(set, "nvars")
+	attr(result, "nobjs") <- attr(set, "nobjs")
+	attr(result, "nconstrs") <- attr(set, "nconstrs")
+	attr(result, "bounds") <- attr(set, "bounds")
+	attr(result, "maximize") <- attr(set, "maximize")
+	attr(result, "factors") <- factors
+
+	return(result)
 }
 
 #' Returns the row indices in the data set that are marked.

@@ -502,12 +502,10 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 	
 	to.index <- function(input) {
 		if (is.null(input$nfe) || is.na(input$nfe)) {
-			index <- length(data)
+			length(data)
 		} else {
-			index <- input$nfe / step.nfe
+			input$nfe / step.nfe
 		}
-		
-		index
 	}
 	
 	do.plotParallel <- function(input) {

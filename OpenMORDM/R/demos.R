@@ -82,6 +82,17 @@ runVisDemo <- function() {
 	}
 	
 	selection.panel <- function(data, input, output, session) {
+		max.nfe <- attr(data[[length(data)]], "NFE")
+		step.nfe <- max.nfe / length(data)
+		
+		to.index <- function(input) {
+			if (is.null(input$nfe) || is.na(input$nfe)) {
+				length(data)
+			} else {
+				input$nfe / step.nfe
+			}
+		}
+		
 		observe({
 			do.custom <- function(input) {
 				index <- to.index(input)
@@ -155,12 +166,7 @@ runVisDemo <- function() {
 		}, priority=1)
 		
 		renderUI({
-			if (is.null(input$nfe) || is.na(input$nfe)) {
-				index <- length(data)
-			} else {
-				index <- input$nfe / step.nfe
-			}
-			
+			index <- to.index(input)
 			set <- mordm.getset(data, index)
 			
 			if (is.null(input$selection) || is.na(input$selection) || input$selection <= 0 || input$selection > nrow(set)) {

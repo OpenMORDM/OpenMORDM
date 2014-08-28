@@ -51,7 +51,7 @@ mordm.defaultnames <- function(nvars, nobjs) {
 #' 
 #' @param the data set to convert
 #' @export
-mordm.to.data.frame <- function(entry) {
+mordm.as.data.frame <- function(entry) {
 	result <- as.data.frame(entry)
 	factors <- attr(entry, "factors")
 	
@@ -70,14 +70,19 @@ mordm.to.data.frame <- function(entry) {
 #' columns are objectives.  N is determined by \code{ncol(bounds)}.
 #' 
 #' @param mat the matrix or data.frame
+#' @param nvars the number of decision variables
+#' @param nobjs the number of objectives
 #' @param bounds the lower and upper bounds of each decision variable
 #' @param maximize vector indicating the columns to be maximized
 #' @param names override the column names
 #' @export
-mordm.read.matrix <- function(mat, bounds=NULL, maximize=NULL, names=NULL) {
+mordm.read.matrix <- function(mat, nvars=NULL, nobjs=NULL, bounds=NULL, maximize=NULL, names=NULL) {
 	entry <- mat
-	nvars <- ifelse(is.null(bounds), 0, ncol(bounds))
-	nobjs <- ncol(entry) - nvars
+	
+	if (is.null(nvars) || is.null(nobjs)) {
+		nvars <- ifelse(is.null(bounds), 0, ncol(bounds))
+		nobjs <- ncol(entry) - nvars
+	}
 	
 	# Provide column names
 	if (is.null(names)) {
@@ -1403,7 +1408,6 @@ mordm.differences <- function(set1, set2, scale=TRUE, decreasing=TRUE, splits=20
 mordm.prim <- function(data, objective, minimize=TRUE, percentages=FALSE, expand=TRUE, ...) {
 	set <- mordm.getset(data)
 	nvars <- attr(set, "nvars")
-	x <- set[,1:nvars]
 	varargs <- list(...)
 	
 	if (is.function(objective)) {
@@ -1411,10 +1415,24 @@ mordm.prim <- function(data, objective, minimize=TRUE, percentages=FALSE, expand
 		minimize <- FALSE
 		varargs$threshold.type=1
 		varargs$threshold=0.5
+		
+		x <- set[,1:nvars]
 	} else if (is.character(objective)) {
 		y <- set[,objective]
+		
+		if (nvars == 0) {
+			x <- set[,-which(colnames(set) %in% objective)]
+		} else {
+			x <- set[,1:nvars]
+		}
 	} else {
 		y <- set[,nvars+objective]
+		
+		if (nvars == 0) {
+			x <- set[,-(nvars+objective)]
+		} else {
+			x <- set[,1:nvars]
+		}
 	}
 	
 	if (minimize) {
@@ -1499,13 +1517,7 @@ mordm.prim <- function(data, objective, minimize=TRUE, percentages=FALSE, expand
 #' @param indent character string prepended to each line
 #' @export
 mordm.printbox <- function(data, mark, threshold=0.01, digits=3, indent="") {
-	nvars <- attr(data, "nvars")
 	bounds <- attr(data, "bounds")
-	
-	if (is.null(bounds)) {
-		stop("Bounds must be defined for the dataset")
-	}
-	
 	box <- attr(mark, "box")
 	
 	if (is.null(box)) {
@@ -1529,25 +1541,35 @@ mordm.printbox <- function(data, mark, threshold=0.01, digits=3, indent="") {
 	cat(indent)
 	cat("Bound Variables:\n")
 	
-	for (i in 1:nvars) {
+	for (i in 1:ncol(box)) {
 		show.min <- FALSE
 		show.max <- FALSE
 		show.equals <- FALSE
 		
-		limits <- c(max(bounds[1,i], box[1,i]), min(bounds[2,i], box[2,i]))
+		if (is.null(bounds)) {
+			limits <- c(box[1,i], box[2,i])
+		} else {
+			limits <- c(max(bounds[1,i], box[1,i]), min(bounds[2,i], box[2,i]))
+		}
+		
 		limits <- round(limits, digits=digits)
 		
-		if (abs(limits[1] - bounds[1,i]) > threshold*(bounds[2,i] - bounds[1,i])) {
+		if (is.null(bounds)) {
 			show.min <- TRUE
-		}
-		
-		if (abs(limits[2] - bounds[2,i]) > threshold*(bounds[2,i] - bounds[1,i])) {
 			show.max <- TRUE
-		}
+		} else {
+			if (abs(limits[1] - bounds[1,i]) > threshold*(bounds[2,i] - bounds[1,i])) {
+				show.min <- TRUE
+			}
+			
+			if (abs(limits[2] - bounds[2,i]) > threshold*(bounds[2,i] - bounds[1,i])) {
+				show.max <- TRUE
+			}
 		
-		if (abs(limits[1] - bounds[2,i]) <= threshold*(bounds[2,i] - bounds[1,i]) |
-					abs(limits[2] - bounds[1,i]) <= threshold*(bounds[2,i] - bounds[1,i])) {
-			show.equals <- TRUE
+			if (abs(limits[1] - bounds[2,i]) <= threshold*(bounds[2,i] - bounds[1,i]) |
+						abs(limits[2] - bounds[1,i]) <= threshold*(bounds[2,i] - bounds[1,i])) {
+				show.equals <- TRUE
+			}
 		}
 		
 		if (show.min & show.max) {
@@ -1626,7 +1648,7 @@ mordm.printbox <- function(data, mark, threshold=0.01, digits=3, indent="") {
 mordm.plotbox <- function(data, mark, main="PRIM Box", scale.width=TRUE, bar.width=3, col=NULL, names=NULL) {
 	nvars <- attr(data, "nvars")
 	bounds <- attr(data, "bounds")
-	
+
 	if (is.null(bounds)) {
 		stop("Bounds must be defined for the dataset")
 	}
@@ -1935,13 +1957,27 @@ mordm.sensitivity <- function(data, objective, index=-1, all=FALSE, ...) {
 		} else {
 			y <- apply(set, 1, objective)
 		}
+		
+		x <- set[,1:nvars]
 	} else if (is.character(objective)) {
 		y <- set[,objective]
+		
+		if (nvars == 0) {
+			x <- set[,-which(colnames(set) %in% objective)]
+		} else {
+			x <- set[,1:nvars]
+		}
 	} else {
 		y <- set[,nvars+objective]
+		
+		if (nvars == 0) {
+			x <- set[,-(nvars+objective)]
+		} else {
+			x <- set[,1:nvars]
+		}
 	}
 	
-	do.call(deltamim, c(list(set[,1:nvars], y), varargs))
+	do.call(deltamim, c(list(x, y), varargs))
 }
 
 #' Computes robustness under uncertainty.

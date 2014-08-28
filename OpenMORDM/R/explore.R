@@ -69,10 +69,8 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 	############################################################################
 	
 	# Setup and load the data
-	if (is.data.frame(filename)) {
-		data <- mordm.read.matrix(filename, bounds=bounds, maximize=maximize, names=names)
-	} else if (is.matrix(filename)) {
-		data <- mordm.read.matrix(filename, bounds=bounds, maximize=maximize, names=names)
+	if (is.data.frame(filename) || is.matrix(filename)) {
+		data <- mordm.read.matrix(filename, nvars=nvars, nobjs=nobjs, bounds=bounds, maximize=maximize, names=names)
 	} else if (is.character(filename)) {
 		if (!file.exists(filename)) {
 			stop("The file does not exist")
@@ -443,7 +441,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 				cfactors <- factors[[plot.toobj(show.color)]]
 				
 				if (!is.null(cfactors)) {
-					axis(1, at=1:length(cfactors), labels=sprintf("%s\n(%d)", cfactors, 1:length(cfactors)))
+					axis(1, at=1:length(cfactors), labels=sprintf("%s (%d)", cfactors, 1:length(cfactors)))
 				} else {
 					axis(1)
 				}
@@ -871,10 +869,6 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 	}
 	
 	do.sensitivity <- function(input) {
-		if (nvars == 0) {
-			stop("Unable to compute sensitivities on data set with no decision variables")
-		}
-		
 		index <- to.index(input)
 		
 		if (input$sensitivity.response == "Brushed Set") {
@@ -910,7 +904,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 							  all=input$sensitivity.all,
 							  kd.estimator=input$sensitivity.kd.estimator,
 							  plot.enabled=input$sensitivity.pdfs),
-			error=function(msg) stop("Unable to compute sensitivities, try a different option"))
+			error=function(msg) stop("Unable to compute sensitivities, try a different kernel density estimator"))
 		
 		indices <- result$Si
 		
@@ -924,10 +918,6 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 	}
 	
 	do.prim <- function(input) {
-		if (nvars == 0) {
-			stop("Unable to perform PRIM analysis on data set with no decision variables")
-		}
-		
 		if (input$prim.response == "Brushed Set") {
 			brush.limits <- to.limits(input, ignore.constant=TRUE)
 			preference <- to.weighted.preference(input, mordm.getset(data), brush=input[["brush.Preference"]])
@@ -975,21 +965,47 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 			threshold <- (input$prim.threshold * (objective.range[2]-objective.range[1])) + objective.range[1]
 		}
 		
-		result <- mordm.prim(data, objective, threshold.type=threshold.type,
-							 threshold=threshold, minimize=FALSE,
-							 expand=input$prim.expand)
+		result <- tryCatch(
+			mordm.prim(data, objective, threshold.type=threshold.type,
+					   threshold=threshold, minimize=FALSE,
+					   expand=input$prim.expand),
+			error=function(msg) stop("Unable to find any PRIM boxes with the given threshold, try CART instead"))
+		
+		# The first arg to mordm.plotbox is used to read nvars and bounds
+		# attributes.  If this info is not available, estimate the bounds.
+		if (!is.null(attr(data, "bounds"))) {
+			est.bounds <- data
+		} else {
+			est.bounds <- list()
+			set <- mordm.getset(data)
+			
+			if (is.function(objective)) {
+				x <- set[,1:nvars]
+			} else if (is.character(objective)) {
+				if (nvars == 0) {
+					x <- set[,-which(colnames(set) %in% objective)]
+				} else {
+					x <- set[,1:nvars]
+				}
+			} else {
+				if (nvars == 0) {
+					x <- set[,-(nvars+objective)]
+				} else {
+					x <- set[,1:nvars]
+				}
+			}
+			
+			attr(est.bounds, "nvars") <- ncol(x)
+			attr(est.bounds, "bounds") <- apply(x, 2, range)
+		}
 		
 		set.par(input)
-		mordm.plotbox(data, result[[1]])
+		mordm.plotbox(est.bounds, result[[1]])
 		
 		result
 	}
 	
 	do.cart <- function(input) {
-		if (nvars == 0) {
-			stop("Unable to perform CART on data set with no decision variables")
-		}
-		
 		oldpar <- par(no.readonly=TRUE)
 		set.par(input, xpd=TRUE)
 		
@@ -1028,8 +1044,15 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 			y[y==TRUE] <- "Survived"
 			y[y==FALSE] <- "Removed"
 			
-			extended.set <- data.frame(as.data.frame(set), .internalResponse=y)
-			formula <- sprintf("`.internalResponse` ~ %s", paste(sprintf("`%s`", colnames(set)[1:nvars]), collapse="+"))
+			extended.set <- data.frame(mordm.as.data.frame(set), .internalResponse=y)
+			
+			if (nvars == 0) {
+				factors <- colnames(set)
+			} else {
+				factors <- colnames(set)[1:nvars]
+			}
+			
+			formula <- sprintf("`.internalResponse` ~ %s", paste(sprintf("`%s`", factors), collapse="+"))
 			
 			if (input$cart.method == "Conditional Inference Trees") {
 				fit <- ctree(as.formula(formula), data=extended.set)
@@ -1048,8 +1071,14 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 				weights <- (weights - weights.range[1]) / (weights.range[2] - weights.range[1])
 			}
 			
-			extended.set <- data.frame(as.data.frame(set), .internalResponse=weights)
-			formula <- sprintf("`.internalResponse` ~ %s", paste(sprintf("`%s`", colnames(set)[1:nvars]), collapse="+"))
+			if (nvars == 0) {
+				factors <- colnames(set)
+			} else {
+				factors <- colnames(set)[1:nvars]
+			}
+			
+			extended.set <- data.frame(mordm.as.data.frame(set), .internalResponse=weights)
+			formula <- sprintf("`.internalResponse` ~ %s", paste(sprintf("`%s`", factors), collapse="+"))
 			
 			if (input$cart.method == "Conditional Inference Trees") {
 				fit <- ctree(as.formula(formula), data=extended.set)
@@ -1057,12 +1086,25 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 				fit <- rpart(as.formula(formula), data=extended.set, method=tolower(input$cart.method))
 			}
 		} else {
-			formula <- sprintf("`%s` ~ %s", input$cart.response, paste(sprintf("`%s`", colnames(set)[1:nvars]), collapse="+"))
+			if (nvars == 0) {
+				factors <- colnames(set)[-which(colnames(set) %in% input$cart.response)]
+			} else {
+				factors <- colnames(set)[1:nvars]
+			}
+			
+			formula <- sprintf("`%s` ~ %s", input$cart.response, paste(sprintf("`%s`", factors), collapse="+"))
+			extended.set <- mordm.as.data.frame(set)
+			
+			if (is.factor(extended.set[[input$cart.response]])) {
+				method = "class"
+			} else {
+				method = tolower(input$cart.method)
+			}
 			
 			if (input$cart.method == "Conditional Inference Trees") {
-				fit <- ctree(as.formula(formula), data=as.data.frame(set))
+				fit <- ctree(as.formula(formula), data=extended.set)
 			} else {
-				fit <- rpart(as.formula(formula), data=as.data.frame(set), method=tolower(input$cart.method))
+				fit <- rpart(as.formula(formula), data=extended.set, method=method)
 			}
 		}
 		

@@ -42,13 +42,18 @@ point}
 \item{metadata}{columns to retain in a metadata attribute (CSV/Excel only)}
 }
 \description{
+Starts a Shiny server and launches a webpage to display the given dataset.
+The Shiny server will remain running even if the web browser is closed.  You
+must interrupt the current R function call (press Ctrl-C or select
+Session -> Interrupt R in RStudio) to stop the server.
+}
+\details{
 This method currently supports loading CSV files (.csv), Excel files (.xls
 or .xlsx), and MOEA runtime files (any other extension).  For CSV and Excel
 files, you may optionally specify nvars and/or nobjs.  If unspecified, the
 method will assume every column is an objective.  For MOEA runtime files,
 nvars and nobjs are mandatory.
-}
-\details{
+
 For CSV and Excel files, you can optionally ignore certain columns or
 indicate a column is metadata.  Ignored columns are completely removed from
 the analysis.  Metadata is not shown in the visualizations, but will be

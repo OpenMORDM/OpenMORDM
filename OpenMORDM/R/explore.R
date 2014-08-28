@@ -26,6 +26,12 @@ options(rgl.useNULL=TRUE)
 
 #' A web-based tool (powered by Shiny) for exploring high-dimensional data sets.
 #' 
+#' Starts a Shiny server and launches a webpage to display the given dataset.
+#' The Shiny server will remain running even if the web browser is closed.  You
+#' must interrupt the current R function call (press Ctrl-C or select
+#' Session -> Interrupt R in RStudio) to stop the server.
+#' 
+#' @details
 #' This method currently supports loading CSV files (.csv), Excel files (.xls
 #' or .xlsx), and MOEA runtime files (any other extension).  For CSV and Excel
 #' files, you may optionally specify nvars and/or nobjs.  If unspecified, the

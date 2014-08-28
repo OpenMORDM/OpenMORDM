@@ -550,6 +550,9 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		transparency <- input$parallel.transparency * alpha
 		colors <- alpha(original.colors, transparency)
 		
+		# fix column names (since plot3d may change them to X, Y, Z)
+		colnames(set) <- c(colnames(data[[1]]), "Constant")[cols]
+		
 		# highlight the selected point
 		if (is.null(input$selection) || !input$selection.enabled) {
 			highlight <- NULL
@@ -626,6 +629,9 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		transparency <- input$tradeoff.transparency * alpha
 		colors <- alpha(original.colors, transparency)
 		point.sizes <- rep(input$tradeoff.point, nrow(set))
+		
+		# fix column names (since plot3d may change them to X, Y, Z)
+		colnames(set) <- c(colnames(data[[1]]), "Constant")[cols]
 		
 		# highlight the selected point
 		if (is.null(input$selection) || !input$selection.enabled) {
@@ -757,6 +763,9 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		transparency <- input$scatter.transparency * alpha
 		colors <- alpha(original.colors, transparency)
 		point.sizes <- rep(input$scatter.point, nrow(set))
+		
+		# fix column names (since plot3d may change them to X, Y, Z)
+		colnames(set) <- c(colnames(data[[1]]), "Constant")[cols]
 		
 		# highlight the selected point
 		if (is.null(input$selection) || !input$selection.enabled) {

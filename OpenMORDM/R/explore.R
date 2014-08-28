@@ -838,7 +838,9 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		brush.limits <- to.limits(input, ignore.constant=TRUE)
 		alpha <- plot.brush(set, brush.limits, 0.0)
 		alpha <- plot.brush.preference(set, alpha, input, 0.0)
-		set[alpha==1,cols]
+		
+		result <- mordm.subset(set, columns=cols, rows=alpha==1)
+		result <- mordm.as.data.frame(result)
 	}
 	
 	to.image.size <- function(session, id, dpi=72) {
@@ -1407,7 +1409,11 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 					brush.limits <- to.limits(input, ignore.constant=TRUE)
 					alpha <- plot.brush(set, brush.limits, 0.0)
 					alpha <- plot.brush.preference(set, alpha, input, 0.0)
-					write.csv(set[alpha==1,,drop=FALSE], file, row.names=FALSE)
+					
+					result <- mordm.subset(set, rows=alpha==1)
+					result <- mordm.as.data.frame(result)
+					
+					write.csv(result, file, row.names=FALSE)
 				})
 			
 			output$download.rotate.gif <- downloadHandler(

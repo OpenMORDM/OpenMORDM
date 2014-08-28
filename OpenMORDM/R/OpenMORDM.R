@@ -1298,6 +1298,49 @@ mordm.select <- function(data, marking, index=-1, not=FALSE, or=FALSE) {
 	return(subset)
 }
 
+#' Returns a subset of a data set.
+#' 
+#' @param set the data set
+#' @param columns the columns to return
+#' @param rows the rows to return
+#' @export
+mordm.subset <- function(set, columns=1:ncol(set), rows=1:nrow(set)) {
+	nvars <- attr(set, "nvars")
+	nobjs <- attr(set, "nobjs")
+	
+	col.vars <- c()
+	col.objs <- c()
+	
+	# select only the variables and objectives requested
+	if (is.logical(columns)) {
+		if (nvars > 0) {
+			col.vars <- (1:nvars)[columns[1:nvars]]
+		}
+		
+		if (nobjs > 0) {
+			col.objs <- (1:nobjs)[columns[(nvars+1):(nvars+nobjs)]]
+		}
+	} else if (is.numeric(columns)) {
+		if (nvars > 0) {
+			col.vars <- (1:nvars)[columns[which(columns >= 1 & columns <= nvars)]]
+		}
+		
+		if (nobjs > 0) {
+			col.objs <- (1:nobjs)[columns[which(columns >= nvars+1 & columns <= nvars+nobjs)] - nvars]
+		}
+	}
+
+	result <- set[rows,columns,drop=FALSE]
+	attr(result, "nvars") <- length(col.vars)
+	attr(result, "nobjs") <- length(col.objs)
+	attr(result, "nconstrs") <- attr(set, "nconstrs")
+	attr(result, "bounds") <- attr(set, "bounds")[col.vars]
+	attr(result, "maximize") <- attr(set, "maximize")
+	attr(result, "factors") <- attr(set, "factors")[c(col.vars, col.objs+nvars)]
+	
+	return(result)
+}
+
 #' Adds extra colums to the end of a data set.
 #' 
 #' @param set the data set
@@ -1329,7 +1372,7 @@ mordm.cbind <- function(set, columns) {
 	# Append the new columns to the data set
 	result <- cbind(set, columns)
 	attr(result, "nvars") <- attr(set, "nvars")
-	attr(result, "nobjs") <- attr(set, "nobjs")
+	attr(result, "nobjs") <- attr(set, "nobjs")+ncol(columns)
 	attr(result, "nconstrs") <- attr(set, "nconstrs")
 	attr(result, "bounds") <- attr(set, "bounds")
 	attr(result, "maximize") <- attr(set, "maximize")

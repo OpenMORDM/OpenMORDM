@@ -10,7 +10,9 @@ visualization toolkit that can be launched through the `runVisDemo` or `explore`
 ### Note on Custom Packages ###
 This software requires a custom version of RGL and ShinyRGL.  Other software that uses
 RGL or ShinyRGL should be compatible, but if problems arise, you can always reinstall the
-original versions from CRAN.
+original versions from CRAN.  This software will still work with the original versions,
+but the web-based visualization tool will not support picking and will reorient to the
+default view every time the 3D scene is redrawn.
 
 ### Prerequisite Software ###
 1. A compatible C/C++ compiler
@@ -37,9 +39,11 @@ original versions from CRAN.
 * Run the demo: `runVisDemo()`
 * Use `explore` to visualize CSV or XLS files, matrices, or data.frames: `library(datasets); data(iris); explore(iris)`
 
-### Notes ###
+### Troubleshooting ###
 * Linux users may need to run R with admin permissions when installing: `sudo R`
-* Mac OS X users who see an error about llvm-g++-4.2 missing, run:
+* Mac OS X users who see an error about `llvm-g++-4.2` missing, run:
     * `cd /usr/bin`
     * `sudo ln -fs clang llvm-gcc-4.2`
     * `sudo ln -fs clang++ llvm-g++-4.2`
+* When running the Shiny web visualizations, we must set `options(rgl.useNULL=TRUE)`.  This is required to run on headless systems.  If you try to run `mordm.plot` and do not see the 3D window, you may need to restart R, set `options(rgl.useNULL=FALSE)`, then `library(OpenMORDM)`.
+

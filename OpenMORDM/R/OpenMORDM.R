@@ -82,27 +82,21 @@ mordm.as.data.frame <- function(entry) {
 mordm.read.matrix <- function(mat, nvars=NULL, nobjs=NULL, bounds=NULL, maximize=NULL, names=NULL, ignore=NULL, metadata=NULL) {
 	entry <- mat
 	meta <- NULL
+	tmp.names <- NULL
 	
-	# Provide column names
-	if (is.null(names)) {
-		if (is.null(colnames(entry))) {
-			names <- mordm.defaultnames(nvars, nobjs)
-		} else {
-			names <- colnames(entry)
-		}
-	} else if (length(names) == nobjs) {
-		names <- append(mordm.defaultnames(nvars, 0), names)
-	} else if (length(names) != nvars + nobjs) {
-		warning("Incorrect number of names, using defaults")
-		names <- mordm.defaultnames(nvars, nobjs)
+	# Provide temporary column names (will generate final names later)
+	if (!is.null(names) && length(names) == ncol(entry)) {
+		tmp.names <- names
+	} else if (!is.null(colnames(entry))) {
+		tmp.names <- colnames(entry)
+	} else {
+		tmp.names <- sprintf("Col%d", 1:ncol(entry))
 	}
-	
-	colnames(entry) <- names
 	
 	# Copy any metadata columns
 	if (!is.null(metadata)) {
 		if (!is.logical(metadata)) {
-			metadata <- sapply(1:ncol(entry), function(i) { i %in% metadata | names[i] %in% metadata})
+			metadata <- sapply(1:ncol(entry), function(i) { i %in% metadata | tmp.names[i] %in% metadata})
 		}
 		
 		meta <- entry[,metadata,drop=FALSE]
@@ -113,7 +107,7 @@ mordm.read.matrix <- function(mat, nvars=NULL, nobjs=NULL, bounds=NULL, maximize
 	# Strip any ignored/metadata columns
 	if (!is.null(ignore)) {
 		if (!is.logical(ignore)) {
-			ignore <- sapply(1:ncol(entry), function(i) { i %in% ignore | names[i] %in% ignore})
+			ignore <- sapply(1:ncol(entry), function(i) { i %in% ignore | tmp.names[i] %in% ignore})
 		}
 
 		entry <- entry[,!metadata & !ignore,drop=FALSE]
@@ -128,6 +122,22 @@ mordm.read.matrix <- function(mat, nvars=NULL, nobjs=NULL, bounds=NULL, maximize
 	} else if (is.null(nvars)) {
 		nvars <- ncol(entry) - nobjs
 	}
+	
+	# Provide actual column names
+	if (is.null(names)) {
+		if (is.null(colnames(entry))) {
+			names <- mordm.defaultnames(nvars, nobjs)
+		} else {
+			names <- colnames(entry)
+		}
+	} else if (length(names) == nobjs) {
+		names <- append(mordm.defaultnames(nvars, 0), names)
+	} else if (length(names) != nvars + nobjs) {
+		warning("Incorrect number of names, using defaults")
+		names <- mordm.defaultnames(nvars, nobjs)
+	}
+	
+	colnames(entry) <- names
 	
 	# Check if any columns contain character data, treat as factors
 	factors <- list()

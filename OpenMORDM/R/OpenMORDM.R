@@ -727,6 +727,20 @@ mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, id
 		zat <- c(rangez[1])
 	}
 	
+	# if not being called by explore, override useNULL
+	exploring = FALSE
+	
+	for (call in sys.calls()) {
+		if (call[[1]] == "explore") {
+			exploring = TRUE
+			break
+		}
+	}
+	
+	if (!exploring) {
+		open3d(useNULL=FALSE)
+	}
+	
 	# create the plot
 	par3d(cex=tick.size)
 	bg3d(color=bg)
@@ -744,7 +758,7 @@ mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, id
 				 alpha=alpha,
 				 ...)
 	
-	bbox3d(color=fg, xat=xat, xlab=xtick, yat=yat, ylab=ytick, zat=zat, zlab=ztick)
+	bbox3d(color=fg, xat=xat, xlab=xtick, yat=yat, ylab=ytick, zat=zat, zlab=ztick, front="lines", back="lines")
 	title3d(xlab=xlab, ylab=ylab, zlab=zlab, cex=label.size, line=label.line, color=fg)
 	
 	if (!is.null(window)) {

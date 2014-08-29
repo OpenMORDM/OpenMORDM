@@ -24,5 +24,7 @@
 # THE SOFTWARE.
 
 .onLoad <- function(libname, pkgname) {
-	options(rgl.useNULL=TRUE)
+	if (is.null(getOption("rgl.useNULL"))) {
+		options(rgl.useNULL=TRUE)
+	}
 }

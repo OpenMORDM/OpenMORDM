@@ -66,6 +66,25 @@
 #' @param ignore columns to remove from the dataset (CSV/Excel only)
 #' @param metadata columns to retain in a metadata attribute (CSV/Excel only)
 #' @export
+#' @import shiny
+#' @import shinyRGL
+#' @import rgl
+#' @import scales
+#' @import grid
+#' @import prim
+#' @import MASS
+#' @import animation
+#' @import sensitivity
+#' @import pracma
+#' @import emoa
+#' @import stringr
+#' @import functional
+#' @import dichromat
+#' @import rpart
+#' @import rpart.plot
+#' @import party
+#' @import stats
+#' @import corrgram
 explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bounds=NULL,
 					maximize=NULL, order=NULL, visible.variables=FALSE,
 					plot3d.width="600px", plot3d.height="500px",

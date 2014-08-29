@@ -101,8 +101,7 @@ setup <- function(command, nvars, nobjs, nconstrs=0, bounds=NULL, names=NULL) {
 #' @param return.output if \code{TRUE}, this method loads and returns the
 #'        contents of the output file
 #' @param verbose displays additional information for debugging
-#' @export
-optimize <- function(problem, NFE, executable="./borg.exe", output=tempfile(), output.frequency=100, return.output=TRUE, verbose=TRUE) {
+.optimize <- function(problem, NFE, executable="./borg.exe", output=tempfile(), output.frequency=100, return.output=TRUE, verbose=TRUE) {
 	if (is.function(problem$command)) {
 		stop("Problem must be an external executable")
 	}
@@ -562,6 +561,7 @@ sensitivity.levels <- function(problem, samples, method) {
 #'        variables, objectives, and constraints into a matrix representation
 #' @param ... additional options passed to the sensitivity analysis method
 #' @export
+#' @importFrom boot boot
 sensitivity <- function(problem, objective, samples, method="fast99", verbose=FALSE, plot=FALSE, raw=FALSE, collapse=TRUE, ...) {
 	varargs <- list(...)
 	

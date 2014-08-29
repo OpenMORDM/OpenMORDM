@@ -13,4 +13,5 @@ mordm.defaultnames(nvars, nobjs)
 \description{
 Creates default column names of the form \code{VarN} and \code{ObjN}.
 }
+\keyword{internal}
 

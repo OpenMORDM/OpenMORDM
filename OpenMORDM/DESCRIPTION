@@ -20,7 +20,8 @@ Copyright: Copyright 2014 The Pennsylvania State University.  This work was
     Sustainable Climate Risk Management (SCRiM) under NSF cooperative agreement
     GEO-1240507.
 Depends:
-    R (>= 3.0),
+    R (>= 3.0)
+Imports:
     shiny,
     shinyRGL,
     rgl,

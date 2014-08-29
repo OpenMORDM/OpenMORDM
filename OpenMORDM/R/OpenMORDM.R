@@ -29,6 +29,7 @@
 #' 
 #' @param nvars the number of decision variables
 #' @param nobjs the number of objectives
+#' @keywords internal
 mordm.defaultnames <- function(nvars, nobjs) {
 	names <- vector()
 	
@@ -616,7 +617,6 @@ mordm.plotmark <- function(highlight=NULL) {
 #' @param fg foreground color
 #' @param ... additional options passed to \code{\link{plot3d}}
 #' @export
-#' 
 mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, identify=TRUE, colors=NULL, clim=NULL, ideal=FALSE, selection=NULL, xlim=NULL, ylim=NULL, zlim=NULL, slim=NULL, window=NULL, alpha=1, tick.size=1, label.size=1.2, label.line=1, radius.scale=1, bg="white", fg="black", ...) {
 	set <- mordm.getset(data, index)
 	nvars <- attr(data, "nvars")

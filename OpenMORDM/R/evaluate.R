@@ -538,6 +538,7 @@ sensitivity.levels <- function(problem, samples, method) {
 #' Supports all of the methods provided by the sensitivity library except for
 #' those using metamodels.
 #' 
+#' @details
 #' In addition to using the same inputs for each method, the outputs are also
 #' standardized.  For methods computing the first-order indices, the output
 #' contains the sensitivity indices (\code{Si}) and a ranking (\code{rank}).
@@ -789,15 +790,9 @@ sensitivity <- function(problem, objective, samples, method="fast99", verbose=FA
 	}
 }
 
-#' Internal method copied from the statistics library.
-#' 
-#' This function is not exported from the statistics library, so it is copied
-#' here.  This is used to compute the bootstrap confidence intervals for the
-#' Plischke method.
-#' 
-#' @param b see original documentation
-#' @param conf see original documentation
-#' @param type see original documentation
+# This function is not exported from the statistics library, so it is copied
+# here.  This is used to compute the bootstrap confidence intervals for the
+# Plischke method.
 bootstats <- function(b, conf = 0.95, type = "norm") {
 	p <- length(b$t0)
 	lab <- c("original", "bias", "std. error", "min. c.i.", "max. c.i.")

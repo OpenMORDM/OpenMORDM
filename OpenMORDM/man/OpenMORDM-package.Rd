@@ -3,15 +3,18 @@
 \alias{OpenMORDM}
 \docType{package}
 \title{
-OpenMORDM is an open-source R library for multiobjective robust decision
-making (MORDM).
+A library for multiobjective robust decision making (MORDM) and
+visualizing high-dimensional datasets.
 }
 \description{
-OpenMORDM is an open-source R library for multiobjective robust
-    decision making (MORDM). It includes support for loading optimization
-    output files (from Borg or the MOEA Framework), visualizing the data sets
-    using various 2D and 3D plots, performing scenario discovery and tradeoff
-    analysis, and computing uncertainty/robustness metrics.
+OpenMORDM provides support for visualizing high-dimensional
+    datasets loaded from matrices or data.frames and a variety of file formats
+    including CSV, XLS, XLSX, and MOEA runtime outputs (from the Borg MOEA or
+    MOEA Framework).  This visualization is contained within a web-based viewer
+    capable of generating various 2D and 3D plots as well as performing a
+    number of analyses.  Additionally, the R functions provide the means for
+    evaluating models under uncertainty and deep uncertainty and computing
+    different robustness metrics.
 }
 \details{
 \tabular{ll}{
@@ -19,7 +22,11 @@ Package: \tab OpenMORDM\cr
 Type: \tab Package\cr
 Version: \tab 0.1\cr
 Date: \tab 2014-08-26\cr
-License: \tab MIT License\cr
+License: \tab MIT\cr
+Copyright: \tab Copyright 2014 The Pennsylvania State University.  This work was
+supported by the National Science Foundation through the Network for
+Sustainable Climate Risk Management (SCRiM) under NSF cooperative agreement
+GEO-1240507.\cr
 Depends: \tab 
 R (>= 3.0),
 shiny,
@@ -42,11 +49,15 @@ rpart.plot,
 party,
 stats,
 corrgram\cr
-Built: \tab R 3.1.0; ; 2014-08-27 13:32:24 UTC; windows\cr
+Suggests: \tab 
+gdata\cr
+Built: \tab R 3.1.0; ; 2014-08-29 15:01:53 UTC; windows\cr
 }
 
 Index:
 \preformatted{
+OpenMORDM-package       OpenMORDM is an open-source R library for
+                        multiobjective robust decision making (MORDM).
 bootstats               Internal method copied from the statistics
                         library.
 check.bounds            Returns 'TRUE' if the decision variables are
@@ -68,8 +79,10 @@ evaluate.function       Evaluates a problem representing a R function.
 explore                 A web-based tool (powered by Shiny) for
                         exploring high-dimensional data sets.
 mordm.animate           Animates the time series in a GIF.
+mordm.as.data.frame     Converts a data set into a data frame.
 mordm.attributes        Extracts the common attributes from the time
                         series data.
+mordm.cbind             Adds extra colums to the end of a data set.
 mordm.colorize          Returns a vector of colors to be used when
                         plotting a data set.
 mordm.correlation       Displays the correlations among pairwise
@@ -107,7 +120,9 @@ mordm.printbox          Print descriptive representation of PRIM boxes.
 mordm.read              Loads the time series data output from an
                         optimization algorithm.
 mordm.read.csv          Loads a data set stored in a CSV file.
-mordm.read.matrix       Loads a data set stored in a matrix.
+mordm.read.matrix       Loads a data set stored in a matrix or
+                        data.frame.
+mordm.read.xls          Loads a data set stored in a XLS or XLSX file.
 mordm.recommend         Make recommendations for analyzing the data.
 mordm.robustness        Computes robustness under uncertainty.
 mordm.select            Returns the subset of rows that are marked.
@@ -115,6 +130,7 @@ mordm.select.indices    Returns the row indices in the data set that
                         are marked.
 mordm.sensitivity       Computes the sensitivities of the decision
                         variables.
+mordm.subset            Returns a subset of a data set.
 mordm.uncertainty       Computes robustness under deep uncertainty.
 nsample                 Generate normally distributed random inputs.
 optimize                Optimize the problem.
@@ -141,13 +157,4 @@ David Hadka
 
 Maintainer: David Hadka <dmh309@psu.edu>
 }
-\references{
-~~ Todo ~~
-}
 \keyword{ package }
-\seealso{
-~~ Todo ~~
-}
-\examples{
-~~ Todo ~~
-}

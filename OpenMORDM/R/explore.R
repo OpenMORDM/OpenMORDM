@@ -595,7 +595,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 			colors <- colors[ordering]
 			
 			if (!is.null(highlight)) {
-				highlight <- highlight[ordering]
+				highlight <- which(ordering %in% highlight)
 			}
 		}
 		
@@ -675,7 +675,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 			colors <- colors[ordering]
 			
 			if (!is.null(highlight)) {
-				highlight <- highlight[ordering]
+				highlight <- which(ordering %in% highlight)
 			}
 		}
 		
@@ -809,7 +809,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 			colors <- colors[ordering]
 			
 			if (!is.null(highlight)) {
-				highlight <- highlight[ordering]
+				highlight <- which(ordering %in% highlight)
 			}
 		}
 		

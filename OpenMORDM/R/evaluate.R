@@ -562,6 +562,7 @@ sensitivity.levels <- function(problem, samples, method) {
 #' @param ... additional options passed to the sensitivity analysis method
 #' @export
 #' @importFrom boot boot
+#' @importFrom boot boot.ci
 sensitivity <- function(problem, objective, samples, method="fast99", verbose=FALSE, plot=FALSE, raw=FALSE, collapse=TRUE, ...) {
 	varargs <- list(...)
 	
@@ -629,7 +630,7 @@ sensitivity <- function(problem, objective, samples, method="fast99", verbose=FA
 	vars <- t(apply(model$X, 1, function(x) (problem$bounds[2,]-problem$bounds[1,])*x + problem$bounds[1,]))
 	
 	# evaluate the model
-	output <- evaluate(vars, lake.problem)
+	output <- evaluate(vars, problem)
 	
 	# calculate the response vector
 	if (is.function(objective)) {

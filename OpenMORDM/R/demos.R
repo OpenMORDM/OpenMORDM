@@ -115,16 +115,15 @@ runVisDemo <- function() {
 			}
 			
 			output$custom.view <- renderPlot({
+				if (exists("default.par", mordm.globals)) par(get("default.par", mordm.globals))
+				
 				if (input$colormap.black) {
-					if (exists("mordm.defaultpar")) par(mordm.defaultpar)
 					par(bg="black", fg="white", col="white", col.axis="white", col.lab="white", col.main="white", col.sub="white")
-					mordm.defaultpar <<- par(no.readonly=TRUE)
 				} else {
-					if (exists("mordm.defaultpar")) par(mordm.defaultpar)
 					par(bg="white", fg="black", col="black", col.axis="black", col.lab="black", col.main="black", col.sub="black")
-					mordm.defaultpar <<- par(no.readonly=TRUE)
 				}
 				
+				assign("default.par", par(no.readonly=TRUE), mordm.globals)
 				do.custom(input)
 			})
 			

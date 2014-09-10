@@ -90,7 +90,7 @@ critical.value <- function(x, y, ks.level=0.95, complement=FALSE) {
 	list(ks.test=ks.test, ks.crit=ks.crit)
 }
 
-transform.output <- function(y, output.trafo="off", quadrature.points=110) {
+transform.output <- function(y, n, output.trafo="off", quadrature.points=110) {
 	if (is.function(output.trafo)) {
 		y <- output.trafo(y)
 		output.trafo <- "off"
@@ -249,7 +249,7 @@ deltamim <- function(x,
 	ks.crit <- ks.result$ks.crit
 	
 	# transform the output
-	trafo.result <- transform.output(y, output.trafo, quadrature.points)
+	trafo.result <- transform.output(y, n, output.trafo, quadrature.points)
 	indx <- trafo.result$indx
 	ys <- trafo.result$ys
 	y <- trafo.result$y

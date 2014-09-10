@@ -14,7 +14,7 @@ Description: OpenMORDM provides support for visualizing high-dimensional
     number of analyses.  Additionally, the R functions provide the means for
     evaluating models under uncertainty and deep uncertainty and computing
     different robustness metrics.
-License: MIT
+License: MIT + file LICENSE
 Copyright: Copyright 2014 The Pennsylvania State University.  This work was
     supported by the National Science Foundation through the Network for
     Sustainable Climate Risk Management (SCRiM) under NSF cooperative agreement

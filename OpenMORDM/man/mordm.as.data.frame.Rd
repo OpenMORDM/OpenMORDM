@@ -6,7 +6,7 @@
 mordm.as.data.frame(entry)
 }
 \arguments{
-\item{the}{data set to convert}
+\item{entry}{the data set to convert}
 }
 \description{
 When loading data into OpenMORDM, any non-numeric columns are converted into

@@ -184,7 +184,10 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 	set.par <- function(input, ...) {
 		input$colormap.black # read value so that plots get redrawn
 		
-		if (exists("mordm.defaultpar")) par(mordm.defaultpar)
+		if (exists("default.par", mordm.globals)) {
+			par(get("default.par", mordm.globals))
+		}
+		
 		par(...)
 	}
 	
@@ -554,8 +557,8 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		# plot 3D plot to set the appropriate colors
 		do.plot3d(input)
 		
-		original.set <- mordm.currentset
-		original.colors <- mordm.currentcolors
+		original.set <- get("current.set", mordm.globals)
+		original.colors <- get("current.colors", mordm.globals)
 		
 		# determine which columns to plot
 		cols <- to.columns(input)
@@ -599,8 +602,8 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 			}
 		}
 		
-		mordm.currentset <<- set
-		mordm.currentcolors <<- colors
+		assign("current.set", set, mordm.globals)
+		assign("current.colors", colors, mordm.globals)
 		
 		# generate the parallel coordinates plot
 		set.par(input)
@@ -608,8 +611,8 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 					  line.width=input$parallel.lwd, selection.scale=input$selection.scale)
 		
 		# restore the original settings
-		mordm.currentset <<- original.set
-		mordm.currentcolors <<- original.colors
+		assign("current.set", original.set, mordm.globals)
+		assign("current.colors", original.colors, mordm.globals)
 	}
 	
 	do.plotOps <- function(input) {
@@ -632,8 +635,8 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 	do.tradeoff <- function(input) {
 		do.plot3d(input)
 		
-		original.set <- mordm.currentset
-		original.colors <- mordm.currentcolors
+		original.set <- get("current.set", mordm.globals)
+		original.colors <- get("current.colors", mordm.globals)
 		
 		set.par(input)
 		
@@ -766,8 +769,8 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 	do.scatter <- function(input) {
 		do.plot3d(input)
 		
-		original.set <- mordm.currentset
-		original.colors <- mordm.currentcolors
+		original.set <- get("current.set", mordm.globals)
+		original.colors <- get("current.colors", mordm.globals)
 		
 		set.par(input)
 		
@@ -1484,7 +1487,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 						palette <- rev(palette)
 					}
 					
-					mordm.animate(data, output=file, indices=1:length(data), transform=spin3d(rpm=0), objectives=c(2,3,4), color=1, palette=color.map, window=500)
+					mordm.animate(data, output=file, indices=1:length(data), transform=spin3d(rpm=0), objectives=c(2,3,4), color=1, palette=palette, window=500)
 				})
 			
 			output$plot2d.parallel <- renderPlot({
@@ -1952,15 +1955,17 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 			observe({
 				session$sendCustomMessage("bgChange", ifelse(input$colormap.black, "black", "white"))
 				
-				if (input$colormap.black) {
-					if (exists("mordm.defaultpar")) par(mordm.defaultpar)
-					par(bg="black", fg="white", col="white", col.axis="white", col.lab="white", col.main="white", col.sub="white")
-					mordm.defaultpar <<- par(no.readonly=TRUE)
-				} else {
-					if (exists("mordm.defaultpar")) par(mordm.defaultpar)
-					par(bg="white", fg="black", col="black", col.axis="black", col.lab="black", col.main="black", col.sub="black")
-					mordm.defaultpar <<- par(no.readonly=TRUE)
+				if (exists("default.par", mordm.globals)) {
+					par(get("default.par"), mordm.globals)	
 				}
+				
+				if (input$colormap.black) {
+					par(bg="black", fg="white", col="white", col.axis="white", col.lab="white", col.main="white", col.sub="white")
+				} else {
+					par(bg="white", fg="black", col="black", col.axis="black", col.lab="black", col.main="black", col.sub="black")
+				}
+				
+				assign("default.par", par(no.readonly=TRUE), mordm.globals)
 			})
 	}
 	

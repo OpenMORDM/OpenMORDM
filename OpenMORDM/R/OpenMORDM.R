@@ -50,7 +50,7 @@ mordm.defaultnames <- function(nvars, nobjs) {
 #' factors and represented internally as integers.  This method reverses that
 #' process to get a data frame storing the original values.
 #' 
-#' @param the data set to convert
+#' @param entry the data set to convert
 #' @export
 mordm.as.data.frame <- function(entry) {
 	result <- as.data.frame(entry)
@@ -481,10 +481,10 @@ mordm.colorize <- function(set, objectives, mark=NULL, palette=heat.colors, n=10
 #' @param selection.scale the 
 #' @export
 mordm.plotpar <- function(highlight=NULL, alpha=0.4, label.size=1, line.width=1, selection.scale=2) {
-	set <- mordm.currentset
-	objectives <- mordm.currentobjectives
-	mark <- mordm.currentmark
-	colors <- alpha(mordm.currentcolors, alpha)
+	set <- get("current.set", mordm.globals)
+	objectives <- get("current.objectives", mordm.globals)
+	mark <- get("current.mark", mordm.globals)
+	colors <- alpha(get("current.colors", mordm.globals), alpha)
 
 	# highlight selected solutions
 	if (is.null(highlight)) {
@@ -504,10 +504,10 @@ mordm.plotpar <- function(highlight=NULL, alpha=0.4, label.size=1, line.width=1,
 	}
 	
 	# reset plot settings
-	if (exists("mordm.defaultpar")) {
-		par(mordm.defaultpar)
+	if (exists("default.par", mordm.globals)) {
+		par(get("default.par", mordm.globals))
 	} else {
-		mordm.defaultpar <<- par(no.readonly=TRUE)
+		assign("default.par", par(no.readonly=TRUE), mordm.globals)
 	}
 	
 	# create the plot
@@ -515,7 +515,7 @@ mordm.plotpar <- function(highlight=NULL, alpha=0.4, label.size=1, line.width=1,
 	parcoord(set, col=colors, lwd=lwd, var.label=TRUE)
 	
 	# store the plot settings
-	mordm.currentplot <<- "parallel"
+	assign("current.plot", "parallel", mordm.globals)
 }
 
 #' Display the markings in a box plot (candle stick plot).
@@ -526,9 +526,9 @@ mordm.plotpar <- function(highlight=NULL, alpha=0.4, label.size=1, line.width=1,
 #' @param highlight highlight vector of row indices to be highlighted in the plot
 #' @export
 mordm.plotmark <- function(highlight=NULL) {
-	set <- mordm.currentset
-	mark <- mordm.currentmark
-	colors <- mordm.currentcolors
+	set <- get("current.set", mordm.globals)
+	mark <- get("current.mark", mordm.globals)
+	colors <- get("current.colors", mordm.globals)
 	nvars <- attr(set, "nvars")
 	nobjs <- attr(set, "nobjs")
 	
@@ -553,10 +553,10 @@ mordm.plotmark <- function(highlight=NULL) {
 	}
 	
 	# reset plot settings
-	if (exists("mordm.defaultpar")) {
-		par(mordm.defaultpar)
+	if (exists("default.par", mordm.globals)) {
+		par(get("default.par", mordm.globals))
 	} else {
-		mordm.defaultpar <<- par(no.readonly=TRUE)
+		assign("default.par", par(no.readonly=TRUE), mordm.globals)
 	}
 	
 	# create the plot
@@ -588,7 +588,7 @@ mordm.plotmark <- function(highlight=NULL) {
 	}
 	
 	# store the plot settings
-	mordm.currentplot <<- "mark"
+	assign("current.plot", "mark", mordm.globals)
 }
 
 #' Sets the current data set and displays a 3D scatter plot.
@@ -829,10 +829,10 @@ mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, id
 	}
 	
 	# save the state to a global location so other functions can reference
-	mordm.currentset <<- set
-	mordm.currentobjectives <<- objectives
-	mordm.currentmark <<- mark
-	mordm.currentcolors <<- colors
+	assign("current.set", set, mordm.globals)
+	assign("current.objectives", objectives, mordm.globals)
+	assign("current.mark", mark, mordm.globals)
+	assign("current.colors", colors, mordm.globals)
 }
 
 #' Identify and highlight points using the middle mouse button.
@@ -849,13 +849,15 @@ mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, id
 mordm.identify <- function(enabled=TRUE, label=FALSE) {
 	if (enabled) {
 		rgl.setMouseCallbacks(3, begin=function(x, y) { 
+			stop("here")
+			
 			userMatrix <- par3d("userMatrix")
 			viewport <- par3d("viewport")
 			scale <- par3d("scale")
 			projection <- rgl.projection()
-			set <- mordm.currentset
-			objectives <- mordm.currentobjectives
-
+			set <- get("current.set", mordm.globals)
+			objectives <- get("current.objectives", mordm.globals)
+			print("herea")
 			d = matrix(nrow=nrow(set), ncol=1)
 			
 			for (i in 1:nrow(set)) {
@@ -883,10 +885,10 @@ mordm.identify <- function(enabled=TRUE, label=FALSE) {
 							 i[1])
 			}
 			
-			if (exists("mordm.currentplot")) {
-				if (mordm.currentplot == "parallel") {
+			if (exists("current.plot", mordm.globals)) {
+				if (get("current.plot", mordm.globals) == "parallel") {
 					mordm.plotpar(highlight=i[1])
-				} else if (mordm.currentplot == "mark") {
+				} else if (get("current.plot", mordm.globals) == "mark") {
 					mordm.plotmark(highlight=i[1])
 				}
 			}
@@ -917,10 +919,10 @@ mordm.plotops <- function(data, time=FALSE, improvements=FALSE, log=FALSE, impro
 	attributes <- mordm.attributes(data)
 	
 	# reset plot settings
-	if (exists("mordm.defaultpar")) {
-		par(mordm.defaultpar)
+	if (exists("default.par", mordm.globals)) {
+		par(get("default.par", mordm.globals))
 	} else {
-		mordm.defaultpar <<- par(no.readonly=TRUE)
+		assign("default.par", par(no.readonly=TRUE), mordm.globals)
 	}
 	
 	# the operator plot uses special margins for the legend and right-axis
@@ -1166,13 +1168,14 @@ mordm.mark.selection <- function() {
 	cat("Use the mouse to select the points in the plot\n")
 	flush.console()
 	
+	set <- get("current.set", mordm.globals)
 	selection <- selectpoints3d(value=FALSE)
 	
 	cat("Selected ")
 	cat(nrow(selection))
 	cat(" points!\n")
 	
-	return(mordm.mark.points(mordm.currentset[selection[,"index"],]))
+	return(mordm.mark.points(set[selection[,"index"],]))
 }
 
 #' Creates a marking rule from PRIM boxes.
@@ -1558,10 +1561,10 @@ mordm.differences <- function(set1, set2, scale=TRUE, decreasing=TRUE, splits=20
 	}
 	
 	# reset plot settings
-	if (exists("mordm.defaultpar")) {
-		par(mordm.defaultpar)
+	if (exists("default.par", mordm.globals)) {
+		par(get("default.par", mordm.globals))
 	} else {
-		mordm.defaultpar <<- par(no.readonly=TRUE)
+		assign("default.par", par(no.readonly=TRUE), mordm.globals)
 	}
 	
 	# create the plot
@@ -1845,10 +1848,10 @@ mordm.plotbox <- function(data, mark, main="PRIM Box", scale.width=TRUE, bar.wid
 	outcol <- "transparent"
 	
 	# reset plot settings
-	if (exists("mordm.defaultpar")) {
-		par(mordm.defaultpar)
+	if (exists("default.par", mordm.globals)) {
+		par(get("default.par", mordm.globals))
 	} else {
-		mordm.defaultpar <<- par(no.readonly=TRUE)
+		assign("default.par", par(no.readonly=TRUE), mordm.globals)
 	}
 	
 	# create the plot

@@ -27,4 +27,7 @@
 	if (is.null(getOption("rgl.useNULL"))) {
 		options(rgl.useNULL=TRUE)
 	}
+	
+	# Create a private environment for storing plot settings
+	assign("mordm.globals", new.env(), envir=parent.env(environment()))
 }

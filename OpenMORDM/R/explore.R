@@ -1992,190 +1992,212 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 	tab.welcome <- tabPanel("Welcome", 
 							uiOutput("welcome.panel"))
 	
+	tab.3d.plot <- tabPanel("Plot",
+							div(
+								h3("Plotting Controls"),
+								helpText("Use the controls below to explore the multidimensional tradeoffs."),
+								selectInput("x", "X-Axis", options, options[order[1]]),
+								selectInput("y", "Y-Axis", options, ifelse(length(objectives) < 2, "Constant", options[order[2]])),
+								selectInput("z", "Z-Axis", options, ifelse(length(objectives) < 3, "Constant", options[order[3]])),
+								selectInput("color", "Color", c(options, "Preference","Selected Point"), ifelse(length(objectives) < 4, "Constant", options[order[4]])),
+								selectInput("size", "Size", options, ifelse(length(objectives) < 5, "Constant", options[order[5]])),
+								style="height: 550px"))
+	
+	tab.3d.brush <- tabPanel("Brush",
+							 div(
+							 	h3("Brushing Controls"),
+							 	helpText("Brushing selects a subset of the data for further analysis."),
+							 	uiOutput("brush.sliders"),
+							 	br(),
+							 	br(),
+							 	h4("Additional Options"),
+							 	sliderInput("slider.transparency", "Brush Transparency", min=0, max=0.1, value=0.005, step=0.005),
+							 	style="height: 550px"))
+	
+	tab.3d.preference <- tabPanel("Preference",
+								  div(
+								  	h3("Preference Controls"),
+								  	helpText("Explore how your preferences impact your decisions."),
+								  	actionButton("preference.color", "Change Color to Preference"),
+								  	br(),
+								  	br(),
+								  	uiOutput("preference.sliders"),
+								  	style="height: 550px"))
+	
+	tab.3d.animate <- tabPanel("Animate",
+							   div(
+							   	h3("Animation Controls"),
+							   	helpText("User the slider below to show the set at different times during optimization."),
+							   	uiOutput("slider.nfe"),
+							   	#br(),
+							   	#br(),
+							   	#h4("GIF Plots"),
+							   	#downloadButton("download.rotate.gif", "Rotate 360"),
+							   	#downloadButton("download.converge.gif", "Convergence"),
+							   	style="height: 550px"))
+	
+	tab.3d.download <- tabPanel("Download",
+								div(
+									h3("3D Plot Snapshot"),
+									helpText("Download images of the 3D plot.  SVG/EPS generation may take a while."),
+									downloadButton("download.plot3d.png", "PNG Image"),
+									downloadButton("download.plot3d.svg", "SVG Image"),
+									downloadButton("download.plot3d.eps", "EPS File"),
+									br(),
+									br(),
+									h3("Colorbar Snapshot"),
+									helpText("Download images of the colorbar."),
+									downloadButton("download.colorbar.png", "PNG Image"),
+									downloadButton("download.colorbar.svg", "SVG Image"),
+									downloadButton("download.colorbar.eps", "EPS File"),
+									br(),
+									br(),
+									h3("Data Download"),
+									helpText("Download the current data set."),
+									downloadButton("download.csv", "CSV File"),
+									style="height: 550px"))
+	
+	tab.3d.options <- tabPanel("Options",
+							   div(
+							   	h3("Additional Options"),
+							   	checkboxInput("label", "Show Full Labels", value=FALSE),
+							   	checkboxInput("ideal", "Show Ideal Point", value=TRUE),
+							   	sliderInput("tick.size", "Tick Size", min=0.1, max=2, value=1, step=0.1),
+							   	sliderInput("label.size", "Label Size", min=0.1, max=2, value=1.2, step=0.1),
+							   	sliderInput("label.line", "Label Offset", min=1, max=5, value=2, step=0.25),
+							   	sliderInput("radius.scale", "Sphere Radius", min=0.1, max=2, value=1, step=0.1),
+							   	style="height: 550px"))
+	
+	tab.3d.panels <- list(tab.3d.plot, tab.3d.brush, tab.3d.preference)
+	
+	if (length(data) > 1) {
+		tab.3d.panels <- append(tab.3d.panels, list(tab.3d.animate))
+	}
+	
+	tab.3d.panels <- append(tab.3d.panels, list(tab.3d.download, tab.3d.options))
+	
 	tab.3d <- tabPanel("3D Plot",
 					   sidebarLayout(
 					   	sidebarPanel(
-					   		tabsetPanel(
-					   			tabPanel("Plot",
-					   					 div(
-					   					 	h3("Plotting Controls"),
-					   					 	helpText("Use the controls below to explore the multidimensional tradeoffs."),
-					   					 	selectInput("x", "X-Axis", options, options[order[1]]),
-					   					 	selectInput("y", "Y-Axis", options, ifelse(length(objectives) < 2, "Constant", options[order[2]])),
-					   					 	selectInput("z", "Z-Axis", options, ifelse(length(objectives) < 3, "Constant", options[order[3]])),
-					   					 	selectInput("color", "Color", c(options, "Preference","Selected Point"), ifelse(length(objectives) < 4, "Constant", options[order[4]])),
-					   					 	selectInput("size", "Size", options, ifelse(length(objectives) < 5, "Constant", options[order[5]])),
-					   					 	style="height: 550px")),
-					   			tabPanel("Brush",
-					   					 div(
-					   					 	h3("Brushing Controls"),
-					   					 	helpText("Brushing selects a subset of the data for further analysis."),
-					   					 	uiOutput("brush.sliders"),
-					   					 	br(),
-					   					 	br(),
-					   					 	h4("Additional Options"),
-					   					 	sliderInput("slider.transparency", "Brush Transparency", min=0, max=0.1, value=0.005, step=0.005),
-					   					 	style="height: 550px")),
-					   			tabPanel("Preference",
-					   					 div(
-					   					 	h3("Preference Controls"),
-					   					 	helpText("Explore how your preferences impact your decisions."),
-					   					 	actionButton("preference.color", "Change Color to Preference"),
-					   					 	br(),
-					   					 	br(),
-					   					 	uiOutput("preference.sliders"),
-					   					 	style="height: 550px")),
-					   			#tabPanel("Animate",
-					   			#		 div(
-					   			#		 	h3("Animation Controls"),
-					   			#		 	helpText("User the slider below to show the set at different times during optimization."),
-					   			#		 	uiOutput("slider.nfe"),
-					   			#br(),
-					   			#br(),
-					   			#h4("GIF Plots"),
-					   			#downloadButton("download.rotate.gif", "Rotate 360"),
-					   			#downloadButton("download.converge.gif", "Convergence"),
-					   			#		 	style="height: 550px")),
-					   			tabPanel("Download",
-					   					 div(
-					   					 	h3("3D Plot Snapshot"),
-					   					 	helpText("Download images of the 3D plot.  SVG/EPS generation may take a while."),
-					   					 	downloadButton("download.plot3d.png", "PNG Image"),
-					   					 	downloadButton("download.plot3d.svg", "SVG Image"),
-					   					 	downloadButton("download.plot3d.eps", "EPS File"),
-					   					 	br(),
-					   					 	br(),
-					   					 	h3("Colorbar Snapshot"),
-					   					 	helpText("Download images of the colorbar."),
-					   					 	downloadButton("download.colorbar.png", "PNG Image"),
-					   					 	downloadButton("download.colorbar.svg", "SVG Image"),
-					   					 	downloadButton("download.colorbar.eps", "EPS File"),
-					   					 	br(),
-					   					 	br(),
-					   					 	h3("Data Download"),
-					   					 	helpText("Download the current data set."),
-					   					 	downloadButton("download.csv", "CSV File"),
-					   					 	style="height: 550px")),
-					   			tabPanel("Options",
-					   					 div(
-					   					 	h3("Additional Options"),
-					   					 	checkboxInput("label", "Show Full Labels", value=FALSE),
-					   					 	checkboxInput("ideal", "Show Ideal Point", value=TRUE),
-					   					 	sliderInput("tick.size", "Tick Size", min=0.1, max=2, value=1, step=0.1),
-					   					 	sliderInput("label.size", "Label Size", min=0.1, max=2, value=1.2, step=0.1),
-					   					 	sliderInput("label.line", "Label Offset", min=1, max=5, value=2, step=0.25),
-					   					 	sliderInput("radius.scale", "Sphere Radius", min=0.1, max=2, value=1, step=0.1),
-					   					 	style="height: 550px")))),
+					   		do.call(tabsetPanel, tab.3d.panels)),
 					   	mainPanel(
 					   		conditionalPanel("!output.plot3d", div(HTML("<noscript>You must enable Javascript to view this page properly.</noscript><script>var nav = navigator.userAgent.toLowerCase(); if (nav.indexOf('msie') != -1 && parseInt(nav.split('msie')[1]) <= 9) { document.write('This website will not work with Internet Explorer 9 or earlier versions.  This website works best in the latest versions of <a href=\"http://www.mozilla.org/firefox\">Firefox</a>, <a href=\"http://www.google.com/chrome/browser/\">Chrome</a>, <a href=\"http://www.opera.com\">Opera 22+</a>, Safari 8, and Internet Explorer 11.'); } else { document.write('Loading data, please wait...'); }</script>"))),
 					   		div(webGLOutput("plot3d", width="100%", height="500px"), style=sprintf("overflow: hidden; width: %s; height: %s; margin: 0px auto;", plot3d.width, plot3d.height)),
 					   		plotOutput("colorbar", height="150px"))))
 	
-	tab.2d <- tabPanel("2D Plots",
-					   tabsetPanel(
-					   	tabPanel("Parallel Coords.",
-					   			 sidebarLayout(
-					   			 	sidebarPanel(
-					   			 		h3("Plotting Options"),
-					   			 		sliderInput("parallel.lwd", "Line Width", min=1, max=4, value=2, step=1),
-					   			 		sliderInput("parallel.transparency", "Transparency", min=0.1, max=1, value=1, step=0.1),
-					   			 		sliderInput("parallel.cex", "Label Size", min=0.5, max=2, value=1, step=0.1),
-					   			 		br(),
-					   			 		br(),
-					   			 		h4("Download"),
-					   			 		downloadButton("download.parallel.png", "PNG Image"),
-					   			 		downloadButton("download.parallel.svg", "SVG Image"),
-					   			 		downloadButton("download.parallel.eps", "EPS File"),
-					   			 		br(),
-					   			 		br(),
-					   			 		helpText("Note: EPS export does not support transparency.  Transparent lines will not appear.")),
-					   			 	mainPanel(
-					   			 		plotOutput("plot2d.parallel"),
-					   			 		plotOutput("plot2d.parallel.colorbar", height="150px")))),
-					   	tabPanel("Scatter Plots",
-					   			 sidebarLayout(
-					   			 	sidebarPanel(
-					   			 		h3("Plotting Options"),
-					   			 		sliderInput("scatter.point", "Point Size", min=0.5, max=4, value=2, step=0.5),
-					   			 		sliderInput("scatter.transparency", "Point Transparency", min=0.1, max=1, value=1, step=0.1),
-					   			 		sliderInput("scatter.label", "Label Size", min=0.5, max=2, value=1, step=0.1),
-					   			 		br(),
-					   			 		br(),
-					   			 		h4("Download"),
-					   			 		downloadButton("download.scatter.png", "PNG Image"),
-					   			 		downloadButton("download.scatter.svg", "SVG Image"),
-					   			 		downloadButton("download.scatter.eps", "EPS File"),
-					   			 		br(),
-					   			 		br(),
-					   			 		helpText("Note: EPS export does not support transparency.  Transparent points will not appear.")),
-					   			 	mainPanel(
-					   			 		plotOutput("plot2d.scatter"),
-					   			 		plotOutput("plot2d.scatter.colorbar", height="150px")))),
-					   	tabPanel("Tradeoffs",
-					   			 sidebarLayout(
-					   			 	sidebarPanel(
-					   			 		h3("Plotting Options"),
-					   			 		selectInput("tradeoff.x", "X-Axis", objectives, objectives[order[1]]),
-					   			 		selectInput("tradeoff.y", "Y-Axis", objectives, objectives[order[2]]),
-					   			 		sliderInput("tradeoff.point", "Point Size", min=0.5, max=4, value=2, step=0.5),
-					   			 		sliderInput("tradeoff.transparency", "Point Transparency", min=0.1, max=1, value=1, step=0.1),
-					   			 		sliderInput("tradeoff.label", "Label Size", min=0.5, max=2, value=1, step=0.1),
-					   			 		sliderInput("tradeoff.tick", "Tick Size", min=0.5, max=2, value=1, step=0.1),
-					   			 		checkboxInput("tradeoff.circle", "Draw border around points", value=FALSE),
-					   			 		checkboxInput("tradeoff.pareto", "Show only Pareto set", value=FALSE),
-					   			 		checkboxInput("tradeoff.curve", "Fit curve to points", value=FALSE),
-					   			 		br(),
-					   			 		br(),
-					   			 		h4("Download"),
-					   			 		downloadButton("download.tradeoff.png", "PNG Image"),
-					   			 		downloadButton("download.tradeoff.svg", "SVG Image"),
-					   			 		downloadButton("download.tradeoff.eps", "EPS File"),
-					   			 		br(),
-					   			 		br(),
-					   			 		helpText("Note: EPS export does not support transparency.  Transparent points will not appear.")),
-					   			 	mainPanel(
-					   			 		plotOutput("plot2d.tradeoff"),
-					   			 		plotOutput("plot2d.tradeoff.colorbar", height="150px"),
-					   			 		uiOutput("plot2d.tradeoff.function")))),
-					   	tabPanel("Histograms",
-					   			 sidebarLayout(
-					   			 	sidebarPanel(
-					   			 		h3("Plotting Options"),
-					   			 		sliderInput("histogram.splits", "Number of Splits", min=2, max=20, value=10, step=1),
-					   			 		sliderInput("histogram.label", "Label Size", min=0.5, max=2, value=1, step=0.1),
-					   			 		checkboxInput("histogram.smooth", "Show smooth density", value=FALSE),
-					   			 		checkboxInput("histogram.brushed", "Show brushed set overlay", value=TRUE),
-					   			 		br(),
-					   			 		br(),
-					   			 		h4("Download"),
-					   			 		downloadButton("download.histogram.png", "PNG Image"),
-					   			 		downloadButton("download.histogram.svg", "SVG Image"),
-					   			 		downloadButton("download.histogram.eps", "EPS File")),
-					   			 	mainPanel(
-					   			 		plotOutput("plot2d.histogram")))),
-					   	tabPanel("Operators",
-					   			 sidebarLayout(
-					   			 	sidebarPanel(
-					   			 		h3("Plotting Options"),
-					   			 		checkboxInput("operators.time", "Show Wall Time", value=FALSE),
-					   			 		checkboxInput("operators.improvements", "Show Number of Improvements", value=TRUE),
-					   			 		checkboxInput("operators.log", "Log Scale", value=FALSE),
-					   			 		checkboxInput("operators.current", "Show Current Time", value=TRUE),
-					   			 		br(),
-					   			 		br(),
-					   			 		h4("Download"),
-					   			 		downloadButton("download.operators.png", "PNG Image"),
-					   			 		downloadButton("download.operators.svg", "SVG Image"),
-					   			 		downloadButton("download.operators.eps", "EPS File")),
-					   			 	mainPanel(
-					   			 		plotOutput("plot2d.operators"))))))
+	tab.2d.parallel <- tabPanel("Parallel Coords.",
+								sidebarLayout(
+									sidebarPanel(
+										h3("Plotting Options"),
+										sliderInput("parallel.lwd", "Line Width", min=1, max=4, value=2, step=1),
+										sliderInput("parallel.transparency", "Transparency", min=0.1, max=1, value=1, step=0.1),
+										sliderInput("parallel.cex", "Label Size", min=0.5, max=2, value=1, step=0.1),
+										br(),
+										br(),
+										h4("Download"),
+										downloadButton("download.parallel.png", "PNG Image"),
+										downloadButton("download.parallel.svg", "SVG Image"),
+										downloadButton("download.parallel.eps", "EPS File"),
+										br(),
+										br(),
+										helpText("Note: EPS export does not support transparency.  Transparent lines will not appear.")),
+									mainPanel(
+										plotOutput("plot2d.parallel"),
+										plotOutput("plot2d.parallel.colorbar", height="150px"))))
+	
+	tab.2d.scatter <- tabPanel("Scatter Plots",
+							   sidebarLayout(
+							   	sidebarPanel(
+							   		h3("Plotting Options"),
+							   		sliderInput("scatter.point", "Point Size", min=0.5, max=4, value=2, step=0.5),
+							   		sliderInput("scatter.transparency", "Point Transparency", min=0.1, max=1, value=1, step=0.1),
+							   		sliderInput("scatter.label", "Label Size", min=0.5, max=2, value=1, step=0.1),
+							   		br(),
+							   		br(),
+							   		h4("Download"),
+							   		downloadButton("download.scatter.png", "PNG Image"),
+							   		downloadButton("download.scatter.svg", "SVG Image"),
+							   		downloadButton("download.scatter.eps", "EPS File"),
+							   		br(),
+							   		br(),
+							   		helpText("Note: EPS export does not support transparency.  Transparent points will not appear.")),
+							   	mainPanel(
+							   		plotOutput("plot2d.scatter"),
+							   		plotOutput("plot2d.scatter.colorbar", height="150px"))))
+	
+	tab.2d.tradeoffs <- tabPanel("Tradeoffs",
+								 sidebarLayout(
+								 	sidebarPanel(
+								 		h3("Plotting Options"),
+								 		selectInput("tradeoff.x", "X-Axis", objectives, objectives[order[1]]),
+								 		selectInput("tradeoff.y", "Y-Axis", objectives, objectives[order[2]]),
+								 		sliderInput("tradeoff.point", "Point Size", min=0.5, max=4, value=2, step=0.5),
+								 		sliderInput("tradeoff.transparency", "Point Transparency", min=0.1, max=1, value=1, step=0.1),
+								 		sliderInput("tradeoff.label", "Label Size", min=0.5, max=2, value=1, step=0.1),
+								 		sliderInput("tradeoff.tick", "Tick Size", min=0.5, max=2, value=1, step=0.1),
+								 		checkboxInput("tradeoff.circle", "Draw border around points", value=FALSE),
+								 		checkboxInput("tradeoff.pareto", "Show only Pareto set", value=FALSE),
+								 		checkboxInput("tradeoff.curve", "Fit curve to points", value=FALSE),
+								 		br(),
+								 		br(),
+								 		h4("Download"),
+								 		downloadButton("download.tradeoff.png", "PNG Image"),
+								 		downloadButton("download.tradeoff.svg", "SVG Image"),
+								 		downloadButton("download.tradeoff.eps", "EPS File"),
+								 		br(),
+								 		br(),
+								 		helpText("Note: EPS export does not support transparency.  Transparent points will not appear.")),
+								 	mainPanel(
+								 		plotOutput("plot2d.tradeoff"),
+								 		plotOutput("plot2d.tradeoff.colorbar", height="150px"),
+								 		uiOutput("plot2d.tradeoff.function"))))
+	
+	tab.2d.histograms <- tabPanel("Histograms",
+								  sidebarLayout(
+								  	sidebarPanel(
+								  		h3("Plotting Options"),
+								  		sliderInput("histogram.splits", "Number of Splits", min=2, max=20, value=10, step=1),
+								  		sliderInput("histogram.label", "Label Size", min=0.5, max=2, value=1, step=0.1),
+								  		checkboxInput("histogram.smooth", "Show smooth density", value=FALSE),
+								  		checkboxInput("histogram.brushed", "Show brushed set overlay", value=TRUE),
+								  		br(),
+								  		br(),
+								  		h4("Download"),
+								  		downloadButton("download.histogram.png", "PNG Image"),
+								  		downloadButton("download.histogram.svg", "SVG Image"),
+								  		downloadButton("download.histogram.eps", "EPS File")),
+								  	mainPanel(
+								  		plotOutput("plot2d.histogram"))))
+	
+	tab.2d.operators <- tabPanel("Operators",
+								 sidebarLayout(
+								 	sidebarPanel(
+								 		h3("Plotting Options"),
+								 		checkboxInput("operators.time", "Show Wall Time", value=FALSE),
+								 		checkboxInput("operators.improvements", "Show Number of Improvements", value=TRUE),
+								 		checkboxInput("operators.log", "Log Scale", value=FALSE),
+								 		checkboxInput("operators.current", "Show Current Time", value=TRUE),
+								 		br(),
+								 		br(),
+								 		h4("Download"),
+								 		downloadButton("download.operators.png", "PNG Image"),
+								 		downloadButton("download.operators.svg", "SVG Image"),
+								 		downloadButton("download.operators.eps", "EPS File")),
+								 	mainPanel(
+								 		plotOutput("plot2d.operators"))))
+	
+	tab.2d.panels <- list(tab.2d.parallel, tab.2d.scatter, tab.2d.tradeoffs, tab.2d.histograms)
+	
+	if (length(data) > 1) {
+		tab.2d.panels <- append(tab.2d.panels, list(tab.2d.operators))
+	}
+	
+	tab.2d <- tabPanel("2D Plots", do.call(tabsetPanel, tab.2d.panels))
 	
 	tab.selection <- tabPanel("Selection", 
 							  uiOutput("selection.panel"))
 	
-	tab.analyze <- tabPanel("Analyze",
-							tabsetPanel(
-								tabPanel("Correlations",
+	tab.analyze.correlations <- tabPanel("Correlations",
 										 sidebarLayout(
 										 	sidebarPanel(
 										 		h3("Correlation Options"),
@@ -2197,62 +2219,72 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 										 		helpText("Note: Use the Options tab to select which variables/objectives are shown in the correlogram.")),
 										 	mainPanel(
 										 		conditionalPanel("input.correlations_graphical", div(plotOutput("correlations", width="500px", height="500px"), style="overflow: hidden; width: 500px; height: 500px; margin: 0px auto;")),
-										 		pre(textOutput("correlations.text"))))),
-								tabPanel("Sensitivity",
-										 sidebarLayout(
-										 	sidebarPanel(
-										 		h3("Sensitivity Options"),
-										 		selectInput("sensitivity.response", "Response", c(objectives, "Brushed Set", "Preference")),
-										 		selectInput("sensitivity.kd.estimator", "Kernel Density Estimator", c("cheap", "stats", "diffusion", "hist")),
-										 		checkboxInput("sensitivity.all", "Use all time series data", value=FALSE),
-										 		checkboxInput("sensitivity.order", "Rank factors in plot", value=FALSE),
-										 		checkboxInput("sensitivity.pdfs", "Plot PDFs", value=FALSE),
-										 		br(),
-										 		br(),
-										 		h4("Download"),
-										 		downloadButton("download.sensitivity.png", "PNG Image"),
-										 		downloadButton("download.sensitivity.svg", "SVG Image"),
-										 		downloadButton("download.sensitivity.eps", "EPS File")),
-										 	mainPanel(
-										 		plotOutput("sensitivity")))),
-								tabPanel("PRIM",
-										 sidebarLayout(
-										 	sidebarPanel(
-										 		h3("PRIM Options"),
-										 		selectInput("prim.response", "Response", c(objectives, "Brushed Set", "Preference")),
-										 		selectInput("prim.threshold.type", "Threshold Type", c(">=", "<=")),
-										 		sliderInput("prim.threshold", "Threshold", min=0.0, max=1.0, value=0.5, step=0.01),
-										 		checkboxInput("prim.expand", "Aggressively grow box", value=FALSE),
-										 		br(),
-										 		br(),
-										 		h4("Download"),
-										 		downloadButton("download.prim.png", "PNG Image"),
-										 		downloadButton("download.prim.svg", "SVG Image"),
-										 		downloadButton("download.prim.eps", "EPS File"),
-										 		br(),
-										 		br(),
-										 		helpText("Note: The threshold is scaled to the data.  E.g., 0.5 corresponds to the mean value.")),
-										 	mainPanel(
-										 		plotOutput("prim"),
-										 		uiOutput("prim.text")))),
-								tabPanel("CART",
-										 sidebarLayout(
-										 	sidebarPanel(
-										 		h3("CART Options"),
-										 		selectInput("cart.response", "Response", c(objectives, "Brushed Set", "Preference")),
-										 		selectInput("cart.method", "Method", c("ANOVA", "Poisson")), #, "Class", "Conditional Inference Trees")),
-										 		sliderInput("cart.label", "Label Size", min=0.5, max=2, value=1, step=0.1),
-										 		checkboxInput("cart.prune", "Prune tree to minimize error", value=TRUE),
-										 		checkboxInput("cart.n", "Show number of observations", value=TRUE),
-										 		checkboxInput("cart.fancy", "Use fancy plot (PRP)", value=TRUE),
-										 		br(),
-										 		br(),
-										 		h4("Download"),
-										 		downloadButton("download.cart.png", "PNG Image"),
-										 		downloadButton("download.cart.svg", "SVG Image"),
-										 		downloadButton("download.cart.eps", "EPS File")),
-										 	mainPanel(
-										 		plotOutput("cart"))))))
+										 		pre(textOutput("correlations.text")))))
+	
+	tab.analyze.sensitivity <- tabPanel("Sensitivity",
+										sidebarLayout(
+											sidebarPanel(
+												h3("Sensitivity Options"),
+												selectInput("sensitivity.response", "Response", c(objectives, "Brushed Set", "Preference")),
+												selectInput("sensitivity.kd.estimator", "Kernel Density Estimator", c("cheap", "stats", "diffusion", "hist")),
+												checkboxInput("sensitivity.all", "Use all time series data", value=FALSE),
+												checkboxInput("sensitivity.order", "Rank factors in plot", value=FALSE),
+												checkboxInput("sensitivity.pdfs", "Plot PDFs", value=FALSE),
+												br(),
+												br(),
+												h4("Download"),
+												downloadButton("download.sensitivity.png", "PNG Image"),
+												downloadButton("download.sensitivity.svg", "SVG Image"),
+												downloadButton("download.sensitivity.eps", "EPS File")),
+											mainPanel(
+												plotOutput("sensitivity"))))
+	
+	tab.analyze.prim <- tabPanel("PRIM",
+								 sidebarLayout(
+								 	sidebarPanel(
+								 		h3("PRIM Options"),
+								 		selectInput("prim.response", "Response", c(objectives, "Brushed Set", "Preference")),
+								 		selectInput("prim.threshold.type", "Threshold Type", c(">=", "<=")),
+								 		sliderInput("prim.threshold", "Threshold", min=0.0, max=1.0, value=0.5, step=0.01),
+								 		checkboxInput("prim.expand", "Aggressively grow box", value=FALSE),
+								 		br(),
+								 		br(),
+								 		h4("Download"),
+								 		downloadButton("download.prim.png", "PNG Image"),
+								 		downloadButton("download.prim.svg", "SVG Image"),
+								 		downloadButton("download.prim.eps", "EPS File"),
+								 		br(),
+								 		br(),
+								 		helpText("Note: The threshold is scaled to the data.  E.g., 0.5 corresponds to the mean value.")),
+								 	mainPanel(
+								 		plotOutput("prim"),
+								 		uiOutput("prim.text"))))
+	
+	tab.analyze.cart <- tabPanel("CART",
+								 sidebarLayout(
+								 	sidebarPanel(
+								 		h3("CART Options"),
+								 		selectInput("cart.response", "Response", c(objectives, "Brushed Set", "Preference")),
+								 		selectInput("cart.method", "Method", c("ANOVA", "Poisson")), #, "Class", "Conditional Inference Trees")),
+								 		sliderInput("cart.label", "Label Size", min=0.5, max=2, value=1, step=0.1),
+								 		checkboxInput("cart.prune", "Prune tree to minimize error", value=TRUE),
+								 		checkboxInput("cart.n", "Show number of observations", value=TRUE),
+								 		checkboxInput("cart.fancy", "Use fancy plot (PRP)", value=TRUE),
+								 		br(),
+								 		br(),
+								 		h4("Download"),
+								 		downloadButton("download.cart.png", "PNG Image"),
+								 		downloadButton("download.cart.svg", "SVG Image"),
+								 		downloadButton("download.cart.eps", "EPS File")),
+								 	mainPanel(
+								 		plotOutput("cart"))))
+	
+	tab.analyze <- tabPanel("Analyze",
+							tabsetPanel(
+								tab.analyze.correlations,
+								tab.analyze.sensitivity,
+								tab.analyze.prim,
+								tab.analyze.cart))
 	
 	tab.raw <- tabPanel("Raw Data",
 						dataTableOutput("raw.data"))

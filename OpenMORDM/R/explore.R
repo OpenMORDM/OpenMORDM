@@ -113,7 +113,9 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 	############################################################################
 	
 	# Setup and load the data
-	if (is.data.frame(filename) || is.matrix(filename)) {
+	if (class(filename) == "mordm") {
+		data <- filename
+	} else if (is.data.frame(filename) || is.matrix(filename)) {
 		data <- mordm.read.matrix(filename, nvars=nvars, nobjs=nobjs, bounds=bounds, maximize=maximize, names=names, ignore=ignore, metadata=metadata)
 	} else if (is.character(filename)) {
 		if (!file.exists(filename)) {
@@ -446,7 +448,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 				   xlim=xlim, ylim=ylim, zlim=zlim, clim=clim,
 				   tick.size=tick.size, label.size=label.size,
 				   label.line=label.line, radius.scale=radius.scale,
-				   window=window, bg=ifelse(input$colormap.black, "black", "white"),
+				   bg=ifelse(input$colormap.black, "black", "white"),
 				   fg=ifelse(input$colormap.black, "white", "black"))
 	}
 	
@@ -1956,7 +1958,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 				session$sendCustomMessage("bgChange", ifelse(input$colormap.black, "black", "white"))
 				
 				if (exists("default.par", mordm.globals)) {
-					par(get("default.par"), mordm.globals)	
+					par(get("default.par", mordm.globals))	
 				}
 				
 				if (input$colormap.black) {

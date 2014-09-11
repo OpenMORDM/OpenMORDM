@@ -748,7 +748,9 @@ mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, id
 	}
 	
 	if (!exploring) {
-		open3d(useNULL=FALSE)
+		if (rgl.cur() == 0 || names(rgl.cur()) == "null") {
+			open3d(useNULL=FALSE)
+		}
 	}
 	
 	# create the plot
@@ -849,15 +851,12 @@ mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, id
 mordm.identify <- function(enabled=TRUE, label=FALSE) {
 	if (enabled) {
 		rgl.setMouseCallbacks(3, begin=function(x, y) { 
-			stop("here")
-			
 			userMatrix <- par3d("userMatrix")
 			viewport <- par3d("viewport")
 			scale <- par3d("scale")
 			projection <- rgl.projection()
 			set <- get("current.set", mordm.globals)
 			objectives <- get("current.objectives", mordm.globals)
-			print("herea")
 			d = matrix(nrow=nrow(set), ncol=1)
 			
 			for (i in 1:nrow(set)) {

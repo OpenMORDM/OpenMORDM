@@ -14,6 +14,10 @@ original versions from CRAN.  This software will still work with the original ve
 but the web-based visualization tool will not support picking and will reorient to the
 default view every time the 3D scene is redrawn.
 
+Note: The latest versions of RGL appear to have a bug in `rgl.setMouseCallbacks`
+(see Bug 5928 on r-forge).  Until this is resolved, we have created the
+`working` branch for RGL that uses an earlier version of RGL.
+
 ### Prerequisite Software ###
 1. A compatible C/C++ compiler
     * Windows - Install RTools (http://cran.r-project.org/bin/windows/Rtools/)
@@ -29,7 +33,7 @@ default view every time the 3D scene is redrawn.
 * If using Windows, run the following command:
     * `options(devtools.install.args="--force-biarch")`
 * Run the following commands:
-    * `install_github("rgl", "dhadka", "mobile")`
+    * `install_github("rgl", "dhadka", "working")`
     * `install_github("shinyRGL", "dhadka")`
     * `install_local("path/to/openmordm/OpenMORDM")`
 

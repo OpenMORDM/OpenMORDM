@@ -23,32 +23,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-#' Creates the default column names.
-#' 
-#' Creates default column names of the form \code{VarN}, \code{ObjN}, and
-#' \code{ConstrN}.
-#' 
-#' @param nvars the number of decision variables
-#' @param nobjs the number of objectives
-#' @param nconstrs the number of constraints
-default.names <- function(nvars, nobjs, nconstrs) {
-	names <- vector()
-	
-	if (nvars > 0) {
-		names <- append(names, sprintf("Var%d", 1:nvars))
-	}
-	
-	if (nobjs > 0) {
-		names <- append(names, sprintf("Obj%d", 1:nobjs))
-	}
-	
-	if (nconstrs > 0) {
-		names <- append(names, sprintf("Constr%d", 1:nconstrs))
-	}
-	
-	return(names)
-}
-
 #' Setup a new problem formulation.
 #' 
 #' Constructs a new problem formulation.  The command can either be an R
@@ -56,42 +30,54 @@ default.names <- function(nvars, nobjs, nconstrs) {
 #' the program must follow the MOEA Framework external problem protocol,
 #' typically by using the methods in \code{moeaframework.h}.
 #' 
+#' If using an R function, the function should return a list containing two
+#' vectors.  The first vector stores the objective values and the second stores
+#' the constraint values.
+#' 
 #' @param command the R function or executable representing the problem
 #' @param nvars the number of decision variables
 #' @param nobjs the number of objectives
 #' @param nconstrs the number of constraints
 #' @param bounds the lower and upper bounds for each decision variable
 #' @param names override the column names
+#' @param epsilons the epsilon values if using Borg to optimize the problem
 #' @export
-setup <- function(command, nvars, nobjs, nconstrs=0, bounds=NULL, names=NULL) {
+setup <- function(command, nvars, nobjs, nconstrs=0, bounds=NULL, names=NULL, epsilons=NULL) {
 	if (is.null(bounds)) {
 		bounds <- matrix(rep(range(0, 1), nvars), nrow=2)
 	}
 	
 	if (is.null(names)) {
-		names <- default.names(nvars, nobjs, nconstrs)
+		names <- mordm.defaultnames(nvars, nobjs, nconstrs)
 	} else if (length(names) == nobjs+nconstrs) {
-		names <- append(default.names(nvars, 0, 0), names)
+		names <- append(mordm.defaultnames(nvars, 0, 0), names)
 	} else if (length(names) == nobjs) {
-		names <- append(default.names(nvars, 0, 0), names, default.names(0, 0, nconstrs))
+		names <- append(mordm.defaultnames(nvars, 0, 0), names, mordm.defaultnames(0, 0, nconstrs))
 	} else if (length(names) == nvars + nobjs) {
-		names <- append(names, default.names(0, 0, nconstrs))
+		names <- append(names, mordm.defaultnames(0, 0, nconstrs))
 	} else if (length(names) != nvars + nobjs + nconstrs) {
 		warning("Incorrect number of names, using defaults")
-		names <- default.names(nvars, nobjs, nconstrs)
+		names <- mordm.defaultnames(nvars, nobjs, nconstrs)
 	}
 	
-	container <- list(command=command, nvars=nvars, nobjs=nobjs, nconstrs=nconstrs, bounds=bounds, names=names)
+	if (is.null(epsilons)) {
+		epsilons = rep(0.01, nobjs)
+	}
+	
+	container <- list(command=command, nvars=nvars, nobjs=nobjs, nconstrs=nconstrs, bounds=bounds, names=names, epsilons=epsilons)
 	class(container) <- "mop"
 	container
 }
 
-#' Optimize the problem.
+#' Optimize the problem using the borg.exe program.
 #' 
 #' Optimizes the problem.  By default, this method uses the Borg MOEA, which
 #' must first be compiled into an executable on your system.  Since the Borg
 #' MOEA targets POSIX systems, this method is typically not available on
-#' Windows unless you are running inside Cygwin.  
+#' Windows unless you are running inside Cygwin.
+#' 
+#' The Borg MOEA is free and open for non-commercial users.  Source code can
+#' be obtained from \url{http://borgmoea.org}.
 #' 
 #' @param problem the problem setup
 #' @param NFE the maximum number of function evaluations
@@ -101,11 +87,8 @@ setup <- function(command, nvars, nobjs, nconstrs=0, bounds=NULL, names=NULL) {
 #' @param return.output if \code{TRUE}, this method loads and returns the
 #'        contents of the output file
 #' @param verbose displays additional information for debugging
-.optimize <- function(problem, NFE, executable="./borg.exe", output=tempfile(), output.frequency=100, return.output=TRUE, verbose=TRUE) {
-	if (is.function(problem$command)) {
-		stop("Problem must be an external executable")
-	}
-	
+#' @export
+borg.optimize <- function(problem, NFE, executable="./borg.exe", output=tempfile(), output.frequency=100, return.output=TRUE, verbose=TRUE) {
 	if (!file.exists(executable)) {
 		stop(paste("Unable to locate ", executable, sep=""))
 	}
@@ -124,7 +107,7 @@ setup <- function(command, nvars, nobjs, nconstrs=0, bounds=NULL, names=NULL) {
 					 "-c", problem$nconstrs,
 					 "-l", paste(problem$bounds[1,], collapse=","),
 					 "-u", paste(problem$bounds[2,], collapse=","),
-					 "-e", paste(matrix(0.01, nrow=1, ncol=problem$nobjs), collapse=","),
+					 "-e", paste(problem$epsilons, collapse=","),
 					 "-R", output,
 					 "-F", output.frequency,
 					 executable)
@@ -190,6 +173,7 @@ evaluate <- function(set, problem) {
 #' 
 #' @param set the decision variables (inputs) to the problem
 #' @param problem the problem definition
+#' @keywords internal
 evaluate.external <- function(set, problem) {
 	input <- apply(set, 1, function(x) paste(x, collapse=" "))
 	input <- append(input, "")
@@ -205,14 +189,16 @@ evaluate.external <- function(set, problem) {
 #' 
 #' @param set the decision variables (inputs) to the problem
 #' @param problem the problem definition
+#' @keywords internal
 evaluate.function <- function(set, problem) {
-	t(apply(set, 1, function(x) problem$command(x)))
+	t(apply(set, 1, function(x) unlist(problem$command(x))))
 }
 
 #' Ensures the given set contains the correct number of decision variables.
 #' 
 #' @param set the decision variables (inputs) to the problem
 #' @param problem the problem definition
+#' @keywords internal
 check.length <- function(set, problem) {
 	if (is.matrix(set)) {
 		if (ncol(set) != problem$nvars) {
@@ -247,7 +233,7 @@ usample <- function(nsamples, problem) {
 #' 
 #' @param points the decision variables
 #' @param problem the problem definition
-#' @export
+#' @keywords internal
 check.bounds <- function(points, problem) {
 	check.length(points, problem)
 	
@@ -476,23 +462,6 @@ robustness.variance <- function(output, problem, weights=NULL, verbose=FALSE, or
 	}
 	
 	robustness
-}
-
-#' Removes any sampled point that has NA values.
-#' 
-#' Generally an NA indicates a problem with the model.  However, this routine
-#' can be used to prune any invalid entries.
-#' 
-#' @param data the evaluated points
-#' @export
-cleanup <- function(data) {
-	na.indx <- apply(data$objs, 1, function(x) !any(is.na(x)))
-	
-	if (is.null(data$constrs)) {
-		list(vars=data$vars[na.indx,], objs=data$objs[na.indx,])
-	} else {
-		list(vars=data$vars[na.indx,], objs=data$objs[na.indx,], constrs=data$constrs[na.indx,])
-	}
 }
 
 #' Determines number of replicates for sensitivity analysis.

@@ -25,12 +25,14 @@
 
 #' Creates the default column names.
 #' 
-#' Creates default column names of the form \code{VarN} and \code{ObjN}.
+#' Creates default column names of the form \code{VarN}, \code{ObjN}, and
+#' \code{ConstrN}.
 #' 
 #' @param nvars the number of decision variables
 #' @param nobjs the number of objectives
+#' @param nconstrs the number of constraints
 #' @keywords internal
-mordm.defaultnames <- function(nvars, nobjs) {
+mordm.defaultnames <- function(nvars, nobjs, ncontrs=0) {
 	names <- vector()
 	
 	if (nvars > 0) {
@@ -39,6 +41,10 @@ mordm.defaultnames <- function(nvars, nobjs) {
 	
 	if (nobjs > 0) {
 		names <- append(names, sprintf("Obj%d", 1:nobjs))
+	}
+	
+	if (nconstrs > 0) {
+		names <- append(names, sprintf("Constr%d", 1:nconstrs))
 	}
 	
 	return(names)

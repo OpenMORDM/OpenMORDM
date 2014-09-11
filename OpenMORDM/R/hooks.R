@@ -24,6 +24,7 @@
 # THE SOFTWARE.
 
 .onLoad <- function(libname, pkgname) {
+	# Use null device to allow Shiny RGL to work
 	if (is.null(getOption("rgl.useNULL"))) {
 		options(rgl.useNULL=TRUE)
 	}

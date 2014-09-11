@@ -89,6 +89,10 @@ setup <- function(command, nvars, nobjs, nconstrs=0, bounds=NULL, names=NULL, ep
 #' @param verbose displays additional information for debugging
 #' @export
 borg.optimize <- function(problem, NFE, executable="./borg.exe", output=tempfile(), output.frequency=100, return.output=TRUE, verbose=TRUE) {
+	if (is.function(problem$command)) {
+		stop("Problem must be an external executable")
+	}
+	
 	if (!file.exists(executable)) {
 		stop(paste("Unable to locate ", executable, sep=""))
 	}

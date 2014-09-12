@@ -115,6 +115,15 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 	# Setup and load the data
 	if (class(filename) == "mordm") {
 		data <- filename
+	} else if (class(filename) == "samples" || (is.list(filename) && !is.null(filename$vars) && !is.null(filename$objs))) {
+		if (is.null(filename$constrs)) {
+			data <- cbind(filename$vars, filename$objs)
+		} else {
+			keep <- apply(filename$constrs, 1, function(x) sum(abs(x)) == 0)
+			data <- cbind(filename$vars[keep,,drop=FALSE], filename$objs[keep,,drop=FALSE])
+		}
+		
+		data <- mordm.read.matrix(data, nvars=ncol(filename$vars), nobjs=ncol(filename$nobjs), bounds=bounds, maximize=maximize, names=names, ignore=ignore, metadata=metadata)
 	} else if (is.data.frame(filename) || is.matrix(filename)) {
 		data <- mordm.read.matrix(filename, nvars=nvars, nobjs=nobjs, bounds=bounds, maximize=maximize, names=names, ignore=ignore, metadata=metadata)
 	} else if (is.character(filename)) {

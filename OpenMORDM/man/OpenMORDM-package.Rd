@@ -5,6 +5,7 @@
 \title{
 A library for multiobjective robust decision making (MORDM) and
 visualizing high-dimensional datasets.
+~~ package title ~~
 }
 \description{
 OpenMORDM provides support for visualizing high-dimensional
@@ -15,6 +16,7 @@ OpenMORDM provides support for visualizing high-dimensional
     number of analyses.  Additionally, the R functions provide the means for
     evaluating models under uncertainty and deep uncertainty and computing
     different robustness metrics.
+~~ A concise (1-5 lines) description of the package ~~
 }
 \details{
 \tabular{ll}{
@@ -22,13 +24,14 @@ Package: \tab OpenMORDM\cr
 Type: \tab Package\cr
 Version: \tab 0.1\cr
 Date: \tab 2014-08-26\cr
-License: \tab MIT\cr
+License: \tab MIT + file LICENSE\cr
 Copyright: \tab Copyright 2014 The Pennsylvania State University.  This work was
 supported by the National Science Foundation through the Network for
 Sustainable Climate Risk Management (SCRiM) under NSF cooperative agreement
 GEO-1240507.\cr
 Depends: \tab 
-R (>= 3.0),
+R (>= 3.0)\cr
+Imports: \tab 
 shiny,
 shinyRGL,
 rgl,
@@ -51,31 +54,23 @@ stats,
 corrgram\cr
 Suggests: \tab 
 gdata\cr
-Built: \tab R 3.1.0; ; 2014-08-29 15:01:53 UTC; windows\cr
+Built: \tab R 3.1.1; ; 2014-09-12 12:27:54 UTC; windows\cr
 }
 
 Index:
 \preformatted{
-OpenMORDM-package       OpenMORDM is an open-source R library for
-                        multiobjective robust decision making (MORDM).
-bootstats               Internal method copied from the statistics
-                        library.
-check.bounds            Returns 'TRUE' if the decision variables are
-                        within bounds.
-check.length            Ensures the given set contains the correct
-                        number of decision variables.
+OpenMORDM-package       A library for multiobjective robust decision
+                        making (MORDM) and visualizing high-dimensional
+                        datasets.
+borg.optimize           Optimize the problem using the borg.exe
+                        program.
 check.robustness        Computes the robustness metric.
-cleanup                 Removes any sampled point that has NA values.
-default.names           Creates the default column names.
 deltafast               Fast version of Plischke's delta-moment
                         sensitivity analysis method.
 deltamim                Plischke's delta-moment sensitivity analysis
                         method.
 evaluate                Evaluates the decision variables for a given
                         problem.
-evaluate.external       Evaluates a problem representing a command line
-                        executable.
-evaluate.function       Evaluates a problem representing a R function.
 explore                 A web-based tool (powered by Shiny) for
                         exploring high-dimensional data sets.
 mordm.animate           Animates the time series in a GIF.
@@ -87,7 +82,6 @@ mordm.colorize          Returns a vector of colors to be used when
                         plotting a data set.
 mordm.correlation       Displays the correlations among pairwise
                         factors.
-mordm.defaultnames      Creates the default column names.
 mordm.differences       Identifies key similarities/differences between
                         two sets.
 mordm.getset            Returns the individual data set entry to be
@@ -133,7 +127,6 @@ mordm.sensitivity       Computes the sensitivities of the decision
 mordm.subset            Returns a subset of a data set.
 mordm.uncertainty       Computes robustness under deep uncertainty.
 nsample                 Generate normally distributed random inputs.
-optimize                Optimize the problem.
 robustness.constraints
                         Robustness metric based on constraint
                         violations.
@@ -151,10 +144,25 @@ sensitivity.levels      Determines number of replicates for sensitivity
 setup                   Setup a new problem formulation.
 usample                 Generate uniformly distributed random inputs.
 }
+~~ An overview of how to use the package, including the most important ~~
+~~ functions ~~
 }
 \author{
 David Hadka
 
 Maintainer: David Hadka <dmh309@psu.edu>
+~~ The author and/or maintainer of the package ~~
 }
+\references{
+~~ Literature or other references for background information ~~
+}
+~~ Optionally other standard keywords, one per line, from file KEYWORDS ~~
+~~ in the R documentation directory ~~
 \keyword{ package }
+\seealso{
+~~ Optional links to other man pages, e.g. ~~
+~~ \code{\link[<pkg>:<pkg>-package]{<pkg>}} ~~
+}
+\examples{
+~~ simple examples of the most important functions ~~
+}

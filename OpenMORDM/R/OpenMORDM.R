@@ -32,7 +32,7 @@
 #' @param nobjs the number of objectives
 #' @param nconstrs the number of constraints
 #' @keywords internal
-mordm.defaultnames <- function(nvars, nobjs, ncontrs=0) {
+mordm.defaultnames <- function(nvars, nobjs, nconstrs=0) {
 	names <- vector()
 	
 	if (nvars > 0) {

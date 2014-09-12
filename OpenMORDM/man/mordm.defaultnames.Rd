@@ -3,7 +3,7 @@
 \alias{mordm.defaultnames}
 \title{Creates the default column names.}
 \usage{
-mordm.defaultnames(nvars, nobjs, ncontrs = 0)
+mordm.defaultnames(nvars, nobjs, nconstrs = 0)
 }
 \arguments{
 \item{nvars}{the number of decision variables}

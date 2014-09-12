@@ -29,21 +29,34 @@ Note: The latest versions of RGL appear to have a bug in `rgl.setMouseCallbacks`
 3. [R version 3.0](http://www.r-project.org/) or later
 
 ### Installation ###
-* Install the prerequisite software
-* Clone the OpenMORDM repository: `git clone https://bitbucket.org/dmh309/openmordm.git`
-* Start R: `R`
-* If using Windows, run the following command:
+1. Install the prerequisite software
+2. Clone the OpenMORDM repository: `git clone https://bitbucket.org/dmh309/openmordm.git`
+3. Start R: `R`
+4. If using Windows, run the following command:
     * `options(devtools.install.args="--force-biarch")`
-* Run the following commands:
+5. Run the following commands:
     * `install_github("rgl", "dhadka", "working")`
     * `install_github("shinyRGL", "dhadka")`
-    * `install_local("path/to/openmordm/OpenMORDM")`
+    * `install_local("C:/path/to/openmordm/OpenMORDM")`
 
 ### Running the Demo ###
-* Start R: `R`
-* Load the OpenMORDM library: `library(OpenMORDM)`
-* Run the demo: `runVisDemo()`
-* Use `explore` to visualize CSV or XLS files, matrices, or data.frames: `library(datasets); data(iris); explore(iris)`
+1. Start R: `R`
+2. Load the OpenMORDM library: `library(OpenMORDM)`
+3. Run the demo: `runVisDemo()`
+4. Use `explore` to visualize CSV or XLS files, matrices, or data.frames: `library(datasets); data(iris); explore(iris)`
+
+### Building the R Package on Windows ###
+1. Open a new command prompt window
+2. You may need to setup the PATH to include:
+    * `C:\Program Files\RTools\bin`
+    * `C:\Program Files\RTools\gcc-4.6.3\bin`
+    * `C:\Program Files\R\R-3.1.1\bin` (or your installed version of R)
+    * `C:\Program Files (x86)\TeXLive\2011\bin\win32` (or any other LaTeX build)
+3. Start R and run `roxygen2::roxygenize("C:/path/to/openmordm/OpenMORDM")`
+4. Also within R, run `promptPackage("OpenMORDM", filename="C:/path/to/openmordm/OpenMORDM/man/OpenMORDM-package.Rd")`
+5. Run `R CMD check --preclean --force-biarch C:/path/to/openmordm/OpenMORDM`
+6. Run `R CMD build C:/path/to/openmordm/OpenMORDM`
+7. Alternatively, upload to [win-builder.r-project.org](win-builder.r-project.org) to build a binary package
 
 ### Troubleshooting ###
 * Linux users may need to run R with admin permissions when installing: `sudo R`

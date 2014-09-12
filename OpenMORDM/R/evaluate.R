@@ -167,6 +167,7 @@ evaluate <- function(set, problem) {
 	}
 	
 	# return the results
+	class(result) <- "samples"
 	result
 }
 

@@ -85,6 +85,7 @@
 #' @import party
 #' @import stats
 #' @import corrgram
+#' @import lhs
 explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bounds=NULL,
 					maximize=NULL, order=NULL, visible.variables=FALSE,
 					plot3d.width="600px", plot3d.height="500px",
@@ -123,7 +124,12 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 			data <- cbind(filename$vars[keep,,drop=FALSE], filename$objs[keep,,drop=FALSE])
 		}
 		
-		data <- mordm.read.matrix(data, nvars=ncol(filename$vars), nobjs=ncol(filename$nobjs), bounds=bounds, maximize=maximize, names=names, ignore=ignore, metadata=metadata)
+		if (is.null(nvars) && is.null(nobjs)) {
+			nvars <- ncol(filename$vars)
+			nobjs <- ncol(filename$objs)
+		}
+		
+		data <- mordm.read.matrix(data, nvars=nvars, nobjs=nobjs, bounds=bounds, maximize=maximize, names=names, ignore=ignore, metadata=metadata)
 	} else if (is.data.frame(filename) || is.matrix(filename)) {
 		data <- mordm.read.matrix(filename, nvars=nvars, nobjs=nobjs, bounds=bounds, maximize=maximize, names=names, ignore=ignore, metadata=metadata)
 	} else if (is.character(filename)) {

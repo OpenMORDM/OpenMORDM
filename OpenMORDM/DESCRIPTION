@@ -41,6 +41,8 @@ Imports:
     rpart.plot,
     party,
     stats,
-    corrgram
+    corrgram,
+    lhs,
+    rdyncall
 Suggests:
     gdata

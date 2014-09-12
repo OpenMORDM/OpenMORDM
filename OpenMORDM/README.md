@@ -53,7 +53,7 @@ Note: The latest versions of RGL appear to have a bug in `rgl.setMouseCallbacks`
     * `C:\Program Files\R\R-3.1.1\bin` (or your installed version of R)
     * `C:\Program Files (x86)\TeXLive\2011\bin\win32` (or any other LaTeX build)
 3. Start R and run `roxygen2::roxygenize("C:/path/to/openmordm/OpenMORDM")`
-4. Also within R, run `promptPackage("OpenMORDM", filename="C:/path/to/openmordm/OpenMORDM/man/OpenMORDM-package.Rd")`
+4. Also within R, run `promptPackage("OpenMORDM", filename="C:/path/to/openmordm/OpenMORDM/man/OpenMORDM-package.Rd", final=TRUE)`
 5. Run `R CMD check --preclean --force-biarch C:/path/to/openmordm/OpenMORDM`
 6. Run `R CMD build C:/path/to/openmordm/OpenMORDM`
 7. Alternatively, upload to [win-builder.r-project.org](win-builder.r-project.org) to build a binary package

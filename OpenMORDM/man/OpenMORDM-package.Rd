@@ -5,7 +5,6 @@
 \title{
 A library for multiobjective robust decision making (MORDM) and
 visualizing high-dimensional datasets.
-~~ package title ~~
 }
 \description{
 OpenMORDM provides support for visualizing high-dimensional
@@ -16,7 +15,6 @@ OpenMORDM provides support for visualizing high-dimensional
     number of analyses.  Additionally, the R functions provide the means for
     evaluating models under uncertainty and deep uncertainty and computing
     different robustness metrics.
-~~ A concise (1-5 lines) description of the package ~~
 }
 \details{
 \tabular{ll}{
@@ -51,10 +49,11 @@ rpart,
 rpart.plot,
 party,
 stats,
-corrgram\cr
+corrgram,
+rdyncall\cr
 Suggests: \tab 
 gdata\cr
-Built: \tab R 3.1.1; ; 2014-09-12 12:27:54 UTC; windows\cr
+Built: \tab R 3.1.1; ; 2014-09-12 17:04:52 UTC; windows\cr
 }
 
 Index:
@@ -64,6 +63,9 @@ OpenMORDM-package       A library for multiobjective robust decision
                         datasets.
 borg.optimize           Optimize the problem using the borg.exe
                         program.
+borg.optimize.function
+                        Optimize a problem using the shared library
+                        (borg.dll or libborg.so).
 check.robustness        Computes the robustness metric.
 deltafast               Fast version of Plischke's delta-moment
                         sensitivity analysis method.
@@ -144,25 +146,10 @@ sensitivity.levels      Determines number of replicates for sensitivity
 setup                   Setup a new problem formulation.
 usample                 Generate uniformly distributed random inputs.
 }
-~~ An overview of how to use the package, including the most important ~~
-~~ functions ~~
 }
 \author{
 David Hadka
 
 Maintainer: David Hadka <dmh309@psu.edu>
-~~ The author and/or maintainer of the package ~~
 }
-\references{
-~~ Literature or other references for background information ~~
-}
-~~ Optionally other standard keywords, one per line, from file KEYWORDS ~~
-~~ in the R documentation directory ~~
 \keyword{ package }
-\seealso{
-~~ Optional links to other man pages, e.g. ~~
-~~ \code{\link[<pkg>:<pkg>-package]{<pkg>}} ~~
-}
-\examples{
-~~ simple examples of the most important functions ~~
-}

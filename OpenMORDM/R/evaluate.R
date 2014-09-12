@@ -69,12 +69,66 @@ setup <- function(command, nvars, nobjs, nconstrs=0, bounds=NULL, names=NULL, ep
 	container
 }
 
-#' Optimize the problem using the borg.exe program.
+#' Optimize the problem using the Borg MOEA.
 #' 
 #' Optimizes the problem.  By default, this method uses the Borg MOEA, which
-#' must first be compiled into an executable on your system.  Since the Borg
-#' MOEA targets POSIX systems, this method is typically not available on
-#' Windows unless you are running inside Cygwin.
+#' must first be compiled into an executable or shared library on your system.
+#' If the problem references an R function, then you must have available the
+#' shared library (borg.dll or libborg.so).  If the problem is an external
+#' program, then you must have available the Borg executable (borg.exe).  See
+#' \code{\link{borg.optimize.function}} and \code{\link{borg.optimize.external}}
+#' for details of each method.
+#' 
+#' The Borg MOEA is free and open for non-commercial users.  Source code can
+#' be obtained from \url{http://borgmoea.org}.
+#' 
+#' @param problem the problem setup
+#' @param NFE the maximum number of function evaluations
+#' @param ... optional parameters passed to the underlying methods
+#' @export
+borg.optimize <- function(problem, NFE, ...) {
+	if (is.function(problem$command)) {
+		borg.optimize.function(problem, NFE, ...)
+	} else {
+		borg.optimize.external(problem, NFE, ...)
+	}
+}
+
+#' Optimize a problem using the Borg shared library (borg.dll or libborg.so).
+#' 
+#' This method is used to optimize a problem defined by an R function.  This
+#' method uses R's foreign function interface (FFI) to pass the R function
+#' to the Borg MOEA shared library for optimization.  See the Borg MOEA
+#' documentation for instructions on compiling borg.dll or libborg.so.
+#' 
+#' The function should either return a vector containing the objectives and
+#' any constraints (e.g., \code{c(o1, o2, o3, c1, c2)}), or a list containing
+#' the objectives and constraints as separate elements
+#' (e.g., \code{list(c(o1, o2, o3), c(c1, c2))}).  All objectives are minimized.
+#' Any non-zero constraint value is considered a constraint violation.
+#' 
+#' The Borg MOEA is free and open for non-commercial users.  Source code can
+#' be obtained from \url{http://borgmoea.org}.
+#' 
+#' @param problem the problem setup
+#' @param NFE the maximum number of function evaluations
+#' @param ... additional arguments for setting algorithm parameters
+#' @export
+#' @import rdyncall
+borg.optimize.function <- function(problem, NFE, ...) {
+	output <- borg(problem$nvars, problem$nobjs, problem$nconstrs, problem$command, NFE, lowerBounds=problem$bounds[1,], upperBounds=problem$bounds[2,], epsilons=problem$epsilons, ...)
+	mordm.read.matrix(as.matrix(output), problem$nvars, problem$nobjs, bounds=problem$bounds, names=problem$names)
+}
+
+#' Optimize the problem using the Borg standalone executable (borg.exe).
+#' 
+#' This method is used to optimize a problem defined by an external executable.
+#' The Borg MOEA communicates with the external executable using the open API
+#' standardized by the MOEA Framework (\url{http://moeaframework.org}).  See
+#' section 5.2 in the user manual for details of using the API.  Since borg.exe
+#' targets POSIX systems, this method is typically not available on Windows
+#' unless you are running inside Cygwin.  See the Borg MOEA documentation for
+#' instructions on compiling borg.exe.
 #' 
 #' The Borg MOEA is free and open for non-commercial users.  Source code can
 #' be obtained from \url{http://borgmoea.org}.
@@ -88,7 +142,7 @@ setup <- function(command, nvars, nobjs, nconstrs=0, bounds=NULL, names=NULL, ep
 #'        contents of the output file
 #' @param verbose displays additional information for debugging
 #' @export
-borg.optimize <- function(problem, NFE, executable="./borg.exe", output=tempfile(), output.frequency=100, return.output=TRUE, verbose=TRUE) {
+borg.optimize.external <- function(problem, NFE, executable="./borg.exe", output=tempfile(), output.frequency=100, return.output=TRUE, verbose=TRUE) {
 	if (is.function(problem$command)) {
 		stop("Problem must be an external executable")
 	}
@@ -196,7 +250,15 @@ evaluate.external <- function(set, problem) {
 #' @param problem the problem definition
 #' @keywords internal
 evaluate.function <- function(set, problem) {
-	t(apply(set, 1, function(x) unlist(problem$command(x))))
+	result <- matrix(0, nrow=nrow(set), ncol=problem$nobjs+problem$nconstrs)
+	
+	for (i in 1:nrow(set)) {
+		result[i,] <- unlist(problem$command(set[i,]))
+	}
+	
+	result
+	
+	#t(apply(set, 1, function(x) unlist(problem$command(x))))
 }
 
 #' Ensures the given set contains the correct number of decision variables.
@@ -223,6 +285,21 @@ check.length <- function(set, problem) {
 #' @export
 usample <- function(nsamples, problem) {
 	points <- rand(nsamples, problem$nvars)
+	
+	for (i in 1:problem$nvars) {
+		points[,i] <- (problem$bounds[2,i]-problem$bounds[1,i])*points[,i] + problem$bounds[1,i]
+	}
+	
+	evaluate(points, problem)
+}
+
+#' Generate Latin Hypercube sampled random inputs.
+#' 
+#' @param nsamples the number of samples to generate
+#' @param problem the problem definition
+#' @export
+lhsample <- function(nsamples, problem) {
+	points <- randomLHS(nsamples, problem$nvars)
 	
 	for (i in 1:problem$nvars) {
 		points[,i] <- (problem$bounds[2,i]-problem$bounds[1,i])*points[,i] + problem$bounds[1,i]

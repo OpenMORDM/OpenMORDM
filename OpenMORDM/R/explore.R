@@ -374,6 +374,53 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		alpha <- plot.brush(set, brush.limits, slider.transparency)
 		alpha <- plot.brush.preference(set, alpha, input, slider.transparency)
 		
+		# pareto sorting
+		if (input$pareto.sort) {
+			# determine which objectives need to be negated (for maximization)
+			maximizeTF <- rep(FALSE, nobjs)
+			names(maximizeTF) <- colnames(set)[(nvars+1):(nvars+nobjs)]
+			
+			if (!is.null(maximize)) {
+				maximizeTF[maximize] <- TRUE
+			}
+			
+			# remove any factor data, since they are not orderable
+			minset <- set
+			minset <- minset[,sapply(attr(set, "factors"), is.null)]
+			
+			# remote the constant column
+			minset <- minset[,(nvars+1):(nvars+nobjs)]
+			
+			# negate the maximized objectives
+			minset[,maximizeTF] <- -minset[,maximizeTF]
+			
+			# non-dominated sorting
+			subset <- t(nondominated_points(t(minset)))
+			
+			# determine which indices were selected so we can select the appropriate colors/sizes
+			indices <- apply(minset, 1, function(x) {
+				for (i in 1:nrow(subset)) {
+					match <- TRUE
+					
+					for (j in 1:ncol(subset)) {
+						if (subset[i,j] != x[j]) {
+							match <- FALSE
+							break
+						}
+					}
+					
+					if (match) {
+						return(TRUE)
+					}
+				}
+				
+				return(FALSE)
+			})
+			
+			# apply the transparency to remove dominated points
+			alpha[!indices] <- slider.transparency
+		}
+		
 		# pick the user-defined axes
 		xlim <- NULL
 		ylim <- NULL
@@ -2027,6 +2074,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 							 	br(),
 							 	h4("Additional Options"),
 							 	sliderInput("slider.transparency", "Brush Transparency", min=0, max=0.1, value=0.005, step=0.005),
+							 	checkboxInput("pareto.sort", "Brush dominated points", value=FALSE),
 							 	style="height: 550px"))
 	
 	tab.3d.preference <- tabPanel("Preference",

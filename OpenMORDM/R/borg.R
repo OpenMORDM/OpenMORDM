@@ -98,7 +98,7 @@ PROBABILITIES_RECENCY <- 1
 PROBABILITIES_BOTH <- 2
 PROBABILITIES_ADAPTIVE <- 3
 
-borg <- function(nvars, nobjs, nconstrs, objectiveFcn, maxEvaluations, lowerBounds=NA, upperBounds=NA, epsilons=NA, ...) {
+borg <- function(nvars, nobjs, nconstrs, objectiveFcn, maxEvaluations, epsilons, lowerBounds=NA, upperBounds=NA, ...) {
 	# validate arguments
 	if (nvars < 1) {
 		stop("Requires at least one decision variable")
@@ -116,6 +116,10 @@ borg <- function(nvars, nobjs, nconstrs, objectiveFcn, maxEvaluations, lowerBoun
 		stop("Requires a positive number of objective function evaluations (NFE)")
 	}
 	
+	if (length(epsilons) != nobjs) {
+		stop("Length of epsilon array must match the number of objectives")
+	}
+	
 	if (any(is.na(lowerBounds) == TRUE)) {
 		lowerBounds = rep(0, nvars)
 	} else if (length(lowerBounds) != nvars) {
@@ -126,12 +130,6 @@ borg <- function(nvars, nobjs, nconstrs, objectiveFcn, maxEvaluations, lowerBoun
 		upperBounds = rep(1, nvars)
 	} else if (length(upperBounds) != nvars) {
 		stop("Length of upper bounds must match the number of decision variables")
-	}
-	
-	if (any(is.na(epsilons) == TRUE)) {
-		epsilons = rep(0.01, nobjs)
-	} else if (length(epsilons) != nobjs) {
-		stop("Length of epsilon array must match the number of objectives")
 	}
 	
 	parameters <- list(...)

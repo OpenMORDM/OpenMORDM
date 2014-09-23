@@ -116,7 +116,7 @@ borg.optimize <- function(problem, NFE, ...) {
 #' @export
 #' @import rdyncall
 borg.optimize.function <- function(problem, NFE, ...) {
-	output <- borg(problem$nvars, problem$nobjs, problem$nconstrs, problem$command, NFE, lowerBounds=problem$bounds[1,], upperBounds=problem$bounds[2,], epsilons=problem$epsilons, ...)
+	output <- borg(problem$nvars, problem$nobjs, problem$nconstrs, problem$command, NFE, problem$epsilons, lowerBounds=problem$bounds[1,], upperBounds=problem$bounds[2,], ...)
 	mordm.read.matrix(as.matrix(output), problem$nvars, problem$nobjs, bounds=problem$bounds, names=problem$names)
 }
 

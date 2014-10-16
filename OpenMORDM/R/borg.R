@@ -54,30 +54,31 @@ magicWrapper <- function(objectiveFcn, nvars, nobjs, nconstrs) {
 	function(vars, objs, constrs) {
 		exVars <- getValues(vars, nvars)
 		result <- objectiveFcn(exVars)
-		
-		if (is.vector(result)) {
+
+		if (is.list(result)) {
+			if (length(result) == 1) {
+				setValues(objs, result[[1]])
+			} else if (length(result) == 2) {
+				setValues(objs, result[[1]])
+				setValues(constrs, result[[2]])
+			} else {
+				stop("Objective function return value does not contain the correct number of elements")
+			}
+		} else if (is.vector(result)) {
 			if (length(result) == nobjs+nconstrs) {
 				setValues(objs, result[1:nobjs])
-				
+
 				if (nconstrs > 0) {
 					setValues(constrs, result[(nobjs+1):(nobjs+nconstrs)])
 				}
 			} else {
 				stop("Objective function return value does not contain the correct number of elements")
 			}
-		} else if (is.list(result)) {
-			if (length(result) == 1) {
-				setValues(objs, result[1])
-			} else if (length(result) == 2) {
-				setValues(objs, result[1])
-				setValues(constrs, result[2])
-			} else {
-				stop("Objective function return value does not contain the correct number of elements")
-			}
+			setValues(objs, result)
 		} else {
 			stop("Objective function return value is not the correct class")
 		}
-		
+
 	}
 }
 

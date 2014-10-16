@@ -552,31 +552,31 @@ robustness.variance <- function(output, problem, weights=NULL, verbose=FALSE, or
 #' analysis method to produce approximately the given number of samples
 #' 
 #' @param problem the problem definition
-#' @param samples the desired number of samples
+#' @param nsamples the desired number of samples
 #' @param method the sensitivity analysis method
-sensitivity.levels <- function(problem, samples, method) {
+sensitivity.levels <- function(problem, nsamples, method) {
 	if (method == "fast99") {
-		ceiling(samples / problem$nvars)
+		ceiling(nsamples / problem$nvars)
 	} else if (method == "sobol") {
-		ceiling(samples / (problem$nvars+1))
+		ceiling(nsamples / (problem$nvars+1))
 	} else if (method == "sobol2002") {
-		ceiling(samples / (problem$nvars+2))
+		ceiling(nsamples / (problem$nvars+2))
 	} else if (method == "sobol2007") {
-		ceiling(samples / (problem$nvars+2))
+		ceiling(nsamples / (problem$nvars+2))
 	} else if (method == "sobolEff") {
-		ceiling(samples / (problem$nvars+1))
+		ceiling(nsamples / (problem$nvars+1))
 	} else if (method == "soboljansen") {
-		ceiling(samples / (problem$nvars+2))
+		ceiling(nsamples / (problem$nvars+2))
 	} else if (method == "sobolmara") {
-		ceiling(samples / 2)
+		ceiling(nsamples / 2)
 	} else if (method == "sobolroalhs") {
-		ceiling(samples / 2)
+		ceiling(nsamples / 2)
 	} else if (method == "morris") {
-		ceiling(samples / (problem$nvars+1))
+		ceiling(nsamples / (problem$nvars+1))
 	} else if (method == "pcc" || method == "src") {
-		samples
+		nsamples
 	} else if (method == "plischke") {
-		samples
+		nsamples
 	} else {
 		stop("Unsupported method")
 	}
@@ -600,7 +600,7 @@ sensitivity.levels <- function(problem, samples, method) {
 #' @param problem the problem definition
 #' @param objective the function, objective index, or objective name whose
 #'        sensitivity is being computed
-#' @param samples the desired number of samples
+#' @param nsamples the desired number of samples
 #' @param method string representation of the sensitivity analysis method
 #'        (fast99, sobol, sobol2002, sobol2007, sobolEff, soboljansen,
 #'        sobolmara, sobolroalhs, morris, prc, src, or plischke)
@@ -614,10 +614,10 @@ sensitivity.levels <- function(problem, samples, method) {
 #' @export
 #' @importFrom boot boot
 #' @importFrom boot boot.ci
-sensitivity <- function(problem, objective, samples, method="fast99", verbose=FALSE, plot=FALSE, raw=FALSE, collapse=TRUE, ...) {
+sensitivity <- function(problem, objective, nsamples, method="fast99", verbose=FALSE, plot=FALSE, raw=FALSE, collapse=TRUE, ...) {
 	varargs <- list(...)
 	
-	n <- sensitivity.levels(problem, samples, method)
+	n <- sensitivity.levels(problem, nsamples, method)
 	
 	if (method == "fast99") {
 		if (is.null(varargs$q)) {
@@ -710,8 +710,12 @@ sensitivity <- function(problem, objective, samples, method="fast99", verbose=FA
 		}
 		
 		y <- sapply(1:nrow(output$vars), function(i) {
-			cat(i)
-			cat("\n")
+			if (verbose) {
+				cat("Evaluating sample ")
+				cat(i)
+				cat("\n")
+			}
+			
 			objective(downselect(output, i))
 		})
 	} else if (is.character(objective) && length(objective) == 1) {

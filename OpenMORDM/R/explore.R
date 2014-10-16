@@ -297,6 +297,55 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		}
 	}
 	
+	plot.brush.dominance <- function(set, alpha, input, slider.transparency=0.01) {
+		if (input$pareto.sort) {
+			# determine which objectives need to be negated (for maximization)
+			maximizeTF <- rep(FALSE, nobjs)
+			names(maximizeTF) <- colnames(set)[(nvars+1):(nvars+nobjs)]
+			
+			if (!is.null(maximize)) {
+				maximizeTF[maximize] <- TRUE
+			}
+			
+			# remove all columns except the objectives
+			minset <- set[,(nvars+1):(nvars+nobjs)]
+			
+			# negate the maximized objectives
+			minset[,maximizeTF] <- -minset[,maximizeTF]
+			
+			# remove any factor data, since they are not orderable
+			minset <- minset[,sapply(attr(set, "factors")[(nvars+1):(nvars+nobjs)], is.null)]
+			
+			# non-dominated sorting
+			subset <- t(nondominated_points(t(minset)))
+			
+			# determine which indices were selected so we can select the appropriate colors/sizes
+			indices <- apply(minset, 1, function(x) {
+				for (i in 1:nrow(subset)) {
+					match <- TRUE
+					
+					for (j in 1:ncol(subset)) {
+						if (subset[i,j] != x[j]) {
+							match <- FALSE
+							break
+						}
+					}
+					
+					if (match) {
+						return(TRUE)
+					}
+				}
+				
+				return(FALSE)
+			})
+			
+			# apply the transparency to remove dominated points
+			alpha[!indices] <- slider.transparency
+		}
+		
+		alpha
+	}
+	
 	plot.brush <- function(set, limits=NULL, slider.transparency=0.01, preference=NULL, preference.limits=NULL) {
 		if (is.null(limits)) {
 			rep(1, nrow(set))
@@ -373,53 +422,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		brush.limits <- to.limits(input)
 		alpha <- plot.brush(set, brush.limits, slider.transparency)
 		alpha <- plot.brush.preference(set, alpha, input, slider.transparency)
-		
-		# pareto sorting
-		if (input$pareto.sort) {
-			# determine which objectives need to be negated (for maximization)
-			maximizeTF <- rep(FALSE, nobjs)
-			names(maximizeTF) <- colnames(set)[(nvars+1):(nvars+nobjs)]
-			
-			if (!is.null(maximize)) {
-				maximizeTF[maximize] <- TRUE
-			}
-			
-			# remove any factor data, since they are not orderable
-			minset <- set
-			minset <- minset[,sapply(attr(set, "factors"), is.null)]
-			
-			# remote the constant column
-			minset <- minset[,(nvars+1):(nvars+nobjs)]
-			
-			# negate the maximized objectives
-			minset[,maximizeTF] <- -minset[,maximizeTF]
-			
-			# non-dominated sorting
-			subset <- t(nondominated_points(t(minset)))
-			
-			# determine which indices were selected so we can select the appropriate colors/sizes
-			indices <- apply(minset, 1, function(x) {
-				for (i in 1:nrow(subset)) {
-					match <- TRUE
-					
-					for (j in 1:ncol(subset)) {
-						if (subset[i,j] != x[j]) {
-							match <- FALSE
-							break
-						}
-					}
-					
-					if (match) {
-						return(TRUE)
-					}
-				}
-				
-				return(FALSE)
-			})
-			
-			# apply the transparency to remove dominated points
-			alpha[!indices] <- slider.transparency
-		}
+		alpha <- plot.brush.dominance(set, alpha, input, slider.transparency)
 		
 		# pick the user-defined axes
 		xlim <- NULL
@@ -623,6 +626,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		
 		original.set <- get("current.set", mordm.globals)
 		original.colors <- get("current.colors", mordm.globals)
+		original.alpha <- get("current.alpha", mordm.globals)
 		
 		# determine which columns to plot
 		cols <- to.columns(input)
@@ -630,10 +634,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		# modify the colors for brushing
 		set <- original.set[,cols,drop=FALSE]
 		brush.limits <- to.limits(input)
-		alpha <- plot.brush(original.set, brush.limits, input$slider.transparency)
-		alpha <- plot.brush.preference(original.set, alpha, input, input$slider.transparency)
-		transparency <- input$parallel.transparency * alpha
-		colors <- alpha(original.colors, transparency)
+		colors <- alpha(original.colors, input$parallel.transparency*original.alpha)
 		
 		# fix column names (since plot3d may change them to X, Y, Z)
 		colnames(set) <- c(colnames(data[[1]]), "Constant")[cols]
@@ -701,18 +702,15 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		
 		original.set <- get("current.set", mordm.globals)
 		original.colors <- get("current.colors", mordm.globals)
+		original.alpha <- get("current.alpha", mordm.globals)
 		
 		set.par(input)
 		
 		# determine which columns to plot
 		cols <- c(plot.toobj(input$tradeoff.x), plot.toobj(input$tradeoff.y))
 		
-		set <- original.set[,cols,drop=FALSE]
-		brush.limits <- to.limits(input)
-		alpha <- plot.brush(original.set, brush.limits, input$slider.transparency)
-		alpha <- plot.brush.preference(original.set, alpha, input, input$slider.transparency)
-		transparency <- input$tradeoff.transparency * alpha
-		colors <- alpha(original.colors, transparency)
+		set <- original.set[,cols,drop=FALSE]		
+		colors <- alpha(original.colors, input$tradeoff.transparency*original.alpha)
 		point.sizes <- rep(input$tradeoff.point, nrow(set))
 		
 		# fix column names (since plot3d may change them to X, Y, Z)
@@ -835,6 +833,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		
 		original.set <- get("current.set", mordm.globals)
 		original.colors <- get("current.colors", mordm.globals)
+		original.alpha <- get("current.alpha", mordm.globals)
 		
 		set.par(input)
 		
@@ -842,11 +841,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		cols <- to.columns(input)
 		
 		set <- original.set[,cols,drop=FALSE]
-		brush.limits <- to.limits(input)
-		alpha <- plot.brush(original.set, brush.limits, input$slider.transparency)
-		alpha <- plot.brush.preference(original.set, alpha, input, input$slider.transparency)
-		transparency <- input$scatter.transparency * alpha
-		colors <- alpha(original.colors, transparency)
+		colors <- alpha(original.colors, input$scatter.transparency*original.alpha)
 		point.sizes <- rep(input$scatter.point, nrow(set))
 		
 		# fix column names (since plot3d may change them to X, Y, Z)
@@ -904,6 +899,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		brush.limits <- to.limits(input, ignore.constant=TRUE)
 		alpha <- plot.brush(set, brush.limits, 0.0)
 		alpha <- plot.brush.preference(set, alpha, input, 0.0)
+		alpha <- plot.brush.dominance(set, alpha, input, 0.0)
 		brushed.set <- set[alpha==1,,drop=FALSE]
 		
 		set.par(input)
@@ -952,6 +948,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		brush.limits <- to.limits(input, ignore.constant=TRUE)
 		alpha <- plot.brush(set, brush.limits, 0.0)
 		alpha <- plot.brush.preference(set, alpha, input, 0.0)
+		alpha <- plot.brush.dominance(set, alpha, input, 0.0)
 		
 		result <- mordm.subset(set, columns=cols, rows=alpha==1)
 		result <- mordm.as.data.frame(result)
@@ -1142,7 +1139,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		
 		if (input$cart.response == "Brushed Set") {
 			brush.limits <- to.limits(input, ignore.constant=TRUE)
-			preference <- to.weighted.preference(input, mordm.getset(data), brush=input[["brush.Preference"]])
+			preference <- to.weighted.preference(input, set, brush=input[["brush.Preference"]])
 			
 			if (is.null(brush.limits) && is.null(preference)) {
 				stop("Must brush at least one response")
@@ -1523,6 +1520,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 					brush.limits <- to.limits(input, ignore.constant=TRUE)
 					alpha <- plot.brush(set, brush.limits, 0.0)
 					alpha <- plot.brush.preference(set, alpha, input, 0.0)
+					alpha <- plot.brush.dominance(set, alpha, input, 0.0)
 					
 					result <- mordm.subset(set, rows=alpha==1)
 					result <- mordm.as.data.frame(result)
@@ -1948,6 +1946,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 					brush.limits <- isolate(to.limits(input, ignore.constant=TRUE))
 					alpha <- plot.brush(set, brush.limits, 0.0)
 					alpha <- plot.brush.preference(set, alpha, input, 0.0)
+					alpha <- plot.brush.dominance(set, alpha, input, 0.0)
 					
 					# render the 3d plot so we can get the correct projection
 					draw <- renderForPicking({

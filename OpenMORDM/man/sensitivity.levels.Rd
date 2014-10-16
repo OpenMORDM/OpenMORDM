@@ -3,12 +3,12 @@
 \alias{sensitivity.levels}
 \title{Determines number of replicates for sensitivity analysis.}
 \usage{
-sensitivity.levels(problem, samples, method)
+sensitivity.levels(problem, nsamples, method)
 }
 \arguments{
 \item{problem}{the problem definition}
 
-\item{samples}{the desired number of samples}
+\item{nsamples}{the desired number of samples}
 
 \item{method}{the sensitivity analysis method}
 }

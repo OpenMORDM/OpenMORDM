@@ -273,6 +273,16 @@ mordm.read <- function(file, nvars, nobjs, nconstrs=0, bounds=NULL, names=NULL, 
 	attributes <- vector()
 	result <- list()
 	
+	# Read arguments from mop class created by setup method
+	if (class(nvars) == "mop") {
+		problem <- nvars
+		nvars <- problem$nvars
+		nobjs <- problem$nobjs
+		nconstrs <- problem$nconstrs
+		bounds <- problem$bounds
+		names <- problem$names[1:(nvars+nobjs)]
+	}
+	
 	if (is.null(names)) {
 		names <- mordm.defaultnames(nvars, nobjs)
 	} else if (length(names) == nobjs) {
@@ -490,7 +500,7 @@ mordm.plotpar <- function(highlight=NULL, alpha=0.4, label.size=1, line.width=1,
 	set <- get("current.set", mordm.globals)
 	objectives <- get("current.objectives", mordm.globals)
 	mark <- get("current.mark", mordm.globals)
-	colors <- alpha(get("current.colors", mordm.globals), alpha)
+	colors <- alpha(get("current.colors", mordm.globals), alpha*get("current.alpha", mordm.globals))
 
 	# highlight selected solutions
 	if (is.null(highlight)) {
@@ -841,6 +851,7 @@ mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, id
 	assign("current.objectives", objectives, mordm.globals)
 	assign("current.mark", mark, mordm.globals)
 	assign("current.colors", colors, mordm.globals)
+	assign("current.alpha", alpha, mordm.globals)
 }
 
 #' Identify and highlight points using the middle mouse button.
@@ -1473,6 +1484,26 @@ mordm.cbind <- function(set, columns) {
 	attr(result, "maximize") <- maximize
 	attr(result, "factors") <- factors
 
+	return(result)
+}
+
+#' Adds extra rows to the end of a data set.
+#' 
+#' @param set the data set
+#' @param rows the extra rows
+#' @export
+mordm.rbind <- function(set, rows) {
+	rows <- as.matrix(rows)
+	
+	# Append the new rows to the data set
+	result <- rbind(set, rows)
+	attr(result, "nvars") <- attr(set, "nvars")
+	attr(result, "nobjs") <- attr(set, "nobjs")
+	attr(result, "nconstrs") <- attr(set, "nconstrs")
+	attr(result, "bounds") <- attr(set, "bounds")
+	attr(result, "maximize") <- attr(set, "maximize")
+	attr(result, "factors") <- attr(set, "factors")
+	
 	return(result)
 }
 

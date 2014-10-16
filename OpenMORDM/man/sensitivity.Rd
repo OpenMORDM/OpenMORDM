@@ -3,8 +3,8 @@
 \alias{sensitivity}
 \title{Standardized interface for sensitivity analysis methods.}
 \usage{
-sensitivity(problem, objective, samples, method = "fast99", verbose = FALSE,
-  plot = FALSE, raw = FALSE, collapse = TRUE, ...)
+sensitivity(problem, objective, nsamples, method = "fast99",
+  verbose = FALSE, plot = FALSE, raw = FALSE, collapse = TRUE, ...)
 }
 \arguments{
 \item{problem}{the problem definition}
@@ -12,7 +12,7 @@ sensitivity(problem, objective, samples, method = "fast99", verbose = FALSE,
 \item{objective}{the function, objective index, or objective name whose
 sensitivity is being computed}
 
-\item{samples}{the desired number of samples}
+\item{nsamples}{the desired number of samples}
 
 \item{method}{string representation of the sensitivity analysis method
 (fast99, sobol, sobol2002, sobol2007, sobolEff, soboljansen,

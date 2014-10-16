@@ -634,7 +634,8 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		# modify the colors for brushing
 		set <- original.set[,cols,drop=FALSE]
 		brush.limits <- to.limits(input)
-		colors <- alpha(original.colors, input$parallel.transparency*original.alpha)
+		alpha <- original.alpha
+		colors <- alpha(original.colors, input$parallel.transparency*alpha)
 		
 		# fix column names (since plot3d may change them to X, Y, Z)
 		colnames(set) <- c(colnames(data[[1]]), "Constant")[cols]
@@ -667,8 +668,19 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 			}
 		}
 		
+		# scale decision variables by bounds if known by adding invisible lines
+		bounds <- attr(original.set, "bounds")
+		
+		if (!is.null(bounds)) {
+			set <- rbind(set, c(bounds[1,], original.set[1,(ncol(bounds)+1):ncol(original.set)])[cols])
+			set <- rbind(set, c(bounds[2,], original.set[1,(ncol(bounds)+1):ncol(original.set)])[cols])
+			colors <- c(colors, "#00000000", "#00000000")
+			alpha <- c(alpha, 0, 0)
+		}
+
 		assign("current.set", set, mordm.globals)
 		assign("current.colors", colors, mordm.globals)
+		assign("current.alpha", alpha, mordm.globals)
 		
 		# generate the parallel coordinates plot
 		set.par(input)
@@ -678,6 +690,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		# restore the original settings
 		assign("current.set", original.set, mordm.globals)
 		assign("current.colors", original.colors, mordm.globals)
+		assign("current.alpha", original.alpha, mordm.globals)
 	}
 	
 	do.plotOps <- function(input) {

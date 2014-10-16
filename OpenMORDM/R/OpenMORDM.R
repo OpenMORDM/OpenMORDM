@@ -525,7 +525,7 @@ mordm.plotpar <- function(highlight=NULL, alpha=0.4, label.size=1, line.width=1,
 	} else {
 		assign("default.par", par(no.readonly=TRUE), mordm.globals)
 	}
-	
+
 	# create the plot
 	par(mgp=c(3,1,0.9), cex=label.size)
 	parcoord(set, col=colors, lwd=lwd, var.label=TRUE)

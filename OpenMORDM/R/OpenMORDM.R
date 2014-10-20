@@ -1871,8 +1871,10 @@ mordm.printbox <- function(data, mark, threshold=0.01, digits=3, indent="") {
 #' @param bar.width the width of the bars
 #' @param col vector of bar colors
 #' @param names names of each PRIM box to display in the legend
+#' @param legend if \code{TRUE}, renders a legend on the plot
+#' @param defaults draw horizontal lines to show default values
 #' @export
-mordm.plotbox <- function(data, mark, main="PRIM Box", scale.width=TRUE, bar.width=3, col=NULL, names=NULL) {
+mordm.plotbox <- function(data, mark, main="PRIM Box", scale.width=TRUE, bar.width=3, col=NULL, names=NULL, legend=TRUE, defaults=NULL) {
 	nvars <- attr(data, "nvars")
 	bounds <- attr(data, "bounds")
 
@@ -1890,9 +1892,13 @@ mordm.plotbox <- function(data, mark, main="PRIM Box", scale.width=TRUE, bar.wid
 		assign("default.par", par(no.readonly=TRUE), mordm.globals)
 	}
 	
-	# create the plot
-	layout(c(1,2), heights=c(7,1))
+	if (legend) {
+		layout(c(1,2), heights=c(7,1))
+	}
+	
 	par(xpd=TRUE, mar=c(4.1, 2.1, 4.1, 2.1))
+	
+	# create the plot
 	barplot(matrix(rep(1,3*nvars),ncol=nvars), add=FALSE, main=main, col="transparent", beside=TRUE, width=1, names.arg=rep("",nvars), axes=FALSE, space=c(0,3), border=c("transparent",longcol,"transparent"))
 	
 	if (!is.list(mark)) {
@@ -1951,24 +1957,30 @@ mordm.plotbox <- function(data, mark, main="PRIM Box", scale.width=TRUE, bar.wid
 	}
 	
 	axis(1,at = seq(4.5,by=6,length.out=nvars),labels=colnames(mat[,1:nvars]),las=1, line=2)
-	text(seq(4.5,by=6,length.out=nvars), y=rep(1, nvars), pos=3, labels=sprintf("%.2f", bounds[2,]), cex=0.8)
-	text(seq(4.5,by=6,length.out=nvars), y=rep(0, nvars), pos=1, labels=sprintf("%.2f", bounds[1,]), cex=0.8)
+	text(seq(4.5,by=6,length.out=nvars), y=rep(1, nvars), pos=3, labels=sprintf("%g", bounds[2,]), cex=0.8)
+	text(seq(4.5,by=6,length.out=nvars), y=rep(0, nvars), pos=1, labels=sprintf("%g", bounds[1,]), cex=0.8)
 	
-	# create the legend
-	par(mar=c(0,0,0,0))
-	plot.new()
-	
-	if (is.null(names)) {
-		names <- sprintf("Box %i", 1:length(mark))
+	if (!is.null(defaults)) {
+		segments(seq(4.5,by=6,length.out=nvars)-1.5, (defaults-bounds[1,])/(bounds[2,]-bounds[1,]), seq(4.5,by=6,length.out=nvars)+1.45, (defaults-bounds[1,])/(bounds[2,]-bounds[1,]), lwd=3)
 	}
 	
-	legend("center",
-				 legend=names,
-				 fill=colors,
-				 bty="o",
-				 cex=1.0,
-				 horiz=TRUE,
-				 xjust=0.5)
+	# create the legend
+	if (legend) {
+		par(mar=c(0,0,0,0))
+		plot.new()
+		
+		if (is.null(names)) {
+			names <- sprintf("Box %i", 1:length(mark))
+		}
+		
+		legend("center",
+					 legend=names,
+					 fill=colors,
+					 bty="o",
+					 cex=1.0,
+					 horiz=TRUE,
+					 xjust=0.5)
+	}
 }
 
 #' Make recommendations for analyzing the data.
@@ -2305,41 +2317,72 @@ mordm.uncertainty <- function(data, sd, nsamples, models, base.model=NULL, metho
 	# simple way to figure how many samples to draw from each model
 	indices <- (0:(nsamples-1) %% length(models))+1
 	
-	t(sapply(1:nrow(set), function(i) {
-		if (verbose && nrow(set) > 1) {
-			cat("\r")
-			cat(i)
-			cat(" of ")
-			cat(nrow(set))
-		}
-		
-		for (j in 1:length(models)) {
-			qty <- sum(indices == j)
-			temp <- nsample(set[i,], sd, qty, models[[j]])
+	if (is.null(method)) {
+		# if no robustsness method specified, return raw data
+		lapply(1:nrow(set), function(i) {
+			if (verbose && nrow(set) > 1) {
+				cat("\r")
+				cat(i)
+				cat(" of ")
+				cat(nrow(set))
+			}
 			
-			if (j == 1) {
-				samples <- temp
-			} else {
-				samples$vars <- rbind(samples$vars, temp$vars)
-				samples$objs <- rbind(samples$objs, temp$objs)
+			for (j in 1:length(models)) {
+				qty <- sum(indices == j)
+				temp <- nsample(set[i,], sd, qty, models[[j]])
 				
-				if (!is.null(samples$constrs)) {
-					samples$constrs <- rbind(samples$constrs, temp$constrs)
+				if (j == 1) {
+					samples <- temp
+				} else {
+					samples$vars <- rbind(samples$vars, temp$vars)
+					samples$objs <- rbind(samples$objs, temp$objs)
+					
+					if (!is.null(samples$constrs)) {
+						samples$constrs <- rbind(samples$constrs, temp$constrs)
+					}
 				}
 			}
-		}
-		
-		original.point <- list()
-		original.point$vars <- set.orig[i,1:base.model$nvars,drop=FALSE]
-		original.point$objs <- set.orig[i,(base.model$nvars+1):(base.model$nvars+base.model$nobjs),drop=FALSE]
-		
-		if (base.model$nconstrs > 0) {
-			original.point$constrs <- matrix(0, nrow=1, ncol=base.model$nconstrs)
-			#original.point$constrs <- set.orig[i,(base.model$nvars+base.model$nobjs+1):(base.model$nvars+base.model$nobjs+base.model$nconstrs),drop=FALSE]
-		}
-		
-		sapply(unlist(list(method)), function(m) {
-			check.robustness(samples, base.model, verbose=FALSE, method=m, original.point=original.point)
+			
+			samples
 		})
-	}))
+	} else {
+		# otherwise, calculate the robustness for each set
+		t(sapply(1:nrow(set), function(i) {
+			if (verbose && nrow(set) > 1) {
+				cat("\r")
+				cat(i)
+				cat(" of ")
+				cat(nrow(set))
+			}
+			
+			for (j in 1:length(models)) {
+				qty <- sum(indices == j)
+				temp <- nsample(set[i,], sd, qty, models[[j]])
+				
+				if (j == 1) {
+					samples <- temp
+				} else {
+					samples$vars <- rbind(samples$vars, temp$vars)
+					samples$objs <- rbind(samples$objs, temp$objs)
+					
+					if (!is.null(samples$constrs)) {
+						samples$constrs <- rbind(samples$constrs, temp$constrs)
+					}
+				}
+			}
+			
+			original.point <- list()
+			original.point$vars <- set.orig[i,1:base.model$nvars,drop=FALSE]
+			original.point$objs <- set.orig[i,(base.model$nvars+1):(base.model$nvars+base.model$nobjs),drop=FALSE]
+			
+			if (base.model$nconstrs > 0) {
+				original.point$constrs <- matrix(0, nrow=1, ncol=base.model$nconstrs)
+				#original.point$constrs <- set.orig[i,(base.model$nvars+base.model$nobjs+1):(base.model$nvars+base.model$nobjs+base.model$nconstrs),drop=FALSE]
+			}
+			
+			sapply(unlist(list(method)), function(m) {
+				check.robustness(samples, base.model, verbose=FALSE, method=m, original.point=original.point)
+			})
+		}))
+	}
 }

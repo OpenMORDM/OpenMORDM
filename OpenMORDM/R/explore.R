@@ -314,7 +314,9 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 			minset[,maximizeTF] <- -minset[,maximizeTF]
 			
 			# remove any factor data, since they are not orderable
-			minset <- minset[,sapply(attr(set, "factors")[(nvars+1):(nvars+nobjs)], is.null)]
+			if (!is.null(attr(set, "factors"))) {
+				minset <- minset[,sapply(attr(set, "factors")[(nvars+1):(nvars+nobjs)], is.null)]
+			}
 			
 			# non-dominated sorting
 			subset <- t(nondominated_points(t(minset)))

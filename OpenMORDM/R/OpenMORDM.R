@@ -732,7 +732,6 @@ mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, id
 	rangex <- range(x, xlim)
 	rangey <- range(y, ylim)
 	rangez <- range(z, zlim)
-	sizes <- sizes * (max(c(rangex, rangey, rangez)) / 100)
 	
 	# hide the labels on any collapsed dimensions
 	if (diff(rangex) == 0) {
@@ -772,11 +771,11 @@ mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, id
 	# create the plot
 	par3d(cex=tick.size)
 	bg3d(color=bg)
-	
+
 	plot3d(x, y, z,
 				 type="s",
 				 col=colors,
-				 radius=sizes*radius.scale,
+				 size=sizes*radius.scale,
 				 xlab="",
 				 ylab="",
 				 zlab="",
@@ -786,6 +785,7 @@ mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, id
 				 alpha=alpha,
 				 ...)
 	
+	aspect3d(1)
 	bbox3d(color=fg, xat=xat, xlab=xtick, yat=yat, ylab=ytick, zat=zat, zlab=ztick, front="lines", back="lines")
 	title3d(xlab=xlab, ylab=ylab, zlab=zlab, cex=label.size, line=label.line, color=fg)
 	

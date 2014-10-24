@@ -801,7 +801,7 @@ mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, id
 	
 	# highlight any selected points
 	if (!is.null(selection)) {
-		scale <- radius.scale*3/max(c(rangex, rangey, rangez))
+		scale <- radius.scale/20 #*3/max(c(rangex, rangey, rangez))
 		
 		for (i in selection) {
 			if (i > 0 && i <= nrow(set)) {				

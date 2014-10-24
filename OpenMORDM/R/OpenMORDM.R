@@ -786,7 +786,8 @@ mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, id
 				 ...)
 	
 	aspect3d(1)
-	bbox3d(color=fg, xat=xat, xlab=xtick, yat=yat, ylab=ytick, zat=zat, zlab=ztick, front="lines", back="lines")
+	material3d(color=fg)
+	bbox3d(xat=xat, xlab=xtick, yat=yat, ylab=ytick, zat=zat, zlab=ztick, front="line", back="line")
 	title3d(xlab=xlab, ylab=ylab, zlab=zlab, cex=label.size, line=label.line, color=fg)
 	
 	if (!is.null(window)) {
@@ -801,7 +802,7 @@ mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, id
 	
 	# highlight any selected points
 	if (!is.null(selection)) {
-		scale <- radius.scale/20 #*3/max(c(rangex, rangey, rangez))
+		scale <- radius.scale/20
 		
 		for (i in selection) {
 			if (i > 0 && i <= nrow(set)) {				

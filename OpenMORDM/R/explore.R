@@ -95,6 +95,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 	# to.palette(...)
 	colors <- list("Rainbow (Red to Blue)",
 				   "Heat (White to Red)",
+				   "Stoplight (Red, Yellow, Green)",
 				   "Grayscale (White to Black)",
 				   "Dark Red to Blue*",
 				   "Brown to Blue*",
@@ -363,6 +364,9 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 			palette <- rainbow(100, start=0, end=0.66)
 		} else if (name == "Heat (White to Red)") {
 			palette <- rev(heat.colors(100))
+		} else if (name == "Stoplight (Red, Yellow, Green)") {
+			#palette <- rainbow(100, start=0, end=0.33)
+			palette <- colorRampPalette(c("red", "yellow", "green"))(100)
 		} else if (name == "Grayscale (White to Black)") {
 			palette <- rev(gray(seq(0, 1, length.out=100)))
 		} else if (name == "Dark Red to Blue*") {
@@ -539,6 +543,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		if (show.color == "None" || show.color == "Constant") {
 			plot.new()
 		} else if (show.color == "Selected Point") {
+			plot.new()
 			palette <- to.palette(colormap)
 			legend("top", c("Selected Point", "All Other Points"), fill=c(palette[length(palette)], "#888888"), horiz=TRUE, bty="n")
 		} else if (show.color == "Preference") {

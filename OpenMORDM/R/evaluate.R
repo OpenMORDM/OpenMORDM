@@ -41,8 +41,9 @@
 #' @param bounds the lower and upper bounds for each decision variable
 #' @param names override the column names
 #' @param epsilons the epsilon values if using Borg to optimize the problem
+#' @param maximize vector indicating the columns to be maximized
 #' @export
-setup <- function(command, nvars, nobjs, nconstrs=0, bounds=NULL, names=NULL, epsilons=NULL) {
+setup <- function(command, nvars, nobjs, nconstrs=0, bounds=NULL, names=NULL, epsilons=NULL, maximize=NULL) {
 	if (is.null(bounds)) {
 		bounds <- matrix(rep(range(0, 1), nvars), nrow=2)
 	}
@@ -64,7 +65,7 @@ setup <- function(command, nvars, nobjs, nconstrs=0, bounds=NULL, names=NULL, ep
 		epsilons = rep(0.01, nobjs)
 	}
 	
-	container <- list(command=command, nvars=nvars, nobjs=nobjs, nconstrs=nconstrs, bounds=bounds, names=names, epsilons=epsilons)
+	container <- list(command=command, nvars=nvars, nobjs=nobjs, nconstrs=nconstrs, bounds=bounds, names=names, epsilons=epsilons, maximize=maximize)
 	class(container) <- "mop"
 	container
 }
@@ -117,7 +118,12 @@ borg.optimize <- function(problem, NFE, ...) {
 #' @import rdyncall
 borg.optimize.function <- function(problem, NFE, ...) {
 	output <- borg(problem$nvars, problem$nobjs, problem$nconstrs, problem$command, NFE, problem$epsilons, lowerBounds=problem$bounds[1,], upperBounds=problem$bounds[2,], ...)
-	mordm.read.matrix(as.matrix(output), problem$nvars, problem$nobjs, bounds=problem$bounds, names=problem$names)
+	
+	if (!is.null(problem$maximize)) {
+		output[,problem$maximize] <- -output[,problem$maximize]
+	}
+	
+	mordm.read.matrix(as.matrix(output), problem$nvars, problem$nobjs, bounds=problem$bounds, names=problem$names, maximize=problem$maximize)
 }
 
 #' Optimize the problem using the Borg standalone executable (borg.exe).
@@ -179,7 +185,7 @@ borg.optimize.external <- function(problem, NFE, executable="./borg.exe", output
 	system(command)
 	
 	if (return.output) {
-		mordm.read(output, problem$nvars, problem$nobjs, problem$nconstrs, problem$bounds, problem$names)
+		mordm.read(output, problem$nvars, problem$nobjs, problem$nconstrs, problem$bounds, problem$names, maximize=problem$maximize)
 	} else {
 		NULL
 	}
@@ -210,6 +216,10 @@ evaluate <- function(set, problem) {
 		result <- list(vars=set, objs=output[,1:problem$nobjs,drop=FALSE], constrs=output[,(problem$nobjs+1):(problem$nobjs+problem$nconstrs),drop=FALSE])
 	} else {
 		result <- list(vars=set, objs=output[,1:problem$nobjs,drop=FALSE])
+	}
+	
+	if (!is.null(problem$maximize)) {
+		result$objs[,problem$maximize] <- -result$objs[,problem$maximize]
 	}
 	
 	# assign column names

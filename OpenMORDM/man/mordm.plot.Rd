@@ -5,10 +5,10 @@
 \usage{
 mordm.plot(data, mark = NULL, index = -1, objectives = NULL,
   stay = TRUE, identify = TRUE, colors = NULL, clim = NULL,
-  ideal = FALSE, selection = NULL, xlim = NULL, ylim = NULL,
-  zlim = NULL, slim = NULL, window = NULL, alpha = 1, tick.size = 1,
-  label.size = 1.2, label.line = 1, radius.scale = 1, bg = "white",
-  fg = "black", ...)
+  ideal = FALSE, selection = NULL, selection.enlarge = FALSE,
+  xlim = NULL, ylim = NULL, zlim = NULL, slim = NULL, window = NULL,
+  alpha = 1, tick.size = 1, label.size = 1.2, label.line = 1,
+  radius.scale = 1, bg = "white", fg = "black", ...)
 }
 \arguments{
 \item{data}{the data set to be displayed (if data is a time series, then the
@@ -34,6 +34,9 @@ will identify and highlight that point}
 \item{ideal}{draw a visual indicator of where the ideal point is on the plot}
 
 \item{selection}{draw a visual indicator on the given row indices}
+
+\item{selection.enlarge}{if \code{TRUE}, enlarges the selected point; otherwise
+renders a transparent cube around the selected point}
 
 \item{xlim}{range (lower and upper bounds) for the x axis}
 

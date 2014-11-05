@@ -281,6 +281,7 @@ mordm.read <- function(file, nvars, nobjs, nconstrs=0, bounds=NULL, names=NULL, 
 		nconstrs <- problem$nconstrs
 		bounds <- problem$bounds
 		names <- problem$names[1:(nvars+nobjs)]
+		maximize <- problem$maximize
 	}
 	
 	if (is.null(names)) {
@@ -627,6 +628,8 @@ mordm.plotmark <- function(highlight=NULL) {
 #'        will identify and highlight that point
 #' @param ideal draw a visual indicator of where the ideal point is on the plot
 #' @param selection draw a visual indicator on the given row indices
+#' @param selection.enlarge if \code{TRUE}, enlarges the selected point; otherwise
+#'        renders a transparent cube around the selected point
 #' @param colors override the color values
 #' @param xlim range (lower and upper bounds) for the x axis
 #' @param ylim range (lower and upper bounds) for the y axis
@@ -643,7 +646,7 @@ mordm.plotmark <- function(highlight=NULL) {
 #' @param fg foreground color
 #' @param ... additional options passed to \code{\link{plot3d}}
 #' @export
-mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, identify=TRUE, colors=NULL, clim=NULL, ideal=FALSE, selection=NULL, xlim=NULL, ylim=NULL, zlim=NULL, slim=NULL, window=NULL, alpha=1, tick.size=1, label.size=1.2, label.line=1, radius.scale=1, bg="white", fg="black", ...) {
+mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, identify=TRUE, colors=NULL, clim=NULL, ideal=FALSE, selection=NULL, selection.enlarge=FALSE, xlim=NULL, ylim=NULL, zlim=NULL, slim=NULL, window=NULL, alpha=1, tick.size=1, label.size=1.2, label.line=1, radius.scale=1, bg="white", fg="black", ...) {
 	set <- mordm.getset(data, index)
 	nvars <- attr(data, "nvars")
 	nobjs <- attr(data, "nobjs")
@@ -788,7 +791,10 @@ mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, id
 	aspect3d(1)
 	material3d(color=fg)
 	bbox3d(xat=xat, xlab=xtick, yat=yat, ylab=ytick, zat=zat, zlab=ztick, front="line", back="line")
-	title3d(xlab=xlab, ylab=ylab, zlab=zlab, cex=label.size, line=label.line, color=fg)
+	
+	if (label.size > 0) {
+		title3d(xlab=xlab, ylab=ylab, zlab=zlab, cex=label.size, line=label.line, color=fg)
+	}
 	
 	if (!is.null(window)) {
 		if (length(window) == 1) {
@@ -805,9 +811,13 @@ mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, id
 		scale <- radius.scale/20
 		
 		for (i in selection) {
-			if (i > 0 && i <= nrow(set)) {				
-				cube <- cube3d(scaleMatrix(scale*sizes[i]*(rangex[2]-rangex[1]), scale*sizes[i]*(rangey[2]-rangey[1]), scale*sizes[i]*(rangez[2]-rangez[1])) %*% translationMatrix(x[i], y[i], z[i]))
-				wire3d(cube, col=colors[i], alpha=0.5)
+			if (i > 0 && i <= nrow(set)) {
+				if (selection.enlarge) {
+					spheres3d(x[i], y[i], z[i], radius=0.05*sizes[i]*radius.scale, col=colors[i])
+				} else {
+					cube <- cube3d(scaleMatrix(scale*sizes[i]*(rangex[2]-rangex[1]), scale*sizes[i]*(rangey[2]-rangey[1]), scale*sizes[i]*(rangez[2]-rangez[1])) %*% translationMatrix(x[i], y[i], z[i]))
+					wire3d(cube, col=colors[i], alpha=0.5)
+				}
 			}
 		}
 	}
@@ -2261,24 +2271,190 @@ mordm.robustness <- function(data, sd, nsamples, problem, method="default", verb
 #' 
 #' Adds Gaussian noise to the decision variables and resamples the model output.
 #' The samples are distributed across one or more different models for the
-#' problem. Then computes one or more robustness metrics.
+#' problem.  The result from this method should be passed to 
+#' \code{mordm.uncertainty.evaluate} to compute the robustness metrics.
 #' 
 #' If multiple models are provided, it is assumed that all models have the same
 #' inputs and outputs; they would only differ in the internal calculcations
 #' within the model.
 #' 
 #' @param data the data set
-#' @param sd scalar or vector specifying the standard deviation for each
-#'        decision variable
 #' @param nsamples the number of samples to generate for each point
 #' @param models the problem formulations created using \code{setup}
-#' @param base.model if multiple models are provided, specify which model is the
-#'        base (default) model
-#' @param method the robustness metric or a list of metrics to use (see
-#'        \code{\link{check.robustness}} for available options)
+#' @param sd scalar or vector specifying the standard deviation for each
+#'        decision variable
 #' @param verbose display additional information
 #' @export
-mordm.uncertainty <- function(data, sd, nsamples, models, base.model=NULL, method="default", verbose=TRUE) {
+mordm.uncertainty.sample <- function(data, nsamples, models, sd=0, verbose=TRUE) {
+	if (!is.list(models)) {
+		models <- list(models)
+	}
+	
+	# sanity check to ensure all models are valid
+	if (length(models) == 0) {
+		stop("At least one model must be provided")
+	}
+	
+	for (j in 1:length(models)) {
+		if (j == 1) {
+			nvars <- models[[j]]$nvars
+			nobjs <- models[[j]]$nobjs
+			nconstrs <- models[[j]]$nconstrs
+		} else {
+			if (nvars != models[[j]]$nvars) {
+				stop("All models must have the same number of decision variables")
+			}
+			
+			if (nobjs != models[[j]]$nobjs) {
+				stop("All models must have the same number of objectives")
+			}
+			
+			if (nconstrs != models[[j]]$nconstrs) {
+				stop("All models must have the same number of constraints")
+			}
+		}
+	}
+	
+	set.orig <- mordm.getset(data)
+	set <- set.orig[,1:nvars,drop=FALSE]
+	
+	# simple way to figure how many samples to draw from each model
+	indices <- (0:(nsamples-1) %% length(models))+1
+
+	result <- lapply(1:nrow(set), function(i) {
+		if (verbose && nrow(set) > 1) {
+			cat("\r")
+			cat(i)
+			cat(" of ")
+			cat(nrow(set))
+		}
+			
+		for (j in 1:length(models)) {
+			qty <- sum(indices == j)
+			temp <- nsample(set[i,], sd, qty, models[[j]])
+				
+			if (j == 1) {
+				samples <- temp
+			} else {
+				samples$vars <- rbind(samples$vars, temp$vars)
+				samples$objs <- rbind(samples$objs, temp$objs)
+					
+				if (!is.null(samples$constrs)) {
+					samples$constrs <- rbind(samples$constrs, temp$constrs)
+				}
+			}
+		}
+		
+		samples
+	})
+	
+	class(result) <- "uncertainty.samples"
+	attr(result, "nsamples") <- nsamples
+	attr(result, "models") <- models
+	attr(result, "nvars") <- nvars
+	attr(result, "nobjs") <- nobjs
+	attr(result, "nconstrs") <- nconstrs
+	attr(result, "set.orig") <- set.orig
+}
+
+#' Computes robustness under deep uncertainty.
+#' 
+#' @param samples the samples generated by \code{mordm.uncertainty.sample}
+#' @param satisficing.fcn the satisficing function for computing the two
+#'        satisficing robustness metrics
+#' @export
+mordm.uncertainty.evaluate <- function(samples, satisficing.fcn=NULL) {
+	set.orig <- attr(samples, "set.orig")
+	
+	regret.type1 <- function(original.point, samples) {
+		mean(sapply(1:nrow(samples$objs), function(i) {
+			norm(samples$objs[i,] - original.point[(nvars+1):(nvars+nobjs)], "2") + 10*sum(samples$constrs[i,])
+		}))
+	}
+	
+	regret.type2 <- function(original.point, samples) {
+		mean(sapply(1:nrow(factors), function(i) {
+			best <- c(
+				min(sapply(1:length(result.uncertainty.raw), function(j) result.uncertainty.raw[[j]]$objs[1,])),
+				max(sapply(1:length(result.uncertainty.raw), function(j) result.uncertainty.raw[[j]]$objs[2,])),
+				max(sapply(1:length(result.uncertainty.raw), function(j) result.uncertainty.raw[[j]]$objs[3,])),
+				max(sapply(1:length(result.uncertainty.raw), function(j) result.uncertainty.raw[[j]]$objs[4,])))
+			norm(samples$objs[i,] - best, "2")
+		}))
+	}
+	
+	satisficing.type1 <- function(original.point, samples, satisficing.fcn) {
+		mean(sapply(1:nrow(samples$objs), function(i) {
+			satisficing.fcn(list(vars=samples$vars[i,], objs=samples$objs[i,], constrs=samples$constrs[i,]))
+		}))
+	}
+	
+	satisficing.type2 <- function(original.point, samples, satisficing.fcn) {
+		min(sapply(1:nrow(samples$objs), function(i) {
+			if (satisficing.fcn(list(vars=samples$vars[i,], objs=samples$objs[i,], constrs=samples$constrs[i,]))) {
+				NA
+			} else {
+				norm(factors[i,]-baseline_factors, "2")
+			}
+		}), na.rm=TRUE)
+	}
+	
+	result.regret.type1 <- sapply(1:length(samples), function(i) {
+		regret.type1(set.orig[i,], samples[[i]])
+	})
+	
+	result.regret.type2 <- sapply(1:length(samples), function(i) {
+		regret.type2(set.orig[i,], samples[[i]])
+	})
+	
+	if (!is.null(satisficing.fcn)) {
+		result.satisficing.type1 <- sapply(1:length(samples), function(i) {
+			satisficing.type1(set.orig[i,], samples[[i]], satisficing.fcn)
+		})
+		
+		result.satisficing.type2 <- sapply(1:length(samples), function(i) {
+			satisficing.type2(set.orig[i,], samples[[i]], satisficing.fcn)
+		})
+	}
+	
+	result <- cbind(result.regret.type1, result.regret.type2)
+	
+	if (!is.null(satisficing.fcn)) {
+		result <- cbind(result, result.satisficing.type1, result.satisficing.type2)
+	}
+	
+	colnames(result) <- c("Regret Type I", "Regret Type II", "Satisficing Type I", "Satisficing Type II")
+	result
+}
+
+#' Computes robustness under deep uncertainty.
+#' 
+#' Adds Gaussian noise to the decision variables and resamples the model output.
+#' The samples are distributed across one or more different models for the
+#' problem.  The result from this method should be passed to 
+#' \code{mordm.uncertainty.evaluate} to compute the robustness metrics.
+#' 
+#' If multiple models are provided, it is assumed that all models have the same
+#' inputs and outputs; they would only differ in the internal calculcations
+#' within the model.
+#' 
+#' @param data the data set
+#' @param nsamples the number of samples to generate for each point
+#' @param models the problem formulations created using \code{setup}
+#' @param sd scalar or vector specifying the standard deviation for each
+#'        decision variable
+#' @param verbose display additional information
+#' @param satisficing.fcn the satisficing function for computing the two
+#'        satisficing robustness metrics
+#' @export
+uncertainty <- function(data, nsamples, models, sd=0, verbose=TRUE, satisficing.fcn=NULL) {
+	samples <- mordm.uncertainty.sample(data, nsamples, models, sd=sd, verbose=verbose)
+	mordm.uncertainty.evaluate(samples, satisficing.fcn=satisficing.fcn)
+}
+
+#' This is the old uncertainty function, no longer used.
+#' @keywords internal
+mordm.uncertainty <- function(data, nsamples, models, sd=0, base.model=NULL, method="default", verbose=TRUE) {
 	if (!is.list(models)) {
 		models <- list(models)
 	}
@@ -2386,4 +2562,20 @@ mordm.uncertainty <- function(data, sd, nsamples, models, base.model=NULL, metho
 			})
 		}))
 	}
+}
+
+#' Computes a vector of weighted preferences
+#' 
+#' @param data the data
+#' @param weights the vector of weights
+#' @export
+mordm.weight <- function(data, weights) {
+	set <- mordm.getset(data)
+	nvars <- attr(set, "nvars")
+	nobjs <- attr(set, "nobjs")
+	min.obj <- apply(set, 2, function(x) min(x))
+	max.obj <- apply(set, 2, function(x) max(x))
+	weights <- weights / sum(weights)
+	
+	apply(set, 1, function(x) sum((x[(nvars+1):(nvars+nobjs)]-min.obj[(nvars+1):(nvars+nobjs)])/(max.obj[(nvars+1):(nvars+nobjs)]-min.obj[(nvars+1):(nvars+nobjs)])*weights))
 }

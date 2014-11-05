@@ -4,7 +4,7 @@
 \title{Setup a new problem formulation.}
 \usage{
 setup(command, nvars, nobjs, nconstrs = 0, bounds = NULL, names = NULL,
-  epsilons = NULL)
+  epsilons = NULL, maximize = NULL)
 }
 \arguments{
 \item{command}{the R function or executable representing the problem}
@@ -20,6 +20,8 @@ setup(command, nvars, nobjs, nconstrs = 0, bounds = NULL, names = NULL,
 \item{names}{override the column names}
 
 \item{epsilons}{the epsilon values if using Borg to optimize the problem}
+
+\item{maximize}{vector indicating the columns to be maximized}
 }
 \description{
 Constructs a new problem formulation.  The command can either be an R

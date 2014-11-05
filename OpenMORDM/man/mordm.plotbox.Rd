@@ -4,7 +4,8 @@
 \title{Display plot of PRIM boxes.}
 \usage{
 mordm.plotbox(data, mark, main = "PRIM Box", scale.width = TRUE,
-  bar.width = 3, col = NULL, names = NULL)
+  bar.width = 3, col = NULL, names = NULL, legend = TRUE,
+  defaults = NULL)
 }
 \arguments{
 \item{data}{the original data set}
@@ -21,6 +22,10 @@ boxes are displayed}
 \item{col}{vector of bar colors}
 
 \item{names}{names of each PRIM box to display in the legend}
+
+\item{legend}{if \code{TRUE}, renders a legend on the plot}
+
+\item{defaults}{draw horizontal lines to show default values}
 }
 \description{
 Generates a plot showing the bounds of the PRIM boxes.  Currently only works

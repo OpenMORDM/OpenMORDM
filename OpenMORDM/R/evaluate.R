@@ -53,7 +53,7 @@ setup <- function(command, nvars, nobjs, nconstrs=0, bounds=NULL, names=NULL, ep
 	} else if (length(names) == nobjs+nconstrs) {
 		names <- append(mordm.defaultnames(nvars, 0, 0), names)
 	} else if (length(names) == nobjs) {
-		names <- append(mordm.defaultnames(nvars, 0, 0), names, mordm.defaultnames(0, 0, nconstrs))
+		names <- append(mordm.defaultnames(nvars, 0, 0), append(names, mordm.defaultnames(0, 0, nconstrs)))
 	} else if (length(names) == nvars + nobjs) {
 		names <- append(names, mordm.defaultnames(0, 0, nconstrs))
 	} else if (length(names) != nvars + nobjs + nconstrs) {
@@ -218,16 +218,16 @@ evaluate <- function(set, problem) {
 		result <- list(vars=set, objs=output[,1:problem$nobjs,drop=FALSE])
 	}
 	
-	if (!is.null(problem$maximize)) {
-		result$objs[,problem$maximize] <- -result$objs[,problem$maximize]
-	}
-	
 	# assign column names
 	colnames(result$vars) <- problem$names[1:problem$nvars]
 	colnames(result$objs) <- problem$names[(problem$nvars+1):(problem$nvars+problem$nobjs)]
 	
 	if (problem$nconstrs > 0) {
 		colnames(result$constrs) <- problem$names[(problem$nvars+problem$nobjs+1):(problem$nvars+problem$nobjs+problem$nconstrs)]
+	}
+	
+	if (!is.null(problem$maximize)) {
+		result$objs[,problem$maximize] <- -result$objs[,problem$maximize]
 	}
 	
 	# return the results

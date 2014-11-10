@@ -31,4 +31,6 @@
 	
 	# Create a private environment for storing plot settings
 	assign("mordm.globals", new.env(), envir=parent.env(environment()))
+	
+	options(mordm.palette=Curry(rainbow, start=0, end=2/6))
 }

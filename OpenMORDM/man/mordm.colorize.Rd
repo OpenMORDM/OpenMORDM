@@ -3,9 +3,9 @@
 \alias{mordm.colorize}
 \title{Returns a vector of colors to be used when plotting a data set.}
 \usage{
-mordm.colorize(set, objectives, mark = NULL, palette = heat.colors,
-  n = 100, offset = 0, colors = NULL, clim = NULL,
-  unmarked = "#888888FF", alpha = 1, crev = TRUE)
+mordm.colorize(set, objectives, mark = NULL, palette = NULL, n = 100,
+  offset = 0, colors = NULL, clim = NULL, unmarked = "#888888FF",
+  alpha = 1, crev = TRUE)
 }
 \arguments{
 \item{set}{the data set}

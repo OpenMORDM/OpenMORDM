@@ -27,6 +27,7 @@ Note: The latest versions of RGL appear to have a bug in `rgl.setMouseCallbacks`
     * Mac OS X - Install XCode
 2. [Git](http://git-scm.com/downloads) (for downloading the source code)
 3. [R version 3.0](http://www.r-project.org/) or later
+4. The `devtools` R package (e.g., `install.packages("devtools")`)
 
 ### Installation ###
 1. Install the prerequisite software
@@ -35,6 +36,7 @@ Note: The latest versions of RGL appear to have a bug in `rgl.setMouseCallbacks`
 4. If using Windows, run the following command:
     * `options(devtools.install.args="--force-biarch")`
 5. Run the following commands:
+    * `library(devtools)`
     * `install_github("rgl", "dhadka", "working")`
     * `install_github("shinyRGL", "dhadka")`
     * `install_local("C:/path/to/openmordm/OpenMORDM")`
@@ -65,4 +67,5 @@ Note: The latest versions of RGL appear to have a bug in `rgl.setMouseCallbacks`
     * `sudo ln -fs clang llvm-gcc-4.2`
     * `sudo ln -fs clang++ llvm-g++-4.2`
 * When running the Shiny web visualizations, we must set `options(rgl.useNULL=TRUE)`.  This is required to run on headless systems.  If you try to run `mordm.plot` and do not see the 3D window, you may need to restart R, set `options(rgl.useNULL=FALSE)`, then `library(OpenMORDM)`.
+* CRAN occasionally removes packages if they are not updated to satisfy changes to R.  This recently happened to rdyncall.  If you find a package is missing and can not be installed, search CRAN for the package (e.g., [rdyncall](http://cran.r-project.org/web/packages/rdyncall/index.html)), download the archived version, and use `install_local("C:/path/to/package.tar.gz")`.
 

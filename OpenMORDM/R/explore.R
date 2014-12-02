@@ -365,8 +365,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		} else if (name == "Heat (White to Red)") {
 			palette <- rev(heat.colors(100))
 		} else if (name == "Stoplight (Red, Yellow, Green)") {
-			#palette <- rainbow(100, start=0, end=0.33)
-			palette <- colorRampPalette(c("red", "yellow", "green"))(100)
+			palette <- rev(colorRampPalette(c("red", "yellow", "green"))(100))
 		} else if (name == "Grayscale (White to Black)") {
 			palette <- rev(gray(seq(0, 1, length.out=100)))
 		} else if (name == "Dark Red to Blue*") {

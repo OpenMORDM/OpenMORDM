@@ -4,7 +4,7 @@
 \title{Computes robustness under deep uncertainty.}
 \usage{
 uncertainty(data, nsamples, models, sd = 0, verbose = TRUE,
-  satisficing.fcn = NULL)
+  satisficing.fcn = NULL, factors = NULL, custom.fcn = NULL)
 }
 \arguments{
 \item{data}{the data set}
@@ -20,6 +20,11 @@ decision variable}
 
 \item{satisficing.fcn}{the satisficing function for computing the two
 satisficing robustness metrics}
+
+\item{factors}{matrix of the original uncertainty factors for use by
+Satisficing Type II}
+
+\item{custom.fcn}{custom robustness function}
 }
 \description{
 Adds Gaussian noise to the decision variables and resamples the model output.

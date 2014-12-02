@@ -3,10 +3,25 @@
 \alias{mordm.prim}
 \title{Patient rule induction method.}
 \usage{
-mordm.prim(data, objective, minimize = TRUE, percentages = FALSE,
-  expand = TRUE, ...)
+mordm.prim(factors, response, bounds = NULL, which.box = 1,
+  show.plot = TRUE, ...)
+
+mordm.prim(factors, response, bounds = NULL, which.box = 1,
+  show.plot = TRUE, ...)
 }
 \arguments{
+\item{factors}{the sampled deeply uncertain parameterizations}
+
+\item{response}{vector of responses whose length equals the number of factors}
+
+\item{bounds}{bounds of the sampled uncertainties}
+
+\item{which.box}{index of the PRIM box to plot}
+
+\item{show.plot}{if TRUE, generates a plot representing the PRIM box}
+
+\item{...}{optional arguments passed to \code{\link{prim.box}}}
+
 \item{data}{the data set}
 
 \item{objective}{speecifies the objective index, column name, function, or
@@ -20,10 +35,13 @@ values are preferred}
 \item{expand}{if \code{TRUE}, sets the paste option to 1 to enable expanding
 the boxes to fill as much space as possible}
 
-\item{...}{optional arguments passed to \code{\link{prim.box}}}
+\item{...}{optional parameters passed to prim.box}
 }
 \description{
 Performs the patient rule induction method (PRIM) to identify boxes in input
 space that correlate with data exceeding a given threshold.
+
+Determines the vulernabilities due to deep uncertainties using the Patient
+Rule Induction Method (PRIM).
 }
 

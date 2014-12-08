@@ -165,15 +165,15 @@ borg.optimize.external <- function(problem, NFE, executable="./borg.exe", output
 	}
 	
 	command <- paste(executable,
-					 "-n", NFE,
-					 "-v", problem$nvars,
-					 "-o", problem$nobjs,
-					 "-c", problem$nconstrs,
+					 "-n", format(NFE, scientific=FALSE),
+					 "-v", format(problem$nvars, scientific=FALSE),
+					 "-o", format(problem$nobjs, scientific=FALSE),
+					 "-c", format(problem$nconstrs, scientific=FALSE),
 					 "-l", paste(problem$bounds[1,], collapse=","),
 					 "-u", paste(problem$bounds[2,], collapse=","),
 					 "-e", paste(problem$epsilons, collapse=","),
 					 "-R", output,
-					 "-F", output.frequency,
+					 "-F", format(output.frequency, scientific=FALSE),
 					 problem.executable)
 	
 	if (verbose) {

@@ -158,7 +158,7 @@ borg.optimize.external <- function(problem, NFE, executable="./borg.exe", output
 	}
 	
 	# Hack for Unix systems where local commands need the path prefix
-	if (file.exists(problem$command) && dirname(problem$command) == "." && !substring(problem$command, 1, 1) == ".") {
+	if (.Platform$OS.type != "windows" && file.exists(problem$command) && dirname(problem$command) == "." && !substring(problem$command, 1, 1) == ".") {
 		problem.executable <- paste("./", problem$command, sep="")
 	} else {
 		problem.executable <- problem$command

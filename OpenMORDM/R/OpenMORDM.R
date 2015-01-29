@@ -300,14 +300,16 @@ mordm.read <- function(file, nvars, nobjs, nconstrs=0, bounds=NULL, names=NULL, 
 			if (length(solutions) > 0 | length(attributes) > 0) {
 				entry <- matrix(nrow=length(solutions), ncol=nvars+nobjs)
 				
-				for (i in 1:length(solutions)) {
-					tokens <- unlist(strsplit(solutions[i], " ", fixed=TRUE))
-					
-					for (j in 1:length(tokens)) {
-						entry[i,j] <- as.double(tokens[j])
+				if (length(solutions) > 0) {
+					for (i in 1:length(solutions)) {
+						tokens <- unlist(strsplit(solutions[i], " ", fixed=TRUE))
 						
-						if (!is.null(digits)) {
-							entry[i,j] <- round(entry[i,j], digits=digits)
+						for (j in 1:length(tokens)) {
+							entry[i,j] <- as.double(tokens[j])
+							
+							if (!is.null(digits)) {
+								entry[i,j] <- round(entry[i,j], digits=digits)
+							}
 						}
 					}
 				}

@@ -65,9 +65,28 @@ setup <- function(command, nvars, nobjs, nconstrs=0, bounds=NULL, names=NULL, ep
 		epsilons = rep(0.01, nobjs)
 	}
 	
+	command <- adjust.command(command)
+	
 	container <- list(command=command, nvars=nvars, nobjs=nobjs, nconstrs=nconstrs, bounds=bounds, names=names, epsilons=epsilons, maximize=maximize)
 	class(container) <- "mop"
 	container
+}
+
+#' Prepends a ./ to commands on non-Windows systems.
+#' 
+#' @param command the R function or executable representing the problem
+#' @export
+adjust.command <- function(command) {
+	if (!is.function(command)) {
+		split.command <- unlist(strsplit(command, "\\s"))
+		 
+		if (.Platform$OS.type != "windows" && file.exists(split.command[1]) && dirname(split.command[1]) == "." && substring(split.command[1], 1, 1) != ".") {
+			split.command[1] <- paste("./", split.command[1], sep="")
+			command <- paste(split.command, sep=" ", collapse=" ")
+		}
+	}
+	
+	command
 }
 
 #' Optimize the problem using the Borg MOEA.
@@ -157,13 +176,6 @@ borg.optimize.external <- function(problem, NFE, executable="./borg.exe", output
 		stop(paste("Unable to locate ", executable, sep=""))
 	}
 	
-	# Hack for Unix systems where local commands need the path prefix
-	if (.Platform$OS.type != "windows" && file.exists(problem$command) && dirname(problem$command) == "." && !substring(problem$command, 1, 1) == ".") {
-		problem.executable <- paste("./", problem$command, sep="")
-	} else {
-		problem.executable <- problem$command
-	}
-	
 	command <- paste(executable,
 					 "-n", format(NFE, scientific=FALSE),
 					 "-v", format(problem$nvars, scientific=FALSE),
@@ -174,7 +186,7 @@ borg.optimize.external <- function(problem, NFE, executable="./borg.exe", output
 					 "-e", paste(problem$epsilons, collapse=","),
 					 "-R", output,
 					 "-F", format(output.frequency, scientific=FALSE),
-					 problem.executable)
+					 problem$command)
 	
 	if (verbose) {
 		cat("Running command: ")

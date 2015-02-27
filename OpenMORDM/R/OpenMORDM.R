@@ -767,7 +767,7 @@ mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, id
 	exploring = FALSE
 	
 	for (call in sys.calls()) {
-		if (call[[1]] == "explore") {
+		if (call == "explore") {
 			exploring = TRUE
 			break
 		}

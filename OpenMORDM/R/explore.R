@@ -65,6 +65,8 @@
 #'        point
 #' @param ignore columns to remove from the dataset (CSV/Excel only)
 #' @param metadata columns to retain in a metadata attribute (CSV/Excel only)
+#' @param runShinyApp if TRUE, start the Shiny server with runApp(...); if false, start
+#'        the server with shinyApp(...)
 #' @export
 #' @import shiny
 #' @import shinyRGL
@@ -90,7 +92,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 					maximize=NULL, order=NULL, visible.variables=FALSE,
 					plot3d.width="600px", plot3d.height="500px",
 					welcome.panel=NULL, selection.panel=NULL,
-					ignore=NULL, metadata=NULL) {
+					ignore=NULL, metadata=NULL, runShinyApp=TRUE) {
 	# The available color palettes.  To add new palettes, you must also modify
 	# to.palette(...)
 	colors <- list("Rainbow (Red to Blue)",
@@ -519,7 +521,8 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 				   tick.size=tick.size, label.size=label.size,
 				   label.line=label.line, radius.scale=radius.scale,
 				   bg=ifelse(input$colormap.black, "black", "white"),
-				   fg=ifelse(input$colormap.black, "white", "black"))
+				   fg=ifelse(input$colormap.black, "white", "black"),
+				   exploring=TRUE)
 	}
 	
 	# Generates the colorbar
@@ -2490,5 +2493,9 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 				tags$script(bgListener)),
 			navbar)
 	
-	runApp(list(server=server, ui=ui))
+	if (runShinyApp) {
+		runApp(list(server=server, ui=ui))
+	} else {
+		shinyApp(server=server, ui=ui)
+	}
 }

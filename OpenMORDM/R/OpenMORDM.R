@@ -652,9 +652,11 @@ mordm.plotmark <- function(highlight=NULL) {
 #' @param radius.scale scaling factor applied to the size of the points
 #' @param bg background color
 #' @param fg foreground color
+#' @param exploring set to TRUE if being called from explore(...) method
+#'        to properly open null devices
 #' @param ... additional options passed to \code{\link{plot3d}}
 #' @export
-mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, identify=TRUE, colors=NULL, clim=NULL, ideal=FALSE, selection=NULL, selection.enlarge=FALSE, xlim=NULL, ylim=NULL, zlim=NULL, slim=NULL, window=NULL, alpha=1, tick.size=1, label.size=1.2, label.line=1, radius.scale=1, bg="white", fg="black", ...) {
+mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, identify=TRUE, colors=NULL, clim=NULL, ideal=FALSE, selection=NULL, selection.enlarge=FALSE, xlim=NULL, ylim=NULL, zlim=NULL, slim=NULL, window=NULL, alpha=1, tick.size=1, label.size=1.2, label.line=1, radius.scale=1, bg="white", fg="black", exploring=FALSE, ...) {
 	set <- mordm.getset(data, index)
 	nvars <- attr(data, "nvars")
 	nobjs <- attr(data, "nobjs")
@@ -762,17 +764,7 @@ mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, id
 		ztick <- c("")
 		zat <- c(rangez[1])
 	}
-	
-	# if not being called by explore, override useNULL
-	exploring = FALSE
-	
-	for (call in sys.calls()) {
-		if (call == "explore") {
-			exploring = TRUE
-			break
-		}
-	}
-	
+
 	if (!exploring) {
 		if (rgl.cur() == 0 || names(rgl.cur()) == "null") {
 			open3d(useNULL=FALSE)

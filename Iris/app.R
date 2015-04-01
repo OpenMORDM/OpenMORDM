@@ -25,8 +25,9 @@
 
 options(rgl.useNULL=TRUE)
 
+
+#library(OpenMORDM)
 library(functional)
-library(OpenMORDM)
 library(shiny)
 library(shinyRGL)
 library(rgl)
@@ -48,9 +49,20 @@ library(stats)
 library(corrgram)
 library(lhs)
 library(rdyncall)
+library(datasets)
+
+# Create a private environment for storing plot settings
+assign("mordm.globals", new.env(), envir=parent.env(environment()))
+
+options(mordm.palette=Curry(rainbow, start=0, end=2/6))
+
+source("OpenMORDM.R")
+source("pareto.R")
+source("plischke.R")
+source("evaluate.R")
+source("borg.R")
+source("explore.R")
 
 #rgl.init()
 
-
-data(iris)
 explore(iris, runShinyApp=FALSE)

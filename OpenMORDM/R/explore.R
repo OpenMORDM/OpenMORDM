@@ -173,7 +173,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		limits <- NULL
 		
 		for (i in 1:length(data)) {
-			temp.set <- mordm.getset(data, i)
+			temp.set <- mordm.get.set(data, i)
 			
 			if (is.null(limits)) {
 				limits <- apply(temp.set, 2, range)
@@ -415,7 +415,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 			selection <- input$selection
 		}
 		
-		set <- mordm.getset(data, index)
+		set <- mordm.get.set(data, index)
 		
 		# append a list of 0's in case the constant (column 5) option is selected
 		const <- matrix(rep(0, nrow(set), ncol=1))
@@ -540,7 +540,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		oldpar <- par(no.readonly=TRUE)
 		set.par(input, mai=c(1, 2, 0.5, 2))
 		
-		set <- mordm.getset(data, index)
+		set <- mordm.get.set(data, index)
 		
 		if (show.color == "None" || show.color == "Constant") {
 			plot.new()
@@ -693,7 +693,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		
 		# generate the parallel coordinates plot
 		set.par(input)
-		mordm.plotpar(alpha=NA, highlight=highlight, label.size=input$parallel.cex,
+		mordm.plot.parallel(alpha=NA, highlight=highlight, label.size=input$parallel.cex,
 					  line.width=input$parallel.lwd, selection.scale=input$selection.scale)
 		
 		# restore the original settings
@@ -917,7 +917,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 	do.histogram <- function(input) {
 		oldpar <- par(no.readonly=TRUE)
 		index <- to.index(input)
-		set <- mordm.getset(data, index)
+		set <- mordm.get.set(data, index)
 		brush.limits <- to.limits(input, ignore.constant=TRUE)
 		alpha <- plot.brush(set, brush.limits, 0.0)
 		alpha <- plot.brush.preference(set, alpha, input, 0.0)
@@ -966,13 +966,13 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		index <- to.index(input)
 		cols <- to.columns(input, ignore.constant=TRUE)
 		
-		set <- mordm.getset(data, index)
+		set <- mordm.get.set(data, index)
 		brush.limits <- to.limits(input, ignore.constant=TRUE)
 		alpha <- plot.brush(set, brush.limits, 0.0)
 		alpha <- plot.brush.preference(set, alpha, input, 0.0)
 		alpha <- plot.brush.dominance(set, alpha, input, 0.0)
 		
-		result <- mordm.subset(set, columns=cols, rows=alpha==1)
+		result <- mordm.get.subset(set, columns=cols, rows=alpha==1)
 		result <- mordm.as.data.frame(result)
 	}
 	
@@ -994,7 +994,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 	do.correlogram <- function(input) {
 		set.par(input)
 		
-		set <- mordm.getset(data)
+		set <- mordm.get.set(data)
 		
 		if (input$correlations.objectives) {
 			set <- set[,(nvars+1):(nvars+nobjs),drop=FALSE]
@@ -1020,7 +1020,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		
 		if (input$sensitivity.response == "Brushed Set") {
 			brush.limits <- to.limits(input, ignore.constant=TRUE)
-			preference <- to.weighted.preference(input, mordm.getset(data), brush=input[["brush.Preference"]])
+			preference <- to.weighted.preference(input, mordm.get.set(data), brush=input[["brush.Preference"]])
 			
 			if (is.null(brush.limits) && is.null(preference)) {
 				stop("Must brush at least one response")
@@ -1039,7 +1039,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 				})
 			}
 		} else if (input$sensitivity.response == "Preference") {
-			objective <- to.weighted.preference(input, mordm.getset(data), err="Please specify preferences on the 3D plot tab")
+			objective <- to.weighted.preference(input, mordm.get.set(data), err="Please specify preferences on the 3D plot tab")
 		} else {
 			objective <- plot.toobj(input$sensitivity.response)-nvars
 		}
@@ -1047,7 +1047,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		set.par(input)
 		
 		result <- tryCatch(
-			mordm.sensitivity(data, objective, index=index,
+			mordm.variable.sensitivities(data, objective, index=index,
 							  all=input$sensitivity.all,
 							  kd.estimator=input$sensitivity.kd.estimator,
 							  plot.enabled=input$sensitivity.pdfs),
@@ -1067,7 +1067,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 	do.prim <- function(input) {
 		if (input$prim.response == "Brushed Set") {
 			brush.limits <- to.limits(input, ignore.constant=TRUE)
-			preference <- to.weighted.preference(input, mordm.getset(data), brush=input[["brush.Preference"]])
+			preference <- to.weighted.preference(input, mordm.get.set(data), brush=input[["brush.Preference"]])
 			
 			if (is.null(brush.limits) && is.null(preference)) {
 				stop("Must brush at least one response")
@@ -1086,11 +1086,11 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 				})
 			}
 			
-			# these values will be ignored within mordm.prim
+			# these values will be ignored within analyze.prim
 			threshold.type <- NULL
 			threshold <- NULL
 		} else if (input$prim.response == "Preference") {
-			objective <- to.weighted.preference(input, mordm.getset(data), err="Please specify preferences on the 3D plot tab")
+			objective <- to.weighted.preference(input, mordm.get.set(data), err="Please specify preferences on the 3D plot tab")
 			
 			if (input$prim.threshold.type == ">=") {
 				threshold.type <- 1
@@ -1101,7 +1101,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 			threshold <- input$prim.threshold
 		} else {
 			objective <- plot.toobj(input$prim.response)-nvars
-			objective.range <- range(mordm.getset(data)[,plot.toobj(input$prim.response)])
+			objective.range <- range(mordm.get.set(data)[,plot.toobj(input$prim.response)])
 			
 			if (input$prim.threshold.type == ">=") {
 				threshold.type <- 1
@@ -1113,18 +1113,18 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		}
 		
 		result <- tryCatch(
-			mordm.prim(data, objective, threshold.type=threshold.type,
+			analyze.prim(data, objective, threshold.type=threshold.type,
 					   threshold=threshold, minimize=FALSE,
 					   expand=input$prim.expand),
 			error=function(msg) stop("Unable to find any PRIM boxes with the given threshold, try CART instead"))
 		
-		# The first arg to mordm.plotbox is used to read nvars and bounds
+		# The first arg to mordm.plot.box is used to read nvars and bounds
 		# attributes.  If this info is not available, estimate the bounds.
 		if (!is.null(attr(data, "bounds"))) {
 			est.bounds <- data
 		} else {
 			est.bounds <- list()
-			set <- mordm.getset(data)
+			set <- mordm.get.set(data)
 			
 			if (is.function(objective)) {
 				x <- set[,1:nvars]
@@ -1147,7 +1147,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		}
 		
 		set.par(input)
-		mordm.plotbox(est.bounds, result[[1]])
+		mordm.plot.box(est.bounds, result[[1]])
 		
 		result
 	}
@@ -1157,7 +1157,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		set.par(input, xpd=TRUE)
 		
 		index <- to.index(input)
-		set <- mordm.getset(data, index)
+		set <- mordm.get.set(data, index)
 		
 		if (input$cart.response == "Brushed Set") {
 			brush.limits <- to.limits(input, ignore.constant=TRUE)
@@ -1538,13 +1538,13 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 						index = input$nfe / step.nfe
 					}
 					
-					set <- mordm.getset(data, index)
+					set <- mordm.get.set(data, index)
 					brush.limits <- to.limits(input, ignore.constant=TRUE)
 					alpha <- plot.brush(set, brush.limits, 0.0)
 					alpha <- plot.brush.preference(set, alpha, input, 0.0)
 					alpha <- plot.brush.dominance(set, alpha, input, 0.0)
 					
-					result <- mordm.subset(set, rows=alpha==1)
+					result <- mordm.get.subset(set, rows=alpha==1)
 					result <- mordm.as.data.frame(result)
 					
 					write.csv(result, file, row.names=FALSE)
@@ -1877,7 +1877,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 							cat("\n")
 							cat("--------------------------------------\n")
 							
-							mordm.printbox(data, box, indent="    ")
+							mordm.print.box(data, box, indent="    ")
 							count <- count + 1
 						}
 					})
@@ -1962,7 +1962,7 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 						index <- nfe / step.nfe
 					}
 					
-					set <- mordm.getset(data, index)
+					set <- mordm.get.set(data, index)
 					
 					# calculate brushing so we can ignore hidden solutions
 					brush.limits <- isolate(to.limits(input, ignore.constant=TRUE))

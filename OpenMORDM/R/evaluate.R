@@ -23,7 +23,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-#' Setup a new problem formulation.
+#' Define a new problem formulation.
 #' 
 #' Constructs a new problem formulation.  The command can either be an R
 #' function or a command line executable.  If using a command line executable,
@@ -43,22 +43,22 @@
 #' @param epsilons the epsilon values if using Borg to optimize the problem
 #' @param maximize vector indicating the columns to be maximized
 #' @export
-setup <- function(command, nvars, nobjs, nconstrs=0, bounds=NULL, names=NULL, epsilons=NULL, maximize=NULL) {
+define.problem <- function(command, nvars, nobjs, nconstrs=0, bounds=NULL, names=NULL, epsilons=NULL, maximize=NULL) {
 	if (is.null(bounds)) {
 		bounds <- matrix(rep(range(0, 1), nvars), nrow=2)
 	}
 	
 	if (is.null(names)) {
-		names <- mordm.defaultnames(nvars, nobjs, nconstrs)
+		names <- mordm.generate.names(nvars, nobjs, nconstrs)
 	} else if (length(names) == nobjs+nconstrs) {
-		names <- append(mordm.defaultnames(nvars, 0, 0), names)
+		names <- append(mordm.generate.names(nvars, 0, 0), names)
 	} else if (length(names) == nobjs) {
-		names <- append(mordm.defaultnames(nvars, 0, 0), append(names, mordm.defaultnames(0, 0, nconstrs)))
+		names <- append(mordm.generate.names(nvars, 0, 0), append(names, mordm.generate.names(0, 0, nconstrs)))
 	} else if (length(names) == nvars + nobjs) {
-		names <- append(names, mordm.defaultnames(0, 0, nconstrs))
+		names <- append(names, mordm.generate.names(0, 0, nconstrs))
 	} else if (length(names) != nvars + nobjs + nconstrs) {
 		warning("Incorrect number of names, using defaults")
-		names <- mordm.defaultnames(nvars, nobjs, nconstrs)
+		names <- mordm.generate.names(nvars, nobjs, nconstrs)
 	}
 	
 	if (is.null(epsilons)) {
@@ -102,7 +102,7 @@ adjust.command <- function(command) {
 #' The Borg MOEA is free and open for non-commercial users.  Source code can
 #' be obtained from \url{http://borgmoea.org}.
 #' 
-#' @param problem the problem setup
+#' @param problem the problem definition
 #' @param NFE the maximum number of function evaluations
 #' @param ... optional parameters passed to the underlying methods
 #' @export
@@ -130,7 +130,7 @@ borg.optimize <- function(problem, NFE, ...) {
 #' The Borg MOEA is free and open for non-commercial users.  Source code can
 #' be obtained from \url{http://borgmoea.org}.
 #' 
-#' @param problem the problem setup
+#' @param problem the problem definition
 #' @param NFE the maximum number of function evaluations
 #' @param ... additional arguments for setting algorithm parameters
 #' @export
@@ -158,7 +158,7 @@ borg.optimize.function <- function(problem, NFE, ...) {
 #' The Borg MOEA is free and open for non-commercial users.  Source code can
 #' be obtained from \url{http://borgmoea.org}.
 #' 
-#' @param problem the problem setup
+#' @param problem the problem definition
 #' @param NFE the maximum number of function evaluations
 #' @param executable the path the the optimization executable
 #' @param output the location where the runtime output is stored
@@ -636,7 +636,7 @@ sensitivity.levels <- function(problem, nsamples, method) {
 #' @export
 #' @importFrom boot boot
 #' @importFrom boot boot.ci
-sensitivity <- function(problem, objective, nsamples, method="fast99", verbose=FALSE, plot=FALSE, raw=FALSE, collapse=TRUE, ...) {
+compute.sensitivity <- function(problem, objective, nsamples, method="fast99", verbose=FALSE, plot=FALSE, raw=FALSE, collapse=TRUE, ...) {
 	varargs <- list(...)
 	
 	n <- sensitivity.levels(problem, nsamples, method)

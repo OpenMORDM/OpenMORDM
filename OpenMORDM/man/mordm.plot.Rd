@@ -8,7 +8,7 @@ mordm.plot(data, mark = NULL, index = -1, objectives = NULL,
   ideal = FALSE, selection = NULL, selection.enlarge = FALSE,
   xlim = NULL, ylim = NULL, zlim = NULL, slim = NULL, window = NULL,
   alpha = 1, tick.size = 1, label.size = 1.2, label.line = 1,
-  radius.scale = 1, bg = "white", fg = "black", ...)
+  radius.scale = 1, bg = "white", fg = "black", exploring = FALSE, ...)
 }
 \arguments{
 \item{data}{the data set to be displayed (if data is a time series, then the
@@ -17,7 +17,7 @@ last entry in the time series is displayed)}
 \item{mark}{a list of the markings to be displayed}
 
 \item{index}{if data is a time series, controls which entries to display
-(see \code{\link{mordm.getset}} for details)}
+(see \code{\link{mordm.get.set}} for details)}
 
 \item{objectives}{vector specifying the objectives to be plotted on the
 x, y, z, size, and color axes}
@@ -61,6 +61,9 @@ renders a transparent cube around the selected point}
 \item{bg}{background color}
 
 \item{fg}{foreground color}
+
+\item{exploring}{set to TRUE if being called from explore(...) method
+to properly open null devices}
 
 \item{...}{additional options passed to \code{\link{plot3d}}}
 }

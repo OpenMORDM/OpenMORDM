@@ -59,6 +59,7 @@ Note: The latest versions of RGL appear to have a bug in `rgl.setMouseCallbacks`
 5. Run `R CMD check --preclean --force-biarch C:/path/to/openmordm/OpenMORDM`
 6. Run `R CMD build C:/path/to/openmordm/OpenMORDM`
 7. Alternatively, upload to [win-builder.r-project.org](win-builder.r-project.org) to build a binary package
+8. Run `R CMD Rd2pdf C:/path/to/openmordm/OpenMORDM` to generate a single PDF containing the documentation
 
 ### Troubleshooting ###
 * Linux users may need to run R with admin permissions when installing: `sudo R`

@@ -54,7 +54,7 @@ lhs,
 rdyncall\cr
 Suggests: \tab 
 gdata\cr
-Built: \tab R 3.1.1; ; 2015-01-28 19:25:05 UTC; windows\cr
+Built: \tab R 3.1.1; ; 2015-05-07 20:21:56 UTC; windows\cr
 }
 
 Index:
@@ -62,6 +62,12 @@ Index:
 OpenMORDM-package       A library for multiobjective robust decision
                         making (MORDM) and visualizing high-dimensional
                         datasets.
+adjust.command          Prepends a ./ to commands on non-Windows
+                        systems.
+analyze.cart            Determines the vulernabilities due to deep
+                        uncertainties using Classification and
+                        Regression Trees (CART).
+analyze.prim            Patient rule induction method.
 borg.optimize           Optimize the problem using the Borg MOEA.
 borg.optimize.external
                         Optimize the problem using the Borg standalone
@@ -70,6 +76,14 @@ borg.optimize.function
                         Optimize a problem using the Borg shared
                         library (borg.dll or libborg.so).
 check.robustness        Computes the robustness metric.
+compute.robustness      Computes robustness under deep
+                        compute.robustness.
+compute.robustness.guassian
+                        Computes robustness under well-characterized
+                        compute.robustness (i.e., Gaussian noise).
+compute.sensitivity     Standardized interface for sensitivity analysis
+                        methods.
+define.problem          Define a new problem formulation.
 deltafast               Fast version of Plischke's delta-moment
                         sensitivity analysis method.
 deltamim                Plischke's delta-moment sensitivity analysis
@@ -81,11 +95,6 @@ explore                 A web-based tool (powered by Shiny) for
 lhsample                Generate Latin Hypercube sampled random inputs.
 mordm.animate           Animates the time series in a GIF.
 mordm.as.data.frame     Converts a data set into a data frame.
-mordm.attributes        Extracts the common attributes from the time
-                        series data.
-mordm.cart              Determines the vulernabilities due to deep
-                        uncertainties using Classification and
-                        Regression Trees (CART).
 mordm.cbind             Adds extra colums to the end of a data set.
 mordm.colorize          Returns a vector of colors to be used when
                         plotting a data set.
@@ -93,8 +102,15 @@ mordm.correlation       Displays the correlations among pairwise
                         factors.
 mordm.differences       Identifies key similarities/differences between
                         two sets.
-mordm.getset            Returns the individual data set entry to be
+mordm.evaluate.uncertainties
+                        Computes robustness under deep
+                        compute.robustness.
+mordm.extract.attributes
+                        Extracts the common attributes from the time
+                        series data.
+mordm.get.set           Returns the individual data set entry to be
                         analyzed.
+mordm.get.subset        Returns a subset of a data set.
 mordm.identify          Identify and highlight points using the middle
                         mouse button.
 mordm.mark.box          Creates a marking rule from PRIM boxes.
@@ -112,14 +128,13 @@ mordm.mark.union        Computes the union of two markings.
 mordm.normalize         Normalizes the objectives.
 mordm.plot              Sets the current data set and displays a 3D
                         scatter plot.
-mordm.plotbox           Display plot of PRIM boxes.
-mordm.plotmark          Display the markings in a box plot (candle
+mordm.plot.box          Display plot of PRIM boxes.
+mordm.plot.markings     Display the markings in a box plot (candle
                         stick plot).
-mordm.plotops           Plot operator probabilities.
-mordm.plotpar           Display a parallel plot of the current data
+mordm.plot.operators    Plot operator probabilities.
+mordm.plot.parallel     Display a parallel plot of the current data
                         set.
-mordm.prim              Patient rule induction method.
-mordm.printbox          Print descriptive representation of PRIM boxes.
+mordm.print.box         Print descriptive representation of PRIM boxes.
 mordm.rbind             Adds extra rows to the end of a data set.
 mordm.read              Loads the time series data output from an
                         optimization algorithm.
@@ -128,17 +143,15 @@ mordm.read.matrix       Loads a data set stored in a matrix or
                         data.frame.
 mordm.read.xls          Loads a data set stored in a XLS or XLSX file.
 mordm.recommend         Make recommendations for analyzing the data.
-mordm.robustness        Computes robustness under uncertainty.
+mordm.sample.uncertainties
+                        Computes robustness under deep
+                        compute.robustness.
 mordm.select            Returns the subset of rows that are marked.
 mordm.select.indices    Returns the row indices in the data set that
                         are marked.
-mordm.sensitivity       Computes the sensitivities of the decision
+mordm.variable.sensitivities
+                        Computes the sensitivities of the decision
                         variables.
-mordm.subset            Returns a subset of a data set.
-mordm.uncertainty.evaluate
-                        Computes robustness under deep uncertainty.
-mordm.uncertainty.sample
-                        Computes robustness under deep uncertainty.
 mordm.weight            Computes a vector of weighted preferences
 nsample                 Generate normally distributed random inputs.
 robustness.constraints
@@ -151,12 +164,8 @@ robustness.gap          Experimental robustness metric based on info
 robustness.variance     Robustness metric based on variance.
 runVisDemo              Runs the exploration tool on a 5-objective
                         problem.
-sensitivity             Standardized interface for sensitivity analysis
-                        methods.
 sensitivity.levels      Determines number of replicates for sensitivity
                         analysis.
-setup                   Setup a new problem formulation.
-uncertainty             Computes robustness under deep uncertainty.
 usample                 Generate uniformly distributed random inputs.
 }
 }

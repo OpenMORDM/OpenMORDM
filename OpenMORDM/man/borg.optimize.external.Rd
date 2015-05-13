@@ -8,7 +8,7 @@ borg.optimize.external(problem, NFE, executable = "./borg.exe",
   verbose = TRUE)
 }
 \arguments{
-\item{problem}{the problem setup}
+\item{problem}{the problem definition}
 
 \item{NFE}{the maximum number of function evaluations}
 

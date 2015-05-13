@@ -32,7 +32,7 @@
 #' @param nobjs the number of objectives
 #' @param nconstrs the number of constraints
 #' @keywords internal
-mordm.defaultnames <- function(nvars, nobjs, nconstrs=0) {
+mordm.generate.names <- function(nvars, nobjs, nconstrs=0) {
 	names <- vector()
 	
 	if (nvars > 0) {
@@ -132,15 +132,15 @@ mordm.read.matrix <- function(mat, nvars=NULL, nobjs=NULL, bounds=NULL, maximize
 	# Provide actual column names
 	if (is.null(names)) {
 		if (is.null(colnames(entry))) {
-			names <- mordm.defaultnames(nvars, nobjs)
+			names <- mordm.generate.names(nvars, nobjs)
 		} else {
 			names <- colnames(entry)
 		}
 	} else if (length(names) == nobjs) {
-		names <- append(mordm.defaultnames(nvars, 0), names)
+		names <- append(mordm.generate.names(nvars, 0), names)
 	} else if (length(names) != nvars + nobjs) {
 		warning("Incorrect number of names, using defaults")
-		names <- mordm.defaultnames(nvars, nobjs)
+		names <- mordm.generate.names(nvars, nobjs)
 	}
 	
 	colnames(entry) <- names
@@ -273,7 +273,7 @@ mordm.read <- function(file, nvars, nobjs, nconstrs=0, bounds=NULL, names=NULL, 
 	attributes <- vector()
 	result <- list()
 	
-	# Read arguments from mop class created by setup method
+	# Read arguments from mop class created by define.problem method
 	if (class(nvars) == "mop") {
 		problem <- nvars
 		nvars <- problem$nvars
@@ -285,14 +285,14 @@ mordm.read <- function(file, nvars, nobjs, nconstrs=0, bounds=NULL, names=NULL, 
 	}
 	
 	if (is.null(names)) {
-		names <- mordm.defaultnames(nvars, nobjs)
+		names <- mordm.generate.names(nvars, nobjs)
 	} else if (length(names) == nobjs) {
-		names <- append(mordm.defaultnames(nvars, 0), names)
+		names <- append(mordm.generate.names(nvars, 0), names)
 	} else if (length(names) == nvars + nobjs + nconstrs) {
 		names <- names[1:(length(names)-nconstrs)]
 	} else if (length(names) != nvars + nobjs) {
 		warning("Incorrect number of names, using defaults")
-		names <- mordm.defaultnames(nvars, nobjs)
+		names <- mordm.generate.names(nvars, nobjs)
 	}
 	
 	for (line in text) {
@@ -386,7 +386,7 @@ mordm.normalize <- function(data, maximize) {
 #' data and returns them in a matrix.
 #' 
 #' @param data the time series data
-mordm.attributes <- function(data) {
+mordm.extract.attributes <- function(data) {
 	names <- c("NFE", "ElapsedTime", "SBX", "DE", "PCX", "SPX", "UNDX", "UM", "Improvements", "Restarts", "PopulationSize", "ArchiveSize")
 	result <- matrix(nrow=length(data), ncol=length(names))
 	
@@ -505,7 +505,7 @@ mordm.colorize <- function(set, objectives, mark=NULL, palette=NULL, n=100, offs
 #' @param line.width the width of lines
 #' @param selection.scale the 
 #' @export
-mordm.plotpar <- function(highlight=NULL, alpha=0.4, label.size=1, line.width=1, selection.scale=2) {
+mordm.plot.parallel <- function(highlight=NULL, alpha=0.4, label.size=1, line.width=1, selection.scale=2) {
 	set <- get("current.set", mordm.globals)
 	objectives <- get("current.objectives", mordm.globals)
 	mark <- get("current.mark", mordm.globals)
@@ -550,7 +550,7 @@ mordm.plotpar <- function(highlight=NULL, alpha=0.4, label.size=1, line.width=1,
 #' 
 #' @param highlight highlight vector of row indices to be highlighted in the plot
 #' @export
-mordm.plotmark <- function(highlight=NULL) {
+mordm.plot.markings <- function(highlight=NULL) {
 	set <- get("current.set", mordm.globals)
 	mark <- get("current.mark", mordm.globals)
 	colors <- get("current.colors", mordm.globals)
@@ -628,7 +628,7 @@ mordm.plotmark <- function(highlight=NULL) {
 #'        last entry in the time series is displayed)
 #' @param mark a list of the markings to be displayed
 #' @param index if data is a time series, controls which entries to display
-#'        (see \code{\link{mordm.getset}} for details)
+#'        (see \code{\link{mordm.get.set}} for details)
 #' @param objectives vector specifying the objectives to be plotted on the
 #'        x, y, z, size, and color axes
 #' @param stay forces the 3D scatter plot to stay on top of other windows
@@ -657,7 +657,7 @@ mordm.plotmark <- function(highlight=NULL) {
 #' @param ... additional options passed to \code{\link{plot3d}}
 #' @export
 mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, identify=TRUE, colors=NULL, clim=NULL, ideal=FALSE, selection=NULL, selection.enlarge=FALSE, xlim=NULL, ylim=NULL, zlim=NULL, slim=NULL, window=NULL, alpha=1, tick.size=1, label.size=1.2, label.line=1, radius.scale=1, bg="white", fg="black", exploring=FALSE, ...) {
-	set <- mordm.getset(data, index)
+	set <- mordm.get.set(data, index)
 	nvars <- attr(data, "nvars")
 	nobjs <- attr(data, "nobjs")
 	factors <- attr(data, "factors")
@@ -914,9 +914,9 @@ mordm.identify <- function(enabled=TRUE, label=FALSE) {
 			
 			if (exists("current.plot", mordm.globals)) {
 				if (get("current.plot", mordm.globals) == "parallel") {
-					mordm.plotpar(highlight=i[1])
+					mordm.plot.parallel(highlight=i[1])
 				} else if (get("current.plot", mordm.globals) == "mark") {
-					mordm.plotmark(highlight=i[1])
+					mordm.plot.markings(highlight=i[1])
 				}
 			}
 		})
@@ -940,10 +940,10 @@ mordm.identify <- function(enabled=TRUE, label=FALSE) {
 #'        improvements
 #' @param current draw a line at the current time
 #' @export
-mordm.plotops <- function(data, time=FALSE, improvements=FALSE, log=FALSE, improvement.nfe=1000, current=NULL) {
+mordm.plot.operators <- function(data, time=FALSE, improvements=FALSE, log=FALSE, improvement.nfe=1000, current=NULL) {
 	names <- c("SBX", "DE", "PCX", "SPX", "UNDX", "UM")
 	colors <- c("cyan", "red", "blue", "green", "orange", "purple")
-	attributes <- mordm.attributes(data)
+	attributes <- mordm.extract.attributes(data)
 	
 	# reset plot settings
 	if (exists("default.par", mordm.globals)) {
@@ -1012,7 +1012,7 @@ mordm.plotops <- function(data, time=FALSE, improvements=FALSE, log=FALSE, impro
 	}
 	
 	if (!is.null(current)) {
-		value <- attr(mordm.getset(data, current), ifelse(time, "ElapsedTime", "NFE"))
+		value <- attr(mordm.get.set(data, current), ifelse(time, "ElapsedTime", "NFE"))
 		segments(value, 0, value, 100)
 	}
 	
@@ -1033,7 +1033,7 @@ mordm.plotops <- function(data, time=FALSE, improvements=FALSE, log=FALSE, impro
 #' @param objectives only compute correlations between objectives
 #' @export
 mordm.correlation <- function(data, ht=0.75, lt=0.25, all=FALSE, objectives=FALSE) {
-	set <- mordm.getset(data)
+	set <- mordm.get.set(data)
 	nvars <- attr(set, "nvars")
 	nobjs <- attr(set, "nobjs")
 	names <- colnames(set)
@@ -1210,7 +1210,7 @@ mordm.mark.selection <- function() {
 #' PRIM identifies one or more boxes.  This method converts from the PRIM box
 #' representation to a marking.
 #' 
-#' @param box the box generated by \code{\link{mordm.prim}}
+#' @param box the box generated by \code{\link{analyze.prim}}
 #' @param mean the mean of the box
 #' @param mass the mass of the box
 #' @export
@@ -1345,7 +1345,7 @@ mordm.mark.not <- function(rule) {
 #' @param index if \code{data} is a time series, specifies which entry to
 #'        return (default is the last entry)
 #' @export
-mordm.getset <- function(data, index=-1) {
+mordm.get.set <- function(data, index=-1) {
 	if (is.matrix(data) || is.data.frame(data)) {
 		set <- data
 	} else {
@@ -1368,12 +1368,12 @@ mordm.getset <- function(data, index=-1) {
 #'        last entry in the time series is displayed)
 #' @param marking list of markings
 #' @param index if data is a time series, controls which entries to display
-#'        (see \code{\link{mordm.getset}} for details)
+#'        (see \code{\link{mordm.get.set}} for details)
 #' @param not DEPRECATED
 #' @param or DEPRECATED
 #' @export
 mordm.select <- function(data, marking, index=-1, not=FALSE, or=FALSE) {
-	set <- mordm.getset(data, index)
+	set <- mordm.get.set(data, index)
 	subset <- set[mordm.select.indices(set, marking, not, or),]
 	attr(subset, "nvars") <- attr(set, "nvars")
 	attr(subset, "nobjs") <- attr(set, "nobjs")
@@ -1390,7 +1390,7 @@ mordm.select <- function(data, marking, index=-1, not=FALSE, or=FALSE) {
 #' @param columns the columns to retain
 #' @param rows the rows to retain
 #' @export
-mordm.subset <- function(set, columns=1:ncol(set), rows=1:nrow(set)) {
+mordm.get.subset <- function(set, columns=1:ncol(set), rows=1:nrow(set)) {
 	nvars <- attr(set, "nvars")
 	nobjs <- attr(set, "nobjs")
 	maximize <- attr(set, "maximize")
@@ -1628,7 +1628,8 @@ mordm.differences <- function(set1, set2, scale=TRUE, decreasing=TRUE, splits=20
 	}
 }
 
-#' Patient rule induction method.
+#' Patient rule induction method.  This is a more general method than
+#' \code{analyze.prim}, which only works on deeply-uncertain factor parameterization.
 #' 
 #' Performs the patient rule induction method (PRIM) to identify boxes in input
 #' space that correlate with data exceeding a given threshold.
@@ -1644,7 +1645,7 @@ mordm.differences <- function(set1, set2, scale=TRUE, decreasing=TRUE, splits=20
 #' @param ... optional arguments passed to \code{\link{prim.box}}
 #' @export
 mordm.prim <- function(data, objective, minimize=TRUE, percentages=FALSE, expand=TRUE, ...) {
-	set <- mordm.getset(data)
+	set <- mordm.get.set(data)
 	nvars <- attr(set, "nvars")
 	varargs <- list(...)
 	
@@ -1754,7 +1755,7 @@ mordm.prim <- function(data, objective, minimize=TRUE, percentages=FALSE, expand
 #' @param digits number of digits to round numbers
 #' @param indent character string prepended to each line
 #' @export
-mordm.printbox <- function(data, mark, threshold=0.01, digits=3, indent="") {
+mordm.print.box <- function(data, mark, threshold=0.01, digits=3, indent="") {
 	bounds <- attr(data, "bounds")
 	box <- attr(mark, "box")
 	
@@ -1885,7 +1886,7 @@ mordm.printbox <- function(data, mark, threshold=0.01, digits=3, indent="") {
 #' @param legend if \code{TRUE}, renders a legend on the plot
 #' @param defaults draw horizontal lines to show default values
 #' @export
-mordm.plotbox <- function(data, mark, main="PRIM Box", scale.width=TRUE, bar.width=3, col=NULL, names=NULL, legend=TRUE, defaults=NULL) {
+mordm.plot.box <- function(data, mark, main="PRIM Box", scale.width=TRUE, bar.width=3, col=NULL, names=NULL, legend=TRUE, defaults=NULL) {
 	nvars <- attr(data, "nvars")
 	bounds <- attr(data, "bounds")
 
@@ -2003,7 +2004,7 @@ mordm.plotbox <- function(data, mark, main="PRIM Box", scale.width=TRUE, bar.wid
 #' @param data the data set to be analyzed
 #' @export
 mordm.recommend <- function(data) {
-	set <- mordm.getset(data)
+	set <- mordm.get.set(data)
 	nvars <- attr(set, "nvars")
 	nobjs <- attr(set, "nobjs")
 	names <- colnames(set)
@@ -2176,13 +2177,13 @@ mordm.animate <- function(data, output="animation.gif", indices=1:length(data), 
 #' @param data the data set
 #' @param objective the objective index, column name, function, or marking
 #' @param index if data is a time series, controls which entries to display
-#'        (see \code{\link{mordm.getset}} for details) 
+#'        (see \code{\link{mordm.get.set}} for details) 
 #' @param all if \code{TRUE}, include all points from all entries in the time
 #'        series; otherwise, only the last entry is included
 #' @param ... additional options for Plischke's method
 #' @export
-mordm.sensitivity <- function(data, objective, index=-1, all=FALSE, ...) {
-	set <- mordm.getset(data, index)
+mordm.variable.sensitivities <- function(data, objective, index=-1, all=FALSE, ...) {
+	set <- mordm.get.set(data, index)
 	nvars <- attr(set, "nvars")
 	nobjs <- attr(set, "nobjs")
 	names <- colnames(set)
@@ -2191,7 +2192,7 @@ mordm.sensitivity <- function(data, objective, index=-1, all=FALSE, ...) {
 	if (all) {
 		if (length(data) > 1) {
 			for (i in seq(length(data)-1, 1, -1)) {
-				set <- rbind(set, mordm.getset(data, i))
+				set <- rbind(set, mordm.get.set(data, i))
 			}
 		}
 	}
@@ -2230,12 +2231,12 @@ mordm.sensitivity <- function(data, objective, index=-1, all=FALSE, ...) {
 	do.call(deltamim, c(list(x, y), varargs))
 }
 
-#' Computes robustness under uncertainty.
+#' Computes robustness under well-characterized compute.robustness (i.e., Gaussian noise).
 #' 
 #' Adds Gaussian noise to the decision variables and resamples the model output.
 #' Then computes one or more robustness metrics.
 #' 
-#' This method is equivalent to \code{\link{mordm.uncertainty}} using a single
+#' This method is equivalent to \code{\link{mordm.compute.robustness}} using a single
 #' model.
 #' 
 #' @param data the data set
@@ -2247,8 +2248,8 @@ mordm.sensitivity <- function(data, objective, index=-1, all=FALSE, ...) {
 #'        \code{\link{check.robustness}} for available options)
 #' @param verbose display additional information
 #' @export
-mordm.robustness <- function(data, sd, nsamples, problem, method="default", verbose=TRUE) {
-	set <- mordm.getset(data)
+compute.robustness.guassian <- function(data, sd, nsamples, problem, method="default", verbose=TRUE) {
+	set <- mordm.get.set(data)
 	set <- set[,1:problem$nvars,drop=FALSE]
 	
 	t(sapply(1:nrow(set), function(i) {
@@ -2267,12 +2268,12 @@ mordm.robustness <- function(data, sd, nsamples, problem, method="default", verb
 	}))
 }
 
-#' Computes robustness under deep uncertainty.
+#' Computes robustness under deep compute.robustness.
 #' 
 #' Adds Gaussian noise to the decision variables and resamples the model output.
 #' The samples are distributed across one or more different models for the
 #' problem.  The result from this method should be passed to 
-#' \code{mordm.uncertainty.evaluate} to compute the robustness metrics.
+#' \code{mordm.evaluate.uncertainties} to compute the robustness metrics.
 #' 
 #' If multiple models are provided, it is assumed that all models have the same
 #' inputs and outputs; they would only differ in the internal calculcations
@@ -2280,12 +2281,12 @@ mordm.robustness <- function(data, sd, nsamples, problem, method="default", verb
 #' 
 #' @param data the data set
 #' @param nsamples the number of samples to generate for each point
-#' @param models the problem formulations created using \code{setup}
+#' @param models the problem formulations created using \code{define.problem}
 #' @param sd scalar or vector specifying the standard deviation for each
 #'        decision variable
 #' @param verbose display additional information
 #' @export
-mordm.uncertainty.sample <- function(data, nsamples, models, sd=0, verbose=TRUE) {
+mordm.sample.uncertainties <- function(data, nsamples, models, sd=0, verbose=TRUE) {
 	if (!is.list(models)) {
 		models <- list(models)
 	}
@@ -2315,7 +2316,7 @@ mordm.uncertainty.sample <- function(data, nsamples, models, sd=0, verbose=TRUE)
 		}
 	}
 	
-	set.orig <- mordm.getset(data)
+	set.orig <- mordm.get.set(data)
 	set <- set.orig[,1:nvars,drop=FALSE]
 	
 	# simple way to figure how many samples to draw from each model
@@ -2348,7 +2349,7 @@ mordm.uncertainty.sample <- function(data, nsamples, models, sd=0, verbose=TRUE)
 		samples
 	})
 	
-	class(result) <- "uncertainty.samples"
+	class(result) <- "compute.robustness.samples"
 	attr(result, "nsamples") <- nsamples
 	attr(result, "models") <- models
 	attr(result, "nvars") <- nvars
@@ -2358,16 +2359,16 @@ mordm.uncertainty.sample <- function(data, nsamples, models, sd=0, verbose=TRUE)
 	result
 }
 
-#' Computes robustness under deep uncertainty.
+#' Computes robustness under deep compute.robustness.
 #' 
-#' @param samples the samples generated by \code{mordm.uncertainty.sample}
+#' @param samples the samples generated by \code{mordm.sample.uncertainties}
 #' @param satisficing.fcn the satisficing function for computing the two
 #'        satisficing robustness metrics
-#' @param factors matrix of the original uncertainty factors for use by
+#' @param factors matrix of the original compute.robustness factors for use by
 #'        Satisficing Type II
 #' @param custom.fcn custom robustness function
 #' @export
-mordm.uncertainty.evaluate <- function(samples, satisficing.fcn=NULL, factors=NULL, custom.fcn=NULL) {
+mordm.evaluate.uncertainties <- function(samples, satisficing.fcn=NULL, factors=NULL, custom.fcn=NULL) {
 	set.orig <- attr(samples, "set.orig")
 	models <- attr(samples, "models")
 	
@@ -2502,12 +2503,12 @@ mordm.uncertainty.evaluate <- function(samples, satisficing.fcn=NULL, factors=NU
 	result
 }
 
-#' Computes robustness under deep uncertainty.
+#' Computes robustness under deep compute.robustness.
 #' 
 #' Adds Gaussian noise to the decision variables and resamples the model output.
 #' The samples are distributed across one or more different models for the
 #' problem.  The result from this method should be passed to 
-#' \code{mordm.uncertainty.evaluate} to compute the robustness metrics.
+#' \code{mordm.evaluate.uncertainties} to compute the robustness metrics.
 #' 
 #' If multiple models are provided, it is assumed that all models have the same
 #' inputs and outputs; they would only differ in the internal calculcations
@@ -2515,131 +2516,19 @@ mordm.uncertainty.evaluate <- function(samples, satisficing.fcn=NULL, factors=NU
 #' 
 #' @param data the data set
 #' @param nsamples the number of samples to generate for each point
-#' @param models the problem formulations created using \code{setup}
+#' @param models the problem formulations created using \code{define.problem}
 #' @param sd scalar or vector specifying the standard deviation for each
 #'        decision variable
 #' @param verbose display additional information
 #' @param satisficing.fcn the satisficing function for computing the two
 #'        satisficing robustness metrics
-#' @param factors matrix of the original uncertainty factors for use by
+#' @param factors matrix of the original compute.robustness factors for use by
 #'        Satisficing Type II
 #' @param custom.fcn custom robustness function
 #' @export
-uncertainty <- function(data, nsamples, models, sd=0, verbose=TRUE, satisficing.fcn=NULL, factors=NULL, custom.fcn=NULL) {
-	samples <- mordm.uncertainty.sample(data, nsamples, models, sd=sd, verbose=verbose)
-	mordm.uncertainty.evaluate(samples, satisficing.fcn=satisficing.fcn, factors=factors, custom.fcn=custom.fcn)
-}
-
-#' This is the old uncertainty function, no longer used.
-#' @keywords internal
-mordm.uncertainty <- function(data, nsamples, models, sd=0, base.model=NULL, method="default", verbose=TRUE) {
-	if (!is.list(models)) {
-		models <- list(models)
-	}
-	
-	# sanity check to ensure all models are valid
-	if (length(models) == 0) {
-		stop("At least one model must be provided")
-	}
-	
-	for (j in 1:length(models)) {
-		if (j == 1) {
-			nvars <- models[[j]]$nvars
-			nobjs <- models[[j]]$nobjs
-			nconstrs <- models[[j]]$nconstrs
-		} else {
-			if (nvars != models[[j]]$nvars) {
-				stop("All models must have the same number of decision variables")
-			}
-			
-			if (nobjs != models[[j]]$nobjs) {
-				stop("All models must have the same number of objectives")
-			}
-			
-			if (nconstrs != models[[j]]$nconstrs) {
-				stop("All models must have the same number of constraints")
-			}
-		}
-	}
-	
-	if (is.null(base.model)) {
-		base.model <- models[[1]]
-	}
-	
-	set.orig <- mordm.getset(data)
-	set <- set.orig[,1:base.model$nvars,drop=FALSE]
-	
-	# simple way to figure how many samples to draw from each model
-	indices <- (0:(nsamples-1) %% length(models))+1
-	
-	if (is.null(method)) {
-		# if no robustsness method specified, return raw data
-		lapply(1:nrow(set), function(i) {
-			if (verbose && nrow(set) > 1) {
-				cat("\r")
-				cat(i)
-				cat(" of ")
-				cat(nrow(set))
-			}
-			
-			for (j in 1:length(models)) {
-				qty <- sum(indices == j)
-				temp <- nsample(set[i,], sd, qty, models[[j]])
-				
-				if (j == 1) {
-					samples <- temp
-				} else {
-					samples$vars <- rbind(samples$vars, temp$vars)
-					samples$objs <- rbind(samples$objs, temp$objs)
-					
-					if (!is.null(samples$constrs)) {
-						samples$constrs <- rbind(samples$constrs, temp$constrs)
-					}
-				}
-			}
-			
-			samples
-		})
-	} else {
-		# otherwise, calculate the robustness for each set
-		t(sapply(1:nrow(set), function(i) {
-			if (verbose && nrow(set) > 1) {
-				cat("\r")
-				cat(i)
-				cat(" of ")
-				cat(nrow(set))
-			}
-			
-			for (j in 1:length(models)) {
-				qty <- sum(indices == j)
-				temp <- nsample(set[i,], sd, qty, models[[j]])
-				
-				if (j == 1) {
-					samples <- temp
-				} else {
-					samples$vars <- rbind(samples$vars, temp$vars)
-					samples$objs <- rbind(samples$objs, temp$objs)
-					
-					if (!is.null(samples$constrs)) {
-						samples$constrs <- rbind(samples$constrs, temp$constrs)
-					}
-				}
-			}
-			
-			original.point <- list()
-			original.point$vars <- set.orig[i,1:base.model$nvars,drop=FALSE]
-			original.point$objs <- set.orig[i,(base.model$nvars+1):(base.model$nvars+base.model$nobjs),drop=FALSE]
-			
-			if (base.model$nconstrs > 0) {
-				original.point$constrs <- matrix(0, nrow=1, ncol=base.model$nconstrs)
-				#original.point$constrs <- set.orig[i,(base.model$nvars+base.model$nobjs+1):(base.model$nvars+base.model$nobjs+base.model$nconstrs),drop=FALSE]
-			}
-			
-			sapply(unlist(list(method)), function(m) {
-				check.robustness(samples, base.model, verbose=FALSE, method=m, original.point=original.point)
-			})
-		}))
-	}
+compute.robustness <- function(data, nsamples, models, sd=0, verbose=TRUE, satisficing.fcn=NULL, factors=NULL, custom.fcn=NULL) {
+	samples <- mordm.sample.uncertainties(data, nsamples, models, sd=sd, verbose=verbose)
+	mordm.evaluate.uncertainties(samples, satisficing.fcn=satisficing.fcn, factors=factors, custom.fcn=custom.fcn)
 }
 
 #' Computes a vector of weighted preferences
@@ -2648,7 +2537,7 @@ mordm.uncertainty <- function(data, nsamples, models, sd=0, base.model=NULL, met
 #' @param weights the vector of weights
 #' @export
 mordm.weight <- function(data, weights) {
-	set <- mordm.getset(data)
+	set <- mordm.get.set(data)
 	nvars <- attr(set, "nvars")
 	nobjs <- attr(set, "nobjs")
 	maximize <- attr(set, "maximize")
@@ -2670,31 +2559,89 @@ mordm.weight <- function(data, weights) {
 #' Determines the vulernabilities due to deep uncertainties using the Patient
 #' Rule Induction Method (PRIM).
 #' 
+#' This method supports both the \code{prim.box} command from the \code{prim}
+#' package and the \code{sdprim} command from the \code{sdtoolkit}.  \code{prim.box}
+#' is used by default, but can be changed to \code{sdprim} by setting \code{method="sdprim"}.
+#' Note that this will require \code{sdtoolkit} to be installed.
+#' 
+#' We have experienced errors while trying to run sdtoolkit.  We found that using
+#' version 2.31 or before works best.  In addition, sdtoolkit tends to crash RStudio.
+#' We recommend running this command from a console.
+#' 
 #' @param factors the sampled deeply uncertain parameterizations
 #' @param response vector of responses whose length equals the number of factors
 #' @param bounds bounds of the sampled uncertainties
 #' @param which.box index of the PRIM box to plot
 #' @param show.plot if TRUE, generates a plot representing the PRIM box
+#' @param 
 #' @param ... optional parameters passed to prim.box
+#' @
 #' @export
-mordm.prim <- function(factors, response, bounds=NULL, which.box=1, show.plot=TRUE, ...) {
-	box <- prim.box(factors, response, ...)
-	
-	marks <- lapply(1:box$num.hdr.class, function(i) {
-		i <- eval(i)
-		colnames(box$box[[i]]) <- colnames(factors)
-		mordm.mark.box(box$box[[i]], box$y.fun[i], box$mass[i])
-	})
-	
-	if (is.null(bounds)) {
-		bounds <- apply(factors, 2, range)
+analyze.prim <- function(factors, response, bounds=NULL, which.box=1, show.plot=TRUE, method="prim", ...) {
+	if (method == "prim") {
+		box <- prim.box(factors, response, ...)
+		
+		marks <- lapply(1:box$num.hdr.class, function(i) {
+			i <- eval(i)
+			colnames(box$box[[i]]) <- colnames(factors)
+			mordm.mark.box(box$box[[i]], box$y.fun[i], box$mass[i])
+		})
+		
+		if (is.null(bounds)) {
+			bounds <- apply(factors, 2, range)
+		}
+		
+		dummy.data <- list()
+		attr(dummy.data, "nvars") <- ncol(factors)
+		attr(dummy.data, "bounds") <- bounds
+		mordm.plot.box(dummy.data, marks[[which.box]])
+		
+		# compute density and coverage of the box
+		varargs <- list(...)
+		
+		if (is.null(varargs$threshold.type) || varargs$threshold.type==0) {
+			
+		} else if (varargs$threshold.type == -1) {
+			threshold <- mean(response)
+			total.interesting = sum(response <= threshold)
+			
+			captured.indices <- mordm.select.indices(factors, mordm.mark.union(marks))
+			captured.interesting = sum(response[captured.indices] <= threshold)
+			
+			cat("Coverage: ")
+			cat(captured.interesting / total.interesting)
+			cat("\n")
+			cat("Density: ")
+			cat(captured.interesting / length(captured.indices))
+			cat("\n")
+		} else {
+			threshold <- mean(response)
+			total.interesting = sum(response >= threshold)
+			
+			captured.indices <- mordm.select.indices(factors, mordm.mark.union(marks))
+			captured.interesting = sum(response[captured.indices] >= threshold)
+			
+			cat("Coverage: ")
+			cat(captured.interesting / total.interesting)
+			cat("\n")
+			cat("Density: ")
+			cat(captured.interesting / length(captured.indices))
+			cat("\n")
+		}
+		
+		invisible(marks)
+	} else if (method == "sdprim") {
+		if (packageVersion("sdtoolkit") > '2.31') {
+			warning("Newer version of sdtoolkit have known errors.  Please use version 2.31 or before.")
+		} else if (Sys.getenv("RSTUDIO") == "1") {
+			warning("sdtoolkit often causes RStudio to crash.  Please run PRIM from the console.")
+		}
+		
+		require(sdtoolkit)
+		sdprim(factors, response, ...)
+	} else {
+		warning("Unknown PRIM method, must be 'prim' or 'sdprim'")
 	}
-	
-	dummy.data <- list()
-	attr(dummy.data, "nvars") <- ncol(factors)
-	attr(dummy.data, "bounds") <- bounds
-	mordm.plotbox(dummy.data, marks[[which.box]])
-	marks
 }
 
 #' Determines the vulernabilities due to deep uncertainties using Classification
@@ -2703,7 +2650,7 @@ mordm.prim <- function(factors, response, bounds=NULL, which.box=1, show.plot=TR
 #' @param factors the sampled deeply uncertain parameterizations
 #' @param response vector of responses whose length equals the number of factors
 #' @export
-mordm.cart <- function(factors, response) {
+analyze.cart <- function(factors, response) {
 	extended.set <- data.frame(factors, response=response)
 	param_names <- colnames(factors)
 	names(extended.set) <- c(param_names, "response")

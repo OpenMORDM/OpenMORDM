@@ -12,7 +12,7 @@ last entry in the time series is displayed)}
 \item{marking}{list of markings}
 
 \item{index}{if data is a time series, controls which entries to display
-(see \code{\link{mordm.getset}} for details)}
+(see \code{\link{mordm.get.set}} for details)}
 
 \item{not}{DEPRECATED}
 

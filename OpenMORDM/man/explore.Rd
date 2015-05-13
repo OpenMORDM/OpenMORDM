@@ -7,7 +7,7 @@ explore(filename, nvars = NULL, nobjs = NULL, nconstrs = 0,
   names = NULL, bounds = NULL, maximize = NULL, order = NULL,
   visible.variables = FALSE, plot3d.width = "600px",
   plot3d.height = "500px", welcome.panel = NULL, selection.panel = NULL,
-  ignore = NULL, metadata = NULL)
+  ignore = NULL, metadata = NULL, runShinyApp = TRUE)
 }
 \arguments{
 \item{filename}{the name of the file, a matrix, or a data frame}
@@ -40,6 +40,9 @@ point}
 \item{ignore}{columns to remove from the dataset (CSV/Excel only)}
 
 \item{metadata}{columns to retain in a metadata attribute (CSV/Excel only)}
+
+\item{runShinyApp}{if TRUE, start the Shiny server with runApp(...); if false, start
+the server with shinyApp(...)}
 }
 \description{
 Starts a Shiny server and launches a webpage to display the given dataset.

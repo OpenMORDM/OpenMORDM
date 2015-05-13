@@ -6,7 +6,7 @@
 borg.optimize(problem, NFE, ...)
 }
 \arguments{
-\item{problem}{the problem setup}
+\item{problem}{the problem definition}
 
 \item{NFE}{the maximum number of function evaluations}
 

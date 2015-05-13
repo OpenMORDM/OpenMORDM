@@ -96,7 +96,7 @@ runVisDemo <- function() {
 		observe({
 			do.custom <- function(input) {
 				index <- to.index(input)
-				set <- mordm.getset(data, index)
+				set <- mordm.get.set(data, index)
 				point <- set[input$selection,,drop=FALSE]
 				
 				names <- vector()
@@ -166,7 +166,7 @@ runVisDemo <- function() {
 		
 		renderUI({
 			index <- to.index(input)
-			set <- mordm.getset(data, index)
+			set <- mordm.get.set(data, index)
 			
 			if (is.null(input$selection) || is.na(input$selection) || input$selection <= 0 || input$selection > nrow(set)) {
 				p("Select a point on the 3D Plot page to view details.")

@@ -503,9 +503,10 @@ mordm.colorize <- function(set, objectives, mark=NULL, palette=NULL, n=100, offs
 #' @param alpha the transparency value; or \code{NA}
 #' @param label.size the font size of labels
 #' @param line.width the width of lines
-#' @param selection.scale the 
+#' @param selection.scale the scale of the selected line
+#' @param show.variables hide decision variables from the plot if \code{FALSE}
 #' @export
-mordm.plot.parallel <- function(highlight=NULL, alpha=0.4, label.size=1, line.width=1, selection.scale=2) {
+mordm.plot.parallel <- function(highlight=NULL, alpha=0.4, label.size=1, line.width=1, selection.scale=2, show.variables=FALSE) {
 	set <- get("current.set", mordm.globals)
 	objectives <- get("current.objectives", mordm.globals)
 	mark <- get("current.mark", mordm.globals)
@@ -533,6 +534,11 @@ mordm.plot.parallel <- function(highlight=NULL, alpha=0.4, label.size=1, line.wi
 		par(get("default.par", mordm.globals))
 	} else {
 		assign("default.par", par(no.readonly=TRUE), mordm.globals)
+	}
+	
+	# option to show only the objectives
+	if (!show.variables) {
+		set <- set[,objectives]
 	}
 
 	# create the plot
@@ -875,10 +881,11 @@ mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, id
 #' @param enabled if \code{TRUE}, enables this functionality
 #' @param label if \code{TRUE}, a label will be added to the 3D scatter plot
 #'        identifying the selected point
+#' @param button the mouse button (typically 1=left, 2=right, 3=middle)
 #' @export
-mordm.identify <- function(enabled=TRUE, label=FALSE) {
+mordm.identify <- function(enabled=TRUE, label=FALSE, button=3) {
 	if (enabled) {
-		rgl.setMouseCallbacks(3, begin=function(x, y) { 
+		rgl.setMouseCallbacks(button, begin=function(x, y) { 
 			userMatrix <- par3d("userMatrix")
 			viewport <- par3d("viewport")
 			scale <- par3d("scale")
@@ -2366,9 +2373,10 @@ mordm.sample.uncertainties <- function(data, nsamples, models, sd=0, verbose=TRU
 #'        satisficing robustness metrics
 #' @param factors matrix of the original compute.robustness factors for use by
 #'        Satisficing Type II
+#' @param baseline_factors the baseline factors (under well characterized uncertainty)
 #' @param custom.fcn custom robustness function
 #' @export
-mordm.evaluate.uncertainties <- function(samples, satisficing.fcn=NULL, factors=NULL, custom.fcn=NULL) {
+mordm.evaluate.uncertainties <- function(samples, satisficing.fcn=NULL, factors=NULL, baseline_factors=NULL, custom.fcn=NULL) {
 	set.orig <- attr(samples, "set.orig")
 	models <- attr(samples, "models")
 	
@@ -2477,7 +2485,7 @@ mordm.evaluate.uncertainties <- function(samples, satisficing.fcn=NULL, factors=
 	}
 	
 	if (!is.null(satisficing.fcn)) {
-		if (!is.null(factors)) {
+		if (!is.null(factors) && !is.null(baseline_factors)) {
 			result <- cbind(result.regret.type1, result.regret.type2, result.satisficing.type1, result.satisficing.type2)
 			colnames(result) <- c("Regret Type I", "Regret Type II", "Satisficing Type I", "Satisficing Type II")
 		} else {

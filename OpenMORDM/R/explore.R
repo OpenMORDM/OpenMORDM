@@ -181,6 +181,13 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 				limits <- apply(rbind(temp.set, limits), 2, range)
 			}
 		}
+
+		for (i in 1:ncol(limits)) {
+			if (limits[2,i]-limits[1,i] < 0.0001) {
+				limits[1,i] = limits[1,i] - limits[1,i]/100
+				limits[2,i] = limits[2,i] + limits[2,i]/100
+			} 
+		}
 		
 		names <- colnames(limits)
 		limits <- cbind(limits, range(0)) # add range for constant objective
@@ -694,7 +701,8 @@ explore <- function(filename, nvars=NULL, nobjs=NULL, nconstrs=0, names=NULL, bo
 		# generate the parallel coordinates plot
 		set.par(input)
 		mordm.plot.parallel(alpha=NA, highlight=highlight, label.size=input$parallel.cex,
-					  line.width=input$parallel.lwd, selection.scale=input$selection.scale)
+					  line.width=input$parallel.lwd, selection.scale=input$selection.scale,
+					  show.variables=TRUE)
 		
 		# restore the original settings
 		assign("current.set", original.set, mordm.globals)

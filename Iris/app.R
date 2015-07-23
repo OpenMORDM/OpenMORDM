@@ -23,46 +23,5 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-options(rgl.useNULL=TRUE)
-
-
-#library(OpenMORDM)
-library(functional)
-library(shiny)
-library(shinyRGL)
-library(rgl)
-library(scales)
-library(grid)
-library(prim)
-library(MASS)
-library(animation)
-library(sensitivity)
-library(boot)
-library(pracma)
-library(emoa)
-library(stringr)
-library(dichromat)
-library(rpart)
-library(rpart.plot)
-library(party)
-library(stats)
-library(corrgram)
-library(lhs)
-library(rdyncall)
-library(datasets)
-
-# Create a private environment for storing plot settings
-assign("mordm.globals", new.env(), envir=parent.env(environment()))
-
-options(mordm.palette=Curry(rainbow, start=0, end=2/6))
-
-source("OpenMORDM.R")
-source("pareto.R")
-source("plischke.R")
-source("evaluate.R")
-source("borg.R")
-source("explore.R")
-
-#rgl.init()
-
+library(OpenMORDM)
 explore(iris, runShinyApp=FALSE)

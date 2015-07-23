@@ -13,6 +13,14 @@ OpenMORDM's core features include:
 
 Please see the [Wiki](https://github.com/dhadka/OpenMORDM/wiki) for installation instructions, tutorials, and more.
 
+## Publications
+
+The design of OpenMORDM and a walkthrough of applying MORDM to an environmental model is detailed in the following journal article:
+
+> Hadka, D., J. Herman, P. Reed, and K. Keller.  "An Open Source Framework for Many-Objective Robust Decision Making."  Accepted to Environmental Modelling & Software.  DOI: 10.1016/j.envsoft.2015.07.014
+
+[Download the supplemental materials](https://github.com/dhadka/OpenMORDM/releases/download/1.0/OpenMORDM.Supplemental.Material.Rev2.zip).  Refer to the `README.txt` file within the ZIP for setup instructions. 
+
 ## License
 
 OpenMORDM is licensed under the GNU General Public License, version 3 or later.

@@ -1,14 +1,25 @@
 # OpenMORDM #
 
 OpenMORDM is an open-source R library for Multiobjective Robust Decision Making (MORDM).
-It includes support for loading datasets from a number of sources including
-CSV, XLS, XLSX, optimization output files (from [Borg](http://www.borgmoea.org/)
-or the [MOEA Framework](http://www.moeaframework.org/)), and R matrices and data frames;
-visualizing the data sets using various 2D and 3D plots; performing scenario
-discovery and tradeoff analysis; and computing uncertainty/robustness metrics.
-OpenMORDM also includes a web-based data exploration and visualization toolkit
-that can be launched through the `runVisDemo` or `explore` commands.
+OpenMORDM's core features include:
+
+1. Connecting to models written in R or compiled as executables;
+2. Defining uncertain and deeply uncertain model inputs
+3. Evaluating the model across many hypothetical states of the world (SOWs)
+4. Identifying potential robust designs using customizable robustness criteria
+5. Characterizing vulnerabilities of designs using PRIM or CART
+6. Evaluating tradeoffs among designs using various visualization tools
+
+In addition, OpenMORDM includes an interactive, web-based visualization toolkit for analyzing and sharing results.  See a **[live demo](https://openmordm.shinyapps.io/Iris)** of the web-based tool.
+
+Please see the [Wiki](https://github.com/dhadka/OpenMORDM/wiki) for installation instructions, tutorials, and more.
 
 ![Main Window](https://github.com/dhadka/OpenMORDM/blob/wiki_images/images/mainWindow.png)
 
-Please see the [Wiki](https://github.com/dhadka/OpenMORDM/wiki) for installation instructions, tutorials, and more.
+## License
+
+OpenMORDM is licensed under the GNU General Public License, version 3 or later.
+
+This work was supported by the National Science Foundation through the Network for Sustainable Climate Risk
+Management (SCRiM) under NSF cooperative agreement GEO-1240507.  Visit [http://scrimhub.org/](http://scrimhub.org/)
+for more details.

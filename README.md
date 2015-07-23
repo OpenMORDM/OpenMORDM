@@ -4,11 +4,11 @@ OpenMORDM is an open-source R library for Multiobjective Robust Decision Making 
 OpenMORDM's core features include:
 
 1. Connecting to models written in R or compiled as executables;
-2. Defining uncertain and deeply uncertain model inputs
-3. Evaluating the model across many hypothetical states of the world (SOWs)
-4. Identifying potential robust designs using customizable robustness criteria
-5. Characterizing vulnerabilities of designs using PRIM or CART
-6. Evaluating tradeoffs among designs using various visualization tools
+2. Defining uncertain and deeply uncertain model inputs;
+3. Evaluating the model across many hypothetical states of the world (SOWs);
+4. Identifying potential robust designs using customizable robustness criteria;
+5. Characterizing vulnerabilities of designs using PRIM or CART;
+6. Evaluating tradeoffs among designs using various visualization tools; and
 7. An interactive, web-based visualization toolkit for sharing results [(live demo)](https://openmordm.shinyapps.io/Iris)
 
 Please see the [Wiki](https://github.com/dhadka/OpenMORDM/wiki) for installation instructions, tutorials, and more.

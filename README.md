@@ -13,8 +13,6 @@ OpenMORDM's core features include:
 
 Please see the [Wiki](https://github.com/dhadka/OpenMORDM/wiki) for installation instructions, tutorials, and more.
 
-![Main Window](https://github.com/dhadka/OpenMORDM/blob/wiki_images/images/mainWindow.png)
-
 ## License
 
 OpenMORDM is licensed under the GNU General Public License, version 3 or later.
@@ -22,3 +20,7 @@ OpenMORDM is licensed under the GNU General Public License, version 3 or later.
 This work was supported by the National Science Foundation through the Network for Sustainable Climate Risk
 Management (SCRiM) under NSF cooperative agreement GEO-1240507.  Visit [http://scrimhub.org/](http://scrimhub.org/)
 for more details.
+
+## Screenshot
+
+![Main Window](https://github.com/dhadka/OpenMORDM/blob/wiki_images/images/mainWindow.png)

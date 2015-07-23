@@ -9,8 +9,7 @@ OpenMORDM's core features include:
 4. Identifying potential robust designs using customizable robustness criteria
 5. Characterizing vulnerabilities of designs using PRIM or CART
 6. Evaluating tradeoffs among designs using various visualization tools
-
-In addition, OpenMORDM includes an interactive, web-based visualization toolkit for analyzing and sharing results.  See a **[live demo](https://openmordm.shinyapps.io/Iris)** of the web-based tool.
+7. An interactive, web-based visualization toolkit for sharing results [(live demo)](https://openmordm.shinyapps.io/Iris)
 
 Please see the [Wiki](https://github.com/dhadka/OpenMORDM/wiki) for installation instructions, tutorials, and more.
 

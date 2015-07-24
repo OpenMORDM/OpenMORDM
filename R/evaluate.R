@@ -162,14 +162,14 @@ borg.optimize.function <- function(problem, NFE, ...) {
 #'        contents of the output file
 #' @param verbose displays additional information for debugging
 #' @export
-borg.optimize.external <- function(problem, NFE, executable="./borg.exe", output=tempfile(), output.frequency=100, return.output=TRUE, verbose=TRUE) {
+borg.optimize.external <- function(problem, NFE, executable="borg.exe", output=tempfile(), output.frequency=100, return.output=TRUE, verbose=TRUE) {
 	if (is.function(problem$command)) {
 		stop("Problem must be an external executable")
 	}
 	
-	if (!file.exists(executable)) {
-		stop(paste("Unable to locate ", executable, sep=""))
-	}
+	#if (!file.exists(executable)) {
+	#	stop(paste("Unable to locate ", executable, sep=""))
+	#}
 	
 	command <- paste(executable,
 					 "-n", format(NFE, scientific=FALSE),

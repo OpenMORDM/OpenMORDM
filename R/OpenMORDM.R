@@ -866,6 +866,150 @@ mordm.plot <- function(data, mark=NULL, index=-1, objectives=NULL, stay=TRUE, id
 	assign("current.alpha", alpha, mordm.globals)
 }
 
+#' Similar to \code{\link{mordm.plot}} except the generated plot is a 2D scatter plot.
+#' 
+#' Creates a 2D scatter plot of the data.  As a side effect, this method sets
+#' a global variable identifying the current data set and plotting attributes
+#' to be used by other plotting methods in this package.  This design allows
+#' you to easily create secondary plots that are consistent with the primary
+#' 3D scatter plot.
+#' 
+#' @param data the data set to be displayed (if data is a time series, then the
+#'        last entry in the time series is displayed)
+#' @param mark a list of the markings to be displayed
+#' @param index if data is a time series, controls which entries to display
+#'        (see \code{\link{mordm.get.set}} for details)
+#' @param objectives vector specifying the objectives to be plotted on the
+#'        x, y, size, and color axes
+#' @param alpha vector of transparency values applied to each point
+#' @param colors override the color values
+#' @param xlim range (lower and upper bounds) for the x axis
+#' @param ylim range (lower and upper bounds) for the y axis
+#' @param zlim range (lower and upper bounds) for the z axis
+#' @param slim range (lower and upper bounds) of size values
+#' @param clim range (lower and upper bounds) of color values
+#' @param ... additional options passed to \code{\link{plot}}
+#' @export
+mordm.plot2d <- function(data, mark=NULL, index=-1, objectives=NULL, alpha=1, colors=NULL, clim=NULL, xlim=NULL, ylim=NULL, zlim=NULL, slim=NULL, ...) {
+	set <- mordm.get.set(data, index)
+	nvars <- attr(data, "nvars")
+	nobjs <- attr(data, "nobjs")
+	factors <- attr(data, "factors")
+	
+	names <- colnames(set)
+	
+	if (is.null(objectives)) {
+		objectives <- (1:nobjs) + nvars
+	}
+	
+	nobjs <- min(4, length(objectives))
+	
+	# setup the plot
+	x <- set[,objectives[1]]
+	xlab <- names[objectives[1]]
+	xfactors <- factors[[objectives[1]]]
+		
+	if (!is.null(xfactors)) {
+		xat <- 1:length(xfactors)
+		xtick <- xfactors
+	} else {
+		xat <- NULL
+		xtick <- NULL
+	}
+		
+	y <- set[,objectives[2]]
+	ylab <- names[objectives[2]]
+	yfactors <- factors[[objectives[2]]]
+		
+	if (!is.null(yfactors)) {
+		yat <- 1:length(yfactors)
+		ytick <- yfactors
+	} else {
+		yat <- NULL
+		ytick <- NULL
+	}
+	
+	if (nobjs >= 3) {
+		sizes <- set[,objectives[3]]
+		
+		if (is.null(slim)) {
+			slim <- range(sizes, na.rm=TRUE)
+		}
+		
+		denominator <- slim[2] - slim[1]
+		sizes <- pmin(pmax(sizes, slim[1]), slim[2])
+		
+		if (denominator > 0) {
+			sizes <- (sizes - slim[1]) / denominator
+			sizes <- 1.6*sizes + 0.4
+		} else {
+			sizes <- 0*sizes + 1
+		}
+	} else {
+		sizes <- rep(1,nrow(set))
+	}
+	
+	if (nobjs >= 4 || !is.null(mark) || !is.null(colors)) {
+		colors <- mordm.colorize(set, c(objectives[1], objectives[2], 0, objectives[3], objectives[4]), mark, colors=colors, clim=clim, ...)
+	} else {
+		colors <- rep("#888888",nrow(set))
+	}
+	
+	subset <- cbind(x, y)
+	colnames(subset) <- c(xlab, ylab)
+	
+	plot(subset, col=colors, cex.axis=1, cex.lab=1, cex=sizes, pch=20, xlim=xlim, ylim=ylim, ...)
+	
+	# save the state to a global location so other functions can reference
+	assign("current.set", set, mordm.globals)
+	assign("current.objectives", objectives, mordm.globals)
+	assign("current.mark", mark, mordm.globals)
+	assign("current.colors", colors, mordm.globals)
+	assign("current.alpha", alpha, mordm.globals)
+}
+
+#' Plots a scatter matrix.
+#' 
+#' Plots a scatter matrix for the current set.
+#' @param alpha the transparency value; or \code{NA}
+#' @param label.size the font size of labels
+#' @param slim limits on the point size
+#' @export
+mordm.plot.matrix <- function(alpha=0.4, label.size=1, slim=NULL) {
+	set <- get("current.set", mordm.globals)
+	objectives <- get("current.objectives", mordm.globals)
+	mark <- get("current.mark", mordm.globals)
+	colors <- alpha(get("current.colors", mordm.globals), alpha*get("current.alpha", mordm.globals))
+	
+	nobjs <- length(objectives)
+	
+	if (nobjs >= 3) {
+		sizes <- set[,objectives[3]]
+		
+		if (is.null(slim)) {
+			slim <- range(sizes, na.rm=TRUE)
+		}
+		
+		denominator <- slim[2] - slim[1]
+		sizes <- pmin(pmax(sizes, slim[1]), slim[2])
+		
+		if (denominator > 0) {
+			sizes <- (sizes - slim[1]) / denominator
+			sizes <- 1.6*sizes + 0.4
+		} else {
+			sizes <- 0*sizes + 1
+		}
+	} else {
+		sizes <- rep(1,nrow(set))
+	}
+	
+	par(mgp=c(0.5,1,0.9), cex=label.size)
+	pairs(set[,objectives], col=colors, cex.labels=label.size, cex=sizes, pch=20)
+	
+	# store the plot settings
+	assign("current.plot", "matrix", mordm.globals)
+}
+
 #' Identify and highlight points using the middle mouse button.
 #' 
 #' Enables a mouse callback for clicking points on the 3D scatter plot and
@@ -2576,9 +2720,8 @@ mordm.weight <- function(data, weights) {
 #' @param bounds bounds of the sampled uncertainties
 #' @param which.box index of the PRIM box to plot
 #' @param show.plot if TRUE, generates a plot representing the PRIM box
-#' @param 
+#' @param method the method, such as \code{prim} or \code{sdprim}
 #' @param ... optional parameters passed to prim.box
-#' @
 #' @export
 analyze.prim <- function(factors, response, bounds=NULL, which.box=1, show.plot=TRUE, method="prim", ...) {
 	if (method == "prim") {

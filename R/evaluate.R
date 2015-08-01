@@ -134,10 +134,11 @@ borg.optimize.function <- function(problem, NFE, ...) {
 	output <- borg(problem$nvars, problem$nobjs, problem$nconstrs, problem$command, NFE, problem$epsilons, lowerBounds=problem$bounds[1,], upperBounds=problem$bounds[2,], ...)
 	
 	if (!is.null(problem$maximize)) {
+		colnames(output)=problem$names[1:(problem$nvars + problem$nobjs)]
 		output[,problem$maximize] <- -output[,problem$maximize]
 	}
 	
-	mordm.read.matrix(as.matrix(output), problem$nvars, problem$nobjs, bounds=problem$bounds, names=problem$names, maximize=problem$maximize)
+	mordm.read.matrix(as.matrix(output), problem$nvars, problem$nobjs, bounds=problem$bounds, names=problem$names[1:(problem$nvars + problem$nobjs)], maximize=problem$maximize)
 }
 
 #' Optimize the problem using the Borg standalone executable (borg.exe).

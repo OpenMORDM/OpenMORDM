@@ -326,15 +326,17 @@ borg <- function(nvars, nobjs, nconstrs, objectiveFcn, maxEvaluations, epsilons,
 	variables <- matrix(0, size, nvars)
 	objectives <- matrix(0, size, nobjs)
 	
-	for (i in 1:size) {
-		solution <- BORG_Archive_get(result, i-1)
+	if (size > 0) {
+		for (i in 1:size) {
+			solution <- BORG_Archive_get(result, i-1)
 		
-		for (j in 1:nvars) {
-			variables[i,j] = BORG_Solution_get_variable(solution, j-1)
-		}
+			for (j in 1:nvars) {
+				variables[i,j] = BORG_Solution_get_variable(solution, j-1)
+			}
 		
-		for (j in 1:nobjs) {
-			objectives[i,j] = BORG_Solution_get_objective(solution, j-1)
+			for (j in 1:nobjs) {
+				objectives[i,j] = BORG_Solution_get_objective(solution, j-1)
+			}
 		}
 	}
 	

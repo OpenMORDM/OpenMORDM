@@ -20,15 +20,15 @@ OpenMORDM provides support for visualizing high-dimensional
 \tabular{ll}{
 Package: \tab OpenMORDM\cr
 Type: \tab Package\cr
-Version: \tab 0.1\cr
-Date: \tab 2014-08-26\cr
-License: \tab MIT + file LICENSE\cr
-Copyright: \tab Copyright 2014 The Pennsylvania State University.  This work was
+Version: \tab 1.0\cr
+Date: \tab 2015-07-23\cr
+License: \tab GPL-3 + file LICENSE\cr
+Copyright: \tab Copyright 2014-2015 The Pennsylvania State University.  This work was
 supported by the National Science Foundation through the Network for
 Sustainable Climate Risk Management (SCRiM) under NSF cooperative agreement
 GEO-1240507.\cr
 Depends: \tab 
-R (>= 3.0)\cr
+R (>= 3.0.2)\cr
 Imports: \tab 
 shiny,
 shinyRGL,
@@ -54,7 +54,7 @@ lhs,
 rdyncall\cr
 Suggests: \tab 
 gdata\cr
-Built: \tab R 3.1.1; ; 2015-05-07 20:21:56 UTC; windows\cr
+Built: \tab R 3.1.1; ; 2015-08-26 19:12:55 UTC; windows\cr
 }
 
 Index:
@@ -67,7 +67,9 @@ adjust.command          Prepends a ./ to commands on non-Windows
 analyze.cart            Determines the vulernabilities due to deep
                         uncertainties using Classification and
                         Regression Trees (CART).
-analyze.prim            Patient rule induction method.
+analyze.prim            Determines the vulernabilities due to deep
+                        uncertainties using the Patient Rule Induction
+                        Method (PRIM).
 borg.optimize           Optimize the problem using the Borg MOEA.
 borg.optimize.external
                         Optimize the problem using the Borg standalone
@@ -131,9 +133,16 @@ mordm.plot              Sets the current data set and displays a 3D
 mordm.plot.box          Display plot of PRIM boxes.
 mordm.plot.markings     Display the markings in a box plot (candle
                         stick plot).
+mordm.plot.matrix       Plots a scatter matrix.
 mordm.plot.operators    Plot operator probabilities.
 mordm.plot.parallel     Display a parallel plot of the current data
                         set.
+mordm.plot2d            Similar to 'mordm.plot' except the generated
+                        plot is a 2D scatter plot.
+mordm.prim              Patient rule induction method.  This is a more
+                        general method than 'analyze.prim', which only
+                        works on deeply-uncertain factor
+                        parameterization.
 mordm.print.box         Print descriptive representation of PRIM boxes.
 mordm.rbind             Adds extra rows to the end of a data set.
 mordm.read              Loads the time series data output from an

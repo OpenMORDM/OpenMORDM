@@ -936,10 +936,9 @@ sample.lhs <- function(nsamples, ...) {
 #' 
 #' @param fcn the function
 #' @param ... the values for the named parameters
-#' @import functional
 #' @export
 with.parameters <- function(fcn, ...) {
-	library(functional)
+	require(functional)
 	do.call(Curry, unlist(list(fcn, ...)))
 }
 

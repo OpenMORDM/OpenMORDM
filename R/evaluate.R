@@ -134,10 +134,11 @@ borg.optimize.function <- function(problem, NFE, ...) {
 	output <- borg(problem$nvars, problem$nobjs, problem$nconstrs, problem$command, NFE, problem$epsilons, lowerBounds=problem$bounds[1,], upperBounds=problem$bounds[2,], ...)
 	
 	if (!is.null(problem$maximize)) {
+		colnames(output)=problem$names[1:(problem$nvars + problem$nobjs)]
 		output[,problem$maximize] <- -output[,problem$maximize]
 	}
 	
-	mordm.read.matrix(as.matrix(output), problem$nvars, problem$nobjs, bounds=problem$bounds, names=problem$names, maximize=problem$maximize)
+	mordm.read.matrix(as.matrix(output), problem$nvars, problem$nobjs, bounds=problem$bounds, names=problem$names[1:(problem$nvars + problem$nobjs)], maximize=problem$maximize)
 }
 
 #' Optimize the problem using the Borg standalone executable (borg.exe).
@@ -895,4 +896,81 @@ bootstats <- function(b, conf = 0.95, type = "norm") {
 	}
 	
 	return(out)
+}
+
+#' Generates uncertainty samples using Latin hypercube sampling.
+#' 
+#' Returns a matrix storing uncertainty samples.  The first argument to this
+#' function is the desired number of samples.  The remaining named arguments
+#' specify the parameter name and its bounds.  For example, the following
+#' generates samples for two parameters, a and b:
+#'    \code{factors <- sample.lhs(100, a=c(0, 10), b=c(-1, 1))}
+#' 
+#' @param nsamples the desired number of samples
+#' @param ... the named arguments specifying the bounds of each parameter
+#' @export
+sample.lhs <- function(nsamples, ...) {
+	args <- list(...)
+	param_names = names(args)
+	
+	if (is.null(param_names) || "" %in% param_names) {
+		error("Either no parameters specified or missing parameter names")
+	}
+	
+	factors <- randomLHS(nsamples, length(args))
+	colnames(factors) <- param_names
+	
+	for (param in param_names) {
+		param_max <- max(unlist(args[param]))
+		param_min <- min(unlist(args[param]))
+		factors[,param] <- factors[,param]*(param_max-param_min) + param_min
+	}
+	
+	return(factors)
+}
+
+#' Assigns the parameters for the given function, returning a new function.
+#' 
+#' Uses the functional package to pre-specify or override the named parameters
+#' for a function.
+#' 
+#' @param fcn the function
+#' @param ... the values for the named parameters
+#' @export
+with.parameters <- function(fcn, ...) {
+	require(functional)
+	do.call(Curry, unlist(list(fcn, ...)))
+}
+
+#' Creates models for each uncertainty parameterization.
+#' 
+#' Takes the model, which must be defined using an R function, and creates
+#' many instances of the model for each uncertainty parameterization.  The
+#' names of the uncertainty parameters must match the optional, named
+#' arguments to the R function.
+#' 
+#' @param problem the problem definition from \code{define.problem}
+#' @param factors the uncertainty parameterizations from \code{sample.lhs}
+#' @export
+create.uncertainty.models <- function(problem, factors) {
+	if (!is.function(problem$command)) {
+		error("create.models only works on problems defined using an R function")
+	}
+	
+	model_calls <- apply(factors, 1, function(x) {
+		with.parameters(problem$command, unlist(x))
+	})
+	
+	models <- lapply(model_calls, function(command) {
+		define.problem(command,
+					   problem$nvars,
+					   problem$nobjs,
+					   problem$nconstrs,
+					   bounds=problem$bounds,
+					   names=problem$names,
+					   epsilons=problem$epsilons,
+					   maximize=problem$maximize)
+	})
+	
+	return(models)
 }

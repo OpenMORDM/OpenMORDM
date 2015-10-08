@@ -1,0 +1,8 @@
+language: r
+sudo: required
+
+r_github_packages:
+  - OpenMORDM/rdyncall
+  - OpenMORDM/shinyRGL
+  - OpenMORDM/rgl@working
+

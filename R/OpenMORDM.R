@@ -2394,7 +2394,7 @@ mordm.variable.sensitivities <- function(data, objective, index=-1, all=FALSE, .
 #'        \code{\link{check.robustness}} for available options)
 #' @param verbose display additional information
 #' @export
-compute.robustness.guassian <- function(data, sd, nsamples, problem, method="default", verbose=TRUE) {
+compute.robustness.gaussian <- function(data, sd, nsamples, problem, method="default", verbose=TRUE) {
 	set <- mordm.get.set(data)
 	set <- set[,1:problem$nvars,drop=FALSE]
 	

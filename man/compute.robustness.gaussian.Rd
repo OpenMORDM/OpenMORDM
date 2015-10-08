@@ -4,7 +4,7 @@
 \alias{compute.robustness.guassian}
 \title{Computes robustness under well-characterized compute.robustness (i.e., Gaussian noise).}
 \usage{
-compute.robustness.guassian(data, sd, nsamples, problem, method = "default",
+compute.robustness.gaussian(data, sd, nsamples, problem, method = "default",
   verbose = TRUE)
 }
 \arguments{

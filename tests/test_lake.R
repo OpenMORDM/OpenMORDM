@@ -1,5 +1,7 @@
 # Runs a shortened version of the Lake Problem demo described in the Wiki.
 test.lakedemo <- function() {
+	require(OpenMORDM)
+
 	# Set up the model
 	lake.eval <- function(decisions, samples=100, days=100, b=0.42, q=2, mean=0.02,
 						  stdev=0.001, delta=0.98, alpha=0.4, beta=0.08,
@@ -30,8 +32,8 @@ test.lakedemo <- function() {
 	
 	# Test the model
 	result <- lake.eval(rep(0.1, 100))
-	checkEqualsNumeric(c(1.679454, -1.700066, -1.000000, -0.140000), result$objectives)
-	checkEqualsNumeric(0.76, result$constraints)
+	checkEqualsNumeric(c(1.679454, -1.700066, -1.000000, -0.140000), result$objectives, tolerance=0.01)
+	checkEqualsNumeric(0.76, result$constraints, tolerance=0.01)
 	
 	# Define the problem within OpenMORDM
 	nvars <- 100

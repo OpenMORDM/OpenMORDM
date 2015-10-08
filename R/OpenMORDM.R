@@ -2382,7 +2382,7 @@ mordm.variable.sensitivities <- function(data, objective, index=-1, all=FALSE, .
 #' Adds Gaussian noise to the decision variables and resamples the model output.
 #' Then computes one or more robustness metrics.
 #' 
-#' This method is equivalent to \code{\link{mordm.compute.robustness}} using a single
+#' This method is equivalent to \code{\link{mordm.sample.uncertainties}} using a single
 #' model.
 #' 
 #' @param data the data set

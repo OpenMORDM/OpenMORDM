@@ -1,0 +1,9 @@
+language: r
+sudo: required
+
+r_github_packages:
+  - MangoTheCat/visualTest
+  - OpenMORDM/rdyncall
+  - OpenMORDM/shinyRGL
+  - OpenMORDM/rgl@working
+

@@ -1,5 +1,7 @@
 # OpenMORDM #
 
+[![Build Status](https://travis-ci.org/OpenMORDM/OpenMORDM.svg)](https://travis-ci.org/OpenMORDM/OpenMORDM)
+
 OpenMORDM is an open-source R library for Multiobjective Robust Decision Making (MORDM).
 OpenMORDM's core features include:
 

@@ -45,4 +45,6 @@ Imports:
     lhs,
     rdyncall
 Suggests:
-    gdata
+    gdata,
+    RUnit,
+    devtools

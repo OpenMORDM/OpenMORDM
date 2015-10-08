@@ -1,11 +1,13 @@
 library(RUnit)
 library(devtools)
 
-if (!"visualTest" %in% installed.packages()[,"Package"]) {
-	devtools::install_github("MangoTheCat/visualTest")
-}
+print(installed.packages()[,"Package"])
 
-library(visualTest)
+require(visualTest)
+
+#if (!"visualTest" %in% installed.packages()[,"Package"]) {
+#	devtools::install_github("MangoTheCat/visualTest")
+#}
 
 test.suite <- defineTestSuite("OpenMORDM Tests",
 							  dir = file.path("."),

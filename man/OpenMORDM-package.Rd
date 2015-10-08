@@ -85,6 +85,9 @@ compute.robustness.guassian
                         compute.robustness (i.e., Gaussian noise).
 compute.sensitivity     Standardized interface for sensitivity analysis
                         methods.
+create.uncertainty.models
+                        Creates models for each uncertainty
+                        parameterization.
 define.problem          Define a new problem formulation.
 deltafast               Fast version of Plischke's delta-moment
                         sensitivity analysis method.
@@ -173,9 +176,13 @@ robustness.gap          Experimental robustness metric based on info
 robustness.variance     Robustness metric based on variance.
 runVisDemo              Runs the exploration tool on a 5-objective
                         problem.
+sample.lhs              Generates uncertainty samples using Latin
+                        hypercube sampling.
 sensitivity.levels      Determines number of replicates for sensitivity
                         analysis.
 usample                 Generate uniformly distributed random inputs.
+with.parameters         Assigns the parameters for the given function,
+                        returning a new function.
 }
 }
 \author{

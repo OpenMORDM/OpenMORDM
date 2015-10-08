@@ -1,5 +1,6 @@
 # Runs a shortened version of the Lake Problem demo described in the Wiki.
 test.lakedemo <- function() {
+	require(RUnit)
 	require(OpenMORDM)
 
 	# Set up the model
@@ -51,20 +52,49 @@ test.lakedemo <- function() {
 	
 	# Generate standard plots
 	palette <- colorRampPalette(c("green", "yellow", "red"))(100)
-	mordm.plot(data, color="Reliability", palette=palette)
-	mordm.plot.parallel(line.width=3)
+	#mordm.plot(data, color="Reliability", palette=palette)
 	
-	# Add deep uncertainties (reduced sampling size)
+	png(filename="plot2d.png")
+	mordm.plot2d(data)
+	dev.off()
+	checkTrue(isSimilar("plot2d.png", "plot2d_expected.png"))
+	
+	png(filename="parallel.png")
+	mordm.plot.parallel(line.width=3)
+	dev.off()
+	checkTrue(isSimilar("parallel.png", "parallel_expected.png"))
+	
+	png(filename="matrix.png")
+	mordm.plot.matrix()
+	dev.off()
+	checkTrue(isSimilar("matrix.png", "matrix_expected.png"))
+	
+	# Set the baseline SOW
+	param_names <- c("b", "q", "mean", "stdev", "delta")
+	baseline_SOW <- c(0.42, 2, 0.02, 0.0017, 0.98)
+	
+	# Add deep uncertainties (with reduced sampling size)
+	temp <- data[[1]][1:20,]
+	attr(temp, "nvars") <- attr(data[[1]], "nvars")
+	attr(temp, "nobjs") <- attr(data[[1]], "nobjs")
+	attr(temp, "nconstrs") <- attr(data[[1]], "nconstrs")
+	attr(temp, "bounds") <- attr(data[[1]], "bounds")
+	attr(temp, "maximize") <- attr(data[[1]], "maximize")
+	data[[1]] <- temp
+	
 	nsamples <- 50
 	
+	set.seed(1337)
 	SOWS <- sample.lhs(nsamples,
 					   b=c(0.1, 0.45),
 					   q=c(2, 4.5),
 					   mean=c(0.01, 0.05),
 					   stdev=c(0.001, 0.005),
 					   delta=c(0.93, 0.99))
+	checkEquals(c(nsamples, 5), dim(SOWS))
 	
 	models <- create.uncertainty.models(problem, SOWS)
+	checkEquals(nsamples, length(models))
 	
 	uncertainty.samples <- mordm.sample.uncertainties(data, nsamples, models)
 	
@@ -73,15 +103,20 @@ test.lakedemo <- function() {
 											   function(x) sum(abs(x$constrs)) == 0 && x$objs[2]>0.1,
 											   SOWS,
 											   baseline_SOW)
-	
 	mordm.plot(data, color=robustness[,"Regret Type I"], palette=palette)
 	mordm.plot(data, color=robustness[,"Satisficing Type I"], palette=palette)
 	
 	# Vulnerability Analysis
 	selected.point <- uncertainty.samples[[17]]
 	
-	analyze.prim(factors, selected.point$objs[,"Reliability"], threshold.type=-1)
+	png(filename="prim.png")
+	analyze.prim(SOWS, selected.point$objs[,"Reliability"], threshold.type=-1)
+	dev.off()
+	checkTrue(isSimilar("prim.png", "prim_expected.png"))
 	
-	analyze.cart(factors, ifelse(samples[[design_id]]$objs[,"Reliability"]<1,
+	png(filename="cart.png")
+	analyze.cart(SOWS, ifelse(selected.point$objs[,"Reliability"]<1,
 								 "Failure", "Success"))
+	dev.off()
+	checkTrue(isSimilar("cart.png", "cart_expected.png"))
 }

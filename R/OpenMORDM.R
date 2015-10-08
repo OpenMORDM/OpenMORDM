@@ -2521,6 +2521,8 @@ mordm.evaluate.uncertainties <- function(samples, satisficing.fcn=NULL, factors=
 	
 	# The following regret metrics are idential to the formulations in Herman et al. (In-Review)
 	regret.type1 <- function(original.point, samples) {
+		nvars <- models[[1]]$nvars
+		
 		max(sapply(1:ncol(samples$objs), function(j) {
 			quantile(sapply(1:nrow(samples$objs), function(i) {
 				abs((samples$objs[i,j] - original.point[nvars+j]) / original.point[nvars+j])

@@ -5,7 +5,12 @@ os:
   - linux
   - osx
 
+env:
+  - R_VERSION="=3.0.2-1precise0"
+  - R_VERSION=""
+
 script:
+  - sudo apt-get install --no-install-recommends r-base-dev${R_VERSION} r-recommended${R_VERSION} qpdf
   - Rscript -e 'options(repos = c(CRAN = "http://cran.rstudio.com")); tryCatch({   devtools::install_github(c("MangoTheCat/visualTest", "OpenMORDM/rdyncall", "OpenMORDM/shinyRGL"), build_vignettes = FALSE) }, error = function(e) {   message(e);   q(status = 1, save = "no") })'
   - if [ "$TRAVIS_OS_NAME" == "linux" ]; then Rscript -e 'options(repos = c(CRAN = "http://cran.rstudio.com")); tryCatch({   devtools::install_github(c("OpenMORDM/rgl@working"), build_vignettes = FALSE) }, error = function(e) {   message(e);   q(status = 1, save = "no") })'; fi
   - R CMD check .

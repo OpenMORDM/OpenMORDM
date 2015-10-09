@@ -1,16 +1,29 @@
-language: r
+language: c
 sudo: required
 
 os:
   - linux
   - osx
 
+before_install:
+  - curl -OL https://raw.githubusercontent.com/metacran/r-builder/master/pkg-build.sh
+  - chmod 755 pkg-build.sh
+  - ./pkg-build.sh bootstrap
+
+install:
+  - ./pkg-build.sh install_deps
+
+after_failure:
+  - ./pkg-build.sh dump_logs
+
 env:
-  - R_VERSION="=3.0.2-1precise0"
-  - R_VERSION=""
+  matrix:
+    - RVERSION=3.0.3
+    - RVERSION=3.1.3
+    - RVERSION=release
+    - RVERSION=devel
 
 script:
-  - sudo apt-get install --no-install-recommends r-base-dev${R_VERSION} r-recommended${R_VERSION} qpdf
   - Rscript -e 'options(repos = c(CRAN = "http://cran.rstudio.com")); tryCatch({   devtools::install_github(c("MangoTheCat/visualTest", "OpenMORDM/rdyncall", "OpenMORDM/shinyRGL"), build_vignettes = FALSE) }, error = function(e) {   message(e);   q(status = 1, save = "no") })'
   - if [ "$TRAVIS_OS_NAME" == "linux" ]; then Rscript -e 'options(repos = c(CRAN = "http://cran.rstudio.com")); tryCatch({   devtools::install_github(c("OpenMORDM/rgl@working"), build_vignettes = FALSE) }, error = function(e) {   message(e);   q(status = 1, save = "no") })'; fi
-  - R CMD check .
+  - ./pkg-build.sh run_tests

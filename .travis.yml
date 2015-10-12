@@ -9,3 +9,7 @@ script:
   - Rscript -e 'options(repos = c(CRAN = "http://cran.rstudio.com")); tryCatch({   devtools::install_github(c("MangoTheCat/visualTest", "OpenMORDM/rdyncall", "OpenMORDM/shinyRGL"), build_vignettes = FALSE) }, error = function(e) {   message(e);   q(status = 1, save = "no") })'
   - if [ "$TRAVIS_OS_NAME" == "linux" ]; then Rscript -e 'options(repos = c(CRAN = "http://cran.rstudio.com")); tryCatch({   devtools::install_github(c("OpenMORDM/rgl@working"), build_vignettes = FALSE) }, error = function(e) {   message(e);   q(status = 1, save = "no") })'; fi
   - R CMD check .
+
+matrix:
+  allow_failures:
+    - os: osx

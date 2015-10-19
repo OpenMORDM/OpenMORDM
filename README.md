@@ -19,7 +19,7 @@ Please see the [Wiki](https://github.com/dhadka/OpenMORDM/wiki) for installation
 
 The design of OpenMORDM and a walkthrough of applying MORDM to an environmental model is detailed in the following journal article:
 
-> Hadka, D., J. Herman, P. Reed, and K. Keller.  "An Open Source Framework for Many-Objective Robust Decision Making."  Accepted to Environmental Modelling & Software.  DOI: 10.1016/j.envsoft.2015.07.014
+> Hadka, D., Herman, J., Reed, P.M., Keller, K. An Open Source Framework for Many-Objective Robust Decision Making. Environmental Modelling & Software, 74:114-129, 2015. DOI:10.1016/j.envsoft.2015.07.014. [(View Online)](http://www.sciencedirect.com/science/article/pii/S1364815215300190)
 
 [Download the supplemental materials](https://github.com/dhadka/OpenMORDM/releases/download/1.0/OpenMORDM.Supplemental.Material.Rev2.zip).  Refer to the `README.txt` file within the ZIP for setup instructions. 
 

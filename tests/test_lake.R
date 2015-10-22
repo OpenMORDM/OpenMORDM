@@ -18,7 +18,7 @@ test.lakedemo <- function() {
 										sqrt(log(1+stdev^2/mean^2)))
 			
 			for (t in 2:days) {
-				X[t] <- (1-b)*X[t-1] + X[t-1]^q/(q+X[t-1]^q) + decisions[t] + natural.pollution[t]
+				X[t] <- (1-b)*X[t-1] + X[t-1]^q/(1+X[t-1]^q) + decisions[t] + natural.pollution[t]
 			}
 			
 			objs[1] <- objs[1] + max(X) / samples
